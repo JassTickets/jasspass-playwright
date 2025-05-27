@@ -1,0 +1,12 @@
+{
+  "name": "jasspass-playwright",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/JassTickets/jasspass-playwright.git",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.51.1",
+    "@types/node": "^22.13.10"
+  },
+  "scripts": {}
+}
