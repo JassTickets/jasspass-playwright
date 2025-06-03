@@ -1,5 +1,5 @@
-// export const JASS_TEST_URL = 'https://testlab-env191.jasspass.com';
-export const JASS_TEST_URL = ' http://localhost:3000';
+export const JASS_TEST_URL = 'https://testlab-env191.jasspass.com';
+// export const JASS_TEST_URL = ' http://localhost:3000';
 export const JASS_TEST_CHANGE_ORG_URL =
   JASS_TEST_URL + '/portal/organizer?mode=change';
 export const PLAYWRIGHT_BOT_EMAIL = 'playwright-bot@gmail.com';

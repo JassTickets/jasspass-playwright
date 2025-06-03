@@ -11,6 +11,7 @@ import {
   PLAYWRIGHT_BOT_STRIPE_CONNECT_ID,
 } from '../constants';
 import { signIn } from './auth';
+import { deleteEvent } from './eventHelpers';
 
 export async function createOrganizer(
   page: Page,
@@ -77,8 +78,12 @@ export async function deleteOrganizer(
       Math.random().toString(36).substring(2, 15),
   } = {}
 ) {
-  const id = await createOrganizer(page, { email, organizerName });
-  await page.getByRole('link', { name: 'Manage' }).click();
-  await page.getByRole('button', { name: 'Delete' }).click();
-  await page.getByRole('button', { name: 'Delete' }).click();
+  // This will delete the event, ensuring that the organizer can be deleted
+  const { page1 } = await deleteEvent(page);
+  // Wait for 3 seconds
+  await page1.waitForTimeout(3000);
+
+  await page1.getByRole('link', { name: 'Manage' }).click();
+  await page1.getByRole('button', { name: 'Delete' }).click();
+  await page1.getByRole('button', { name: 'Delete' }).click();
 }
