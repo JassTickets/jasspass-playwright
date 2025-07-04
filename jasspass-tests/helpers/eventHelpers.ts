@@ -21,12 +21,6 @@ export async function createEvent(
       Math.random().toString(36).substring(2, 15),
   } = {}
 ): Promise<string> {
-  // log in and open the create-organizer form
-  await signIn(page);
-
-  // wait for 0.5 seconds
-  await page.waitForTimeout(500);
-
   await createOrganizer(page);
 
   await page.getByRole('button', { name: 'New Event' }).click();
@@ -42,8 +36,8 @@ export async function createEvent(
   await page.getByRole('textbox', { name: 'Event Title' }).fill(eventName);
   await page.getByRole('link', { name: 'Additional Details' }).click();
 
-  //wait for 1 second
-  await page.waitForTimeout(1000);
+  //wait for 5 seconds
+  await page.waitForTimeout(5000);
 
   await page.getByText('Publish').click();
   await page.getByRole('button', { name: 'Publish as Live Event' }).click();
