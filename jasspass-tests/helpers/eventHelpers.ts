@@ -126,7 +126,8 @@ export async function refundTicket(page: Page) {
     .getByRole('textbox', { name: 'Search Orders' })
     .fill(confirmation || '');
 
-  await page1.getByRole('cell', { name: 'ZJR84K45J6Z5' }).click();
+  await page1.getByRole('cell', { name: confirmation }).click();
+
   await page1
     .getByRole('row', { name: 'Ticket Ticket ID Price' })
     .getByRole('checkbox')
@@ -134,7 +135,7 @@ export async function refundTicket(page: Page) {
   await page1.getByRole('textbox', { name: 'Refund details...' }).click();
   await page1
     .getByRole('textbox', { name: 'Refund details...' })
-    .fill('Refund Test');
+    .fill('Playwright Refund');
   await page1.getByRole('button', { name: 'Submit Refund' }).click();
   const successBanner = page1.getByText('Refund submitted successfully.');
 
