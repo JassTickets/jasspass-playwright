@@ -79,7 +79,9 @@ export async function purchaseTicket(page: Page) {
 
   // Accept terms and pay
   await page
-    .getByRole('checkbox', { name: 'I have read and agree to the' })
+    .locator('div')
+    .filter({ hasText: /^I have read and agree to the Terms and Conditions$/ })
+    .locator('#tosAccepted')
     .check();
   await page.getByRole('button', { name: 'Checkout' }).click();
 
@@ -124,21 +126,16 @@ export async function refundTicket(page: Page) {
     .getByRole('textbox', { name: 'Search Orders' })
     .fill(confirmation || '');
 
-  await page1.getByRole('cell', { name: confirmation }).click();
+  await page1.getByRole('cell', { name: 'ZJR84K45J6Z5' }).click();
   await page1
     .getByRole('row', { name: 'Ticket Ticket ID Price' })
     .getByRole('checkbox')
     .check();
-  await page1.getByRole('checkbox', { name: 'Include Service Fee' }).check();
-  await page1
-    .getByRole('checkbox', { name: 'Include Transaction Fee' })
-    .check();
   await page1.getByRole('textbox', { name: 'Refund details...' }).click();
   await page1
     .getByRole('textbox', { name: 'Refund details...' })
-    .fill('Playwright Refund');
+    .fill('Refund Test');
   await page1.getByRole('button', { name: 'Submit Refund' }).click();
-
   const successBanner = page1.getByText('Refund submitted successfully.');
 
   // Return success banner
