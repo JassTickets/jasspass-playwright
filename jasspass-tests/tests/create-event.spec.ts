@@ -7,7 +7,7 @@ test.setTimeout(60_000);
 // @Dependencies: Depends on the sign-in and create organizer functionalities being correct.
 test('createEvent', async ({ page }) => {
   console.log('[INFO] Executing Create Event test...');
-  const id = await createEvent(page);
+  const id = await createEvent(page, true);
   await expect(page).toHaveURL(new RegExp(`event/${id}$`));
   console.log('[INFO] Create Event test completed successfully.');
 });

@@ -13,6 +13,7 @@ import {
 import { signIn } from './auth';
 import { deleteEvent } from './eventHelpers';
 
+// Create Organizer is an independent test. It will only require sign-in
 export async function createOrganizer(
   page: Page,
   {
@@ -21,12 +22,6 @@ export async function createOrganizer(
       Math.random().toString(36).substring(2, 15),
   } = {}
 ): Promise<string> {
-  // log in and open the create-organizer form
-  await signIn(page);
-
-  // wait for 0.5 seconds
-  await page.waitForTimeout(500);
-
   await page.goto(JASS_TEST_CHANGE_ORG_URL);
   await page.getByRole('button', { name: 'Create Organizer Profile' }).click();
 
@@ -72,6 +67,7 @@ export async function createOrganizer(
 
 export async function deleteOrganizer(
   page: Page,
+  independentTest: boolean,
   {
     email = PLAYWRIGHT_BOT_EMAIL,
     organizerName = ORGANIZER_NAME_PREFIX +
@@ -79,7 +75,7 @@ export async function deleteOrganizer(
   } = {}
 ) {
   // This will delete the event, ensuring that the organizer can be deleted
-  const { page1 } = await deleteEvent(page);
+  const { page1 } = await deleteEvent(page, independentTest);
   // Wait for 3 seconds
   await page1.waitForTimeout(3000);
 

@@ -15,14 +15,21 @@ import { fillIndividualStripeFields } from './stripeHelpers';
 
 export async function createEvent(
   page: Page,
+  independentTest: boolean,
   {
     eventName = ORGANIZER_NAME_PREFIX +
       'Event-' +
       Math.random().toString(36).substring(2, 15),
   } = {}
 ): Promise<string> {
-  await createOrganizer(page);
+  if (independentTest) {
+    // Do not create an organizer, just grab the first one found
+    await grabFirstOrganizer(page);
+  } else {
+    await createOrganizer(page);
+  }
 
+  // At this point, whether we created an organizer or just grabbed one, we should be in the organizer's portal
   await page.getByRole('button', { name: 'New Event' }).click();
 
   //wait for 0.5 seconds
@@ -55,9 +62,9 @@ export async function createEvent(
   return match[1];
 }
 
-export async function purchaseTicket(page: Page) {
+export async function purchaseTicket(page: Page, independentTest: boolean) {
   // Create event
-  await createEvent(page);
+  await createEvent(page, independentTest);
 
   // Select ticket and proceed
   await page.getByRole('combobox').selectOption('1');
@@ -93,9 +100,9 @@ export async function purchaseTicket(page: Page) {
   await page.getByRole('img', { name: 'Ticket QR Code' }).click();
 }
 
-export async function refundTicket(page: Page) {
+export async function refundTicket(page: Page, independentTest: boolean) {
   // Purchase a ticket first
-  await purchaseTicket(page);
+  await purchaseTicket(page, independentTest);
 
   // Extract the event ID and confirmation number from the URL
   const currentUrl = page.url();
@@ -143,9 +150,9 @@ export async function refundTicket(page: Page) {
   return { page1, successBanner };
 }
 
-export async function deleteEvent(page: Page) {
+export async function deleteEvent(page: Page, independentTest: boolean) {
   // Do e2e flow up until now: create organizer, create event, purchase ticket, refund ticket
-  const { page1 } = await refundTicket(page);
+  const { page1 } = await refundTicket(page, independentTest);
 
   // Now that the ticket is refunded, we can safely delete the event
   // Wait for 5 seconds to ensure the refund is processed
@@ -172,4 +179,10 @@ export async function deleteEvent(page: Page) {
   await page1.getByRole('button', { name: 'Delete' }).click();
 
   return { page1 };
+}
+async function grabFirstOrganizer(page: Page) {
+  // Assumes user is already signed in and on the organizers list page
+  // Click on the first organizer in the list to enter its portal
+
+  await page.waitForURL(/\/organizer\/[^/]+/);
 }

@@ -14,6 +14,7 @@ export async function signIn(
     password = PLAYWRIGHT_BOT_PASSWORD,
   } = {}
 ) {
+  console.log('Signing in with', email, 'at', baseURL);
   await page.goto(baseURL + '/signin');
   //wait for 0.5 seconds
   await page.waitForTimeout(500);
