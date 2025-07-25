@@ -12,6 +12,7 @@ import {
 } from '../constants';
 import { signIn } from './auth';
 import { deleteEvent } from './eventHelpers';
+import { selectCountryRobust } from './countrySelectorHelpers';
 
 export async function createOrganizer(
   page: Page,
@@ -34,7 +35,11 @@ export async function createOrganizer(
   await page
     .getByRole('textbox', { name: 'Organizer Profile Name *' })
     .fill(organizerName);
-  await page.getByLabel('Select country').selectOption(getRandomCountry());
+
+  // Robust country selection with fallback
+  const randomCountry = getRandomCountry();
+  await selectCountryRobust(page, randomCountry);
+
   await page
     .getByRole('textbox', { name: 'Contact Name *' })
     .fill(CONTACT_NAME);

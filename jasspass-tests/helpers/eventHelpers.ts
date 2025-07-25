@@ -90,6 +90,13 @@ export async function purchaseTicket(page: Page) {
 
   // Go to success page and trigger ticket confirmation
   await page.waitForURL(/\/payment\/success\//);
+
+  // Close the modal (if any):
+  try {
+    await page.getByRole('button', { name: 'Close' }).click();
+  } catch {
+    // Don't do anything
+  }
   await page.getByRole('img', { name: 'Ticket QR Code' }).click();
 }
 
