@@ -12,7 +12,7 @@ export const PLAYWRIGHT_BOT_STRIPE_CONNECT_ID = 'acct_1R48E5B2utfhUzfT';
 
 export const signIn = 'Sign In';
 
-export const COUNTRIES = ['US', 'CA'] as const;
+export const COUNTRIES = ['CA'] as const;
 export type Country = (typeof COUNTRIES)[number];
 
 export function getRandomCountry(): Country {
