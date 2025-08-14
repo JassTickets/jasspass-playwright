@@ -71,18 +71,21 @@ export async function purchaseTicket(page: Page) {
     .fill(PLAYWRIGHT_BOT_EMAIL);
   await page.locator('#phone-input').fill(CONTACT_PHONE_NUMBER);
 
-  // Wait briefly to ensure Stripe iframes are loaded
-  await page.waitForTimeout(1000);
-
-  // Fill Stripe card fields
-  await fillIndividualStripeFields(page);
-
   // Accept terms and pay
   await page
     .locator('div')
     .filter({ hasText: /^I have read and agree to the Terms and Conditions$/ })
     .locator('#tosAccepted')
     .check();
+
+  await page.getByRole('button', { name: 'Proceed to Payment' }).click();
+
+  // Wait briefly to ensure Stripe iframes are loaded
+  await page.waitForTimeout(1000);
+
+  // Fill Stripe card fields
+  await fillIndividualStripeFields(page);
+
   await page.getByRole('button', { name: 'Checkout' }).click();
 
   //Wait for 5 seconds
