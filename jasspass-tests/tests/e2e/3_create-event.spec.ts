@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { createEvent } from '../helpers/eventHelpers';
+import { createEvent } from '../../helpers/eventHelpers';
 
 test.setTimeout(60_000);
 

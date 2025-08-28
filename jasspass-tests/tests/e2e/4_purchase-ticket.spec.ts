@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { purchaseTicket } from '../helpers/eventHelpers';
+import { purchaseTicket } from '../../helpers/eventHelpers';
 
 test.setTimeout(60_000);
 

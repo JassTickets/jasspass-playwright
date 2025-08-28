@@ -9,6 +9,21 @@ import {
   CONTACT_ADDRESS,
   CONTACT_PHONE_NUMBER,
   PLAYWRIGHT_BOT_STRIPE_CONNECT_ID,
+  NEW_ORGANIZER_NAME,
+  NEW_CONTACT_NAME,
+  NEW_CONTACT_ADDRESS,
+  TEST_PERFORMER_NAME,
+  TEST_PERFORMER_ROLE,
+  TEST_PERFORMER_BIO,
+  NEW_PERFORMER_NAME,
+  NEW_PERFORMER_ROLE,
+  NEW_PERFORMER_BIO,
+  PROMO_CODE,
+  PROMO_DISCOUNT_PERCENTAGE,
+  NEW_PROMO_CODE,
+  NEW_PROMO_DISCOUNT_PERCENTAGE,
+  NEW_PROMO_FIXED_AMOUNT,
+  TEAM_MEMBER_EMAIL,
 } from '../constants';
 import { signIn } from './auth';
 import { deleteEvent } from './eventHelpers';
@@ -75,6 +90,203 @@ export async function createOrganizer(
   return match[1];
 }
 
+export async function selectFirstOrganizer(page: Page) {
+  await signIn(page);
+  await page.waitForTimeout(500);
+
+  // Click the first organizer that contains PBO prefix
+  await page.getByText(new RegExp(ORGANIZER_NAME_PREFIX)).first().click();
+}
+
+export async function editOrganizerDetails(page: Page) {
+  const timestamp = Date.now().toString();
+  await page.getByRole('link', { name: 'Manage' }).click();
+  await page.getByRole('textbox', { name: 'Organizer Profile Name *' }).click();
+  await page
+    .getByRole('textbox', { name: 'Organizer Profile Name *' })
+    .fill(NEW_ORGANIZER_NAME);
+  await page.getByRole('textbox', { name: 'Contact Name *' }).click();
+  await page
+    .getByRole('textbox', { name: 'Contact Name *' })
+    .fill(NEW_CONTACT_NAME + timestamp);
+  await page.getByRole('textbox', { name: 'Organizer Address *' }).click();
+  await page
+    .getByRole('textbox', { name: 'Organizer Address *' })
+    .fill(NEW_CONTACT_ADDRESS);
+  await page.getByRole('button', { name: 'Save Changes' }).click();
+
+  // Wait for and return success message
+  return page.getByText('Organizer updated successfully');
+}
+
+export async function addPerformer(page: Page) {
+  await page.getByRole('button', { name: 'Performers' }).click();
+  await page.getByRole('button', { name: 'Add Performer' }).click();
+  await page.getByRole('textbox', { name: 'Enter performer name' }).click();
+  await page
+    .getByRole('textbox', { name: 'Enter performer name' })
+    .fill(TEST_PERFORMER_NAME);
+  await page.getByRole('textbox', { name: 'e.g., DJ, Singer, Band' }).click();
+  await page
+    .getByRole('textbox', { name: 'e.g., DJ, Singer, Band' })
+    .fill(TEST_PERFORMER_ROLE);
+  await page.getByRole('textbox', { name: "Enter performer's bio" }).click();
+  await page
+    .getByRole('textbox', { name: "Enter performer's bio" })
+    .fill(TEST_PERFORMER_BIO);
+  await page.getByRole('button', { name: 'Add Performer' }).nth(1).click();
+
+  return page.getByRole('heading', { name: TEST_PERFORMER_NAME });
+}
+
+export async function editPerformer(page: Page) {
+  await page.getByRole('heading', { name: TEST_PERFORMER_NAME }).click();
+  await page
+    .locator('div')
+    .filter({ hasText: /^Name$/ })
+    .getByRole('textbox')
+    .click();
+  await page
+    .locator('div')
+    .filter({ hasText: /^Name$/ })
+    .getByRole('textbox')
+    .fill(NEW_PERFORMER_NAME);
+  await page
+    .locator('div')
+    .filter({ hasText: /^Role$/ })
+    .getByRole('textbox')
+    .click();
+  await page
+    .locator('div')
+    .filter({ hasText: /^Role$/ })
+    .getByRole('textbox')
+    .fill(NEW_PERFORMER_ROLE);
+  await page.getByText(TEST_PERFORMER_BIO).click();
+  await page.getByText(TEST_PERFORMER_BIO).fill(NEW_PERFORMER_BIO);
+  await page
+    .locator('div')
+    .filter({
+      hasText: /^Change PhotoNameRoleBioTest performer bio New BioSave$/,
+    })
+    .getByRole('button')
+    .click();
+
+  return page.getByRole('heading', { name: NEW_PERFORMER_NAME });
+}
+
+export async function deletePerformer(page: Page) {
+  await page.locator('svg:nth-child(2)').first().click();
+}
+
+export async function addPromoCode(page: Page) {
+  await page.getByRole('button', { name: 'Promo Codes' }).click();
+  await page.getByRole('button', { name: 'Add Promo Code' }).click();
+  await page.getByRole('textbox', { name: 'Enter promo code' }).click();
+  await page
+    .getByRole('textbox', { name: 'Enter promo code' })
+    .fill(PROMO_CODE);
+  await page.getByPlaceholder('Enter discount percentage').click();
+  await page
+    .getByPlaceholder('Enter discount percentage')
+    .fill(PROMO_DISCOUNT_PERCENTAGE);
+  await page
+    .locator('form')
+    .getByRole('button', { name: 'Add Promo Code' })
+    .click();
+
+  return page.getByText(PROMO_CODE);
+}
+
+export async function editPromoCode(page: Page) {
+  await page.getByText(PROMO_CODE).click();
+  await page.getByRole('textbox', { name: 'Code', exact: true }).click();
+  await page
+    .getByRole('textbox', { name: 'Code', exact: true })
+    .fill(NEW_PROMO_CODE);
+  await page.getByRole('spinbutton', { name: 'Discount Percentage' }).click();
+  await page
+    .getByRole('spinbutton', { name: 'Discount Percentage' })
+    .fill(NEW_PROMO_DISCOUNT_PERCENTAGE);
+  await page.getByRole('spinbutton', { name: 'Discount Fixed Amount' }).click();
+  await page
+    .getByRole('spinbutton', { name: 'Discount Fixed Amount' })
+    .press('ArrowLeft');
+  await page
+    .getByRole('spinbutton', { name: 'Discount Fixed Amount' })
+    .fill(NEW_PROMO_FIXED_AMOUNT);
+  await page
+    .locator('div')
+    .filter({ hasText: /^CodeDiscount PercentageDiscount Fixed AmountSave$/ })
+    .getByRole('button')
+    .click();
+
+  return page.getByText(NEW_PROMO_CODE);
+}
+
+export async function deletePromoCode(page: Page) {
+  await page.locator('svg:nth-child(2)').first().click();
+}
+
+export async function addTeamMember(page: Page) {
+  await page.getByRole('button', { name: 'Team' }).click();
+  await page.getByRole('button', { name: 'Add Representative' }).click();
+  await page.locator('#email1').click();
+  await page.locator('#email1').fill(TEAM_MEMBER_EMAIL);
+  await page.getByRole('button', { name: 'Add Representative' }).click();
+  await page.getByRole('radio', { name: 'Organizer Owner' }).check();
+  await page.getByRole('button', { name: 'Add Representative' }).click();
+
+  return page.getByRole('row', { name: 'Diego Santosuosso' });
+}
+
+export async function editTeamMemberRole(page: Page) {
+  await page
+    .getByRole('row', { name: 'Diego Santosuosso' })
+    .getByRole('button')
+    .first()
+    .click();
+  await page.getByRole('radio', { name: 'Organizer Admin' }).check();
+  await page.getByRole('button', { name: 'Save' }).click();
+}
+
+export async function deleteTeamMember(page: Page) {
+  await page
+    .getByRole('row', { name: 'Diego Santosuosso' })
+    .getByRole('button')
+    .nth(1)
+    .click();
+  await page.getByRole('button', { name: 'Delete' }).click();
+}
+
+export async function accessStripeFinance(page: Page) {
+  await page.getByRole('button', { name: 'Finance' }).click();
+  const page3Promise = page.waitForEvent('popup');
+  await page.getByRole('link', { name: 'Access Stripe Dashboard' }).click();
+  const page3 = await page3Promise;
+
+  return page3;
+}
+
+export async function editOrganizer(
+  page: Page,
+  {
+    email = PLAYWRIGHT_BOT_EMAIL,
+    organizerName = ORGANIZER_NAME_PREFIX +
+      Math.random().toString(36).substring(2, 15),
+  } = {}
+): Promise<string> {
+  // log in and open the create-organizer form
+  await signIn(page);
+
+  // wait for 0.5 seconds
+  await page.waitForTimeout(500);
+
+  await page.goto(JASS_TEST_CHANGE_ORG_URL);
+  // Click the first organizer in the list
+
+  // Edit the organizer details
+  return organizerName;
+}
 export async function deleteOrganizer(
   page: Page,
   {

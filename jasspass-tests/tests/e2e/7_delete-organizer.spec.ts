@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { deleteOrganizer } from '../helpers/organizerHelpers';
+import { deleteOrganizer } from '../../helpers/organizerHelpers';
 
 test.setTimeout(60_000);
 
