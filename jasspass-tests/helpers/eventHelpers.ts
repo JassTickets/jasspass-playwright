@@ -21,6 +21,8 @@ export async function createEvent(
       Math.random().toString(36).substring(2, 15),
   } = {}
 ): Promise<string> {
+  //Timeout for 3 seconds
+  await page.waitForTimeout(3000);
   await createOrganizer(page);
 
   await page.getByRole('button', { name: 'New Event' }).click();
@@ -81,11 +83,13 @@ export async function purchaseTicket(page: Page) {
   await page.getByRole('button', { name: 'Proceed to Payment' }).click();
 
   // Wait briefly to ensure Stripe iframes are loaded
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(3000);
 
   // Fill Stripe card fields
   await fillIndividualStripeFields(page);
 
+  //wait 2 seconds
+  await page.waitForTimeout(2000);
   await page.getByRole('button', { name: 'Checkout' }).click();
 
   //Wait for 5 seconds
