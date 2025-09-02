@@ -35,6 +35,26 @@ export const NEW_PROMO_FIXED_AMOUNT = '100';
 // Team member constants
 export const TEAM_MEMBER_EMAIL = 'dnsantosuosso@gmail.com';
 
+// Event portal constants
+export const EVENT_NAME_PREFIX = 'PBO - Event';
+export const EVENT_NEW_TITLE = 'PBO - Event New Name';
+export const EVENT_NEW_DESCRIPTION =
+  'Join us for the Toronto Student Association! This event New Description offers exciting opportunities to engage and learn.';
+export const EVENT_NEW_ADDRESS = '123 Sample Street New Street';
+export const EVENT_NEW_CITY = 'Orlando New City';
+export const EVENT_NEW_VENUE = 'Sample Venue New Venue';
+export const EVENT_NEW_ADDITIONAL_DETAILS = 'Thanks. See you soon! Soon';
+export const EVENT_NEW_TAX_RATE = '11';
+export const EVENT_PLAYWRIGHT_PROMO_CODE = 'PLAYWRIGHTPROMOCODE';
+export const EVENT_PROMO_DISCOUNT = '010';
+export const EVENT_PROMO_LIMIT = '05';
+export const ATTENDEE_FIRST_NAME = 'Playwright';
+export const ATTENDEE_LAST_NAME = 'Bot';
+export const ATTENDEE_EMAIL = 'admin@jasstickets.com';
+export const ATTENDEE_PHONE = '+1 (646) 789-9045';
+export const MESSAGE_SUBJECT = 'Hello from Playwright';
+export const MESSAGE_BODY = 'Hello from Playwright!';
+
 export const COUNTRIES = ['CA'] as const;
 export type Country = (typeof COUNTRIES)[number];
 
