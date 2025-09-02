@@ -30,6 +30,62 @@ import { signIn } from './auth';
 import { createOrganizer } from './organizerHelpers';
 import { fillIndividualStripeFields } from './stripeHelpers';
 
+// Helper function to generate unique promo code with timestamp
+function generateUniquePromoCode(): string {
+  const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+  return `${EVENT_PLAYWRIGHT_PROMO_CODE}${timestamp}`;
+}
+
+// Helper function to find and click a specific promo code with pagination support
+async function findAndClickPromoCode(organizerPage: Page, promoCode: string): Promise<boolean> {
+  let found = false;
+  let currentPage = 1;
+  const maxPages = 10; // Safety limit to prevent infinite loops
+
+  while (!found && currentPage <= maxPages) {
+    // Look for the promo code on the current page
+    const promoCodeHeading = organizerPage.getByRole('heading', { name: promoCode });
+    const promoCodeCount = await promoCodeHeading.count();
+    
+    if (promoCodeCount > 0) {
+      // Found the promo code, click it
+      await promoCodeHeading.click();
+      found = true;
+      console.log(`Found and clicked promo code "${promoCode}" on page ${currentPage}`);
+      break;
+    }
+
+    // Check if there's a "Next" button to go to the next page
+    const nextButton = organizerPage.getByRole('button', { name: 'Next' }).first();
+    const nextButtonCount = await nextButton.count();
+    
+    if (nextButtonCount > 0) {
+      // Check if the next button is enabled/clickable
+      const isDisabled = await nextButton.isDisabled();
+      if (!isDisabled) {
+        await nextButton.click();
+        await organizerPage.waitForTimeout(1000); // Wait for page to load
+        currentPage++;
+        console.log(`Navigated to page ${currentPage} looking for promo code "${promoCode}"`);
+      } else {
+        // Next button is disabled, we've reached the last page
+        console.log(`Reached last page (${currentPage}) without finding promo code "${promoCode}"`);
+        break;
+      }
+    } else {
+      // No next button found, this might be the only page or last page
+      console.log(`No pagination found, promo code "${promoCode}" not found on current page`);
+      break;
+    }
+  }
+
+  if (!found) {
+    console.warn(`Promo code "${promoCode}" not found after searching ${currentPage} pages`);
+  }
+
+  return found;
+}
+
 export async function createEvent(
   page: Page,
   {
@@ -237,6 +293,9 @@ export async function selectFirstEventStartingWithPBO(
   // Click the first event found
   await eventLink.click();
 
+  // Wait for the event page to load properly
+  await page.waitForTimeout(2000);
+
   // Wait for the event page to load and click "Organizer View"
   const page2Promise = page.waitForEvent('popup');
   await page.getByText('Organizer View').click();
@@ -252,11 +311,13 @@ export async function editEventBasics(organizerPage: Page) {
   // Go to Edit Event
   await organizerPage.getByRole('link', { name: 'Edit Event' }).click();
 
-  // Update event title
+  // Update event title with timestamp for uniqueness
   await organizerPage.getByRole('textbox', { name: 'Event Title' }).click();
+  const timestamp = Date.now();
+  const eventTitleWithTimestamp = `${EVENT_NEW_TITLE} ${timestamp}`;
   await organizerPage
     .getByRole('textbox', { name: 'Event Title' })
-    .fill(EVENT_NEW_TITLE);
+    .fill(eventTitleWithTimestamp);
 
   // Update long description
   await organizerPage
@@ -356,6 +417,9 @@ export async function editEventAdditionalDetails(organizerPage: Page) {
 }
 
 export async function manageEventPromoCodes(organizerPage: Page) {
+  // Generate unique promo code with timestamp
+  const uniquePromoCode = generateUniquePromoCode();
+
   // Go to Promote tab
   await organizerPage.getByRole('link', { name: 'Promote' }).click();
 
@@ -366,7 +430,7 @@ export async function manageEventPromoCodes(organizerPage: Page) {
     .click();
   await organizerPage
     .getByRole('textbox', { name: 'Enter promo code' })
-    .fill(EVENT_PLAYWRIGHT_PROMO_CODE);
+    .fill(uniquePromoCode);
   await organizerPage.getByPlaceholder('Enter discount percentage').click();
   await organizerPage
     .getByPlaceholder('Enter discount percentage')
@@ -376,15 +440,20 @@ export async function manageEventPromoCodes(organizerPage: Page) {
     .getByRole('button', { name: 'Add Promo Code' })
     .click();
 
-  // Add to event
+  // Add to event - use search approach to find the specific promo code
+  await organizerPage
+    .getByRole('textbox', { name: 'Search promo codes...' })
+    .click();
+  await organizerPage
+    .getByRole('textbox', { name: 'Search promo codes...' })
+    .fill(uniquePromoCode);
+  await organizerPage.getByText(uniquePromoCode).click();
   await organizerPage.getByRole('button', { name: 'Add to Event' }).click();
   await organizerPage.getByLabel('Select a Ticket Type').selectOption('all');
   await organizerPage.getByRole('button', { name: 'Attach' }).click();
 
   // Modify promo code settings
-  await organizerPage
-    .getByRole('heading', { name: EVENT_PLAYWRIGHT_PROMO_CODE })
-    .click();
+  await organizerPage.getByRole('heading', { name: uniquePromoCode }).click();
   await organizerPage
     .locator('div')
     .filter({ hasText: /^0 \/ UnlimitedActive$/ })
@@ -613,6 +682,142 @@ export async function manageEventAttendeesAndCommunications(
   });
 
   return { confirmationHeading, successMessage, messageCell };
+}
+
+// Helper function for event duplication logic
+async function performEventDuplication(
+  organizerPage: Page,
+  originalEventTitle: string
+) {
+  // Generate timestamp for unique naming
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const duplicatedEventTitle = `${originalEventTitle} (Duplicated at ${timestamp})`;
+
+  // Go to Event Settings
+  await organizerPage.getByRole('link', { name: 'Event Settings' }).click();
+
+  // Start duplication process
+  await organizerPage.getByRole('button', { name: 'Duplicate Event' }).click();
+
+  // Find the event name field in the duplicate modal and update it
+  // The field should contain the current event title by default
+  const eventNameField = organizerPage.getByRole('textbox').first();
+  await eventNameField.click();
+  await eventNameField.clear(); // Clear existing text
+  await eventNameField.fill(duplicatedEventTitle);
+
+  // Set the new date
+  await organizerPage
+    .getByRole('textbox', { name: 'New Start Date and Time' })
+    .click();
+
+  await organizerPage
+    .getByRole('textbox', { name: 'New Start Date and Time' })
+    .fill('2040-08-20T10:00');
+
+  // Complete the duplication
+  await organizerPage.getByRole('button', { name: 'Duplicate' }).click();
+
+  // Navigate to events list to find the specific duplicated event
+  await organizerPage.getByRole('link', { name: 'Events' }).click();
+  await organizerPage.getByRole('textbox', { name: 'Search Events' }).click();
+
+  // Search for the new duplicated event title
+  await organizerPage
+    .getByRole('textbox', { name: 'Search Events' })
+    .fill(duplicatedEventTitle);
+
+  // Wait for search results
+  await organizerPage.waitForTimeout(1000);
+
+  await organizerPage.getByText(duplicatedEventTitle).click();
+  // Click on the specific duplicated event
+  const duplicatedEventLink = organizerPage
+    .getByRole('link')
+    .filter({ hasText: duplicatedEventTitle })
+    .first();
+
+  await duplicatedEventLink.click();
+
+  return duplicatedEventTitle;
+}
+
+export async function duplicateEvent(organizerPage: Page) {
+  // First, get the current event title
+  await organizerPage.getByRole('link', { name: 'Edit Event' }).click();
+  await organizerPage.getByRole('textbox', { name: 'Event Title' }).click();
+  const eventTitle = await organizerPage
+    .getByRole('textbox', { name: 'Event Title' })
+    .inputValue();
+
+  // Perform the duplication using shared logic
+  await performEventDuplication(organizerPage, eventTitle);
+
+  // Return a locator to verify we're on the duplicated event page
+  return organizerPage.getByRole('link', { name: 'Edit Event' });
+}
+
+export async function duplicateEventWithPromoCodes(organizerPage: Page) {
+  // Generate unique promo code with timestamp
+  const uniquePromoCode = generateUniquePromoCode();
+
+  // First, get the current event title
+  await organizerPage.getByRole('link', { name: 'Edit Event' }).click();
+  await organizerPage.getByRole('textbox', { name: 'Event Title' }).click();
+  const eventTitle = await organizerPage
+    .getByRole('textbox', { name: 'Event Title' })
+    .inputValue();
+
+  // Go to Promote tab and add promo codes to the original event
+  await organizerPage.getByRole('link', { name: 'Promote' }).click();
+
+  // Add new promo code
+  await organizerPage.getByRole('button', { name: 'Add Promo Code' }).click();
+  await organizerPage
+    .getByRole('textbox', { name: 'Enter promo code' })
+    .click();
+  await organizerPage
+    .getByRole('textbox', { name: 'Enter promo code' })
+    .fill(uniquePromoCode);
+  await organizerPage.getByPlaceholder('Enter discount percentage').click();
+  await organizerPage
+    .getByPlaceholder('Enter discount percentage')
+    .fill(EVENT_PROMO_DISCOUNT);
+  await organizerPage
+    .locator('form')
+    .getByRole('button', { name: 'Add Promo Code' })
+    .click();
+
+  // Add to event - use search approach to find the specific promo code
+  await organizerPage
+    .getByRole('textbox', { name: 'Search promo codes...' })
+    .click();
+  await organizerPage
+    .getByRole('textbox', { name: 'Search promo codes...' })
+    .fill(uniquePromoCode);
+  await organizerPage.getByText(uniquePromoCode).click();
+  await organizerPage.getByRole('button', { name: 'Add to Event' }).click();
+  await organizerPage.getByLabel('Select a Ticket Type').selectOption('all');
+  await organizerPage.getByRole('button', { name: 'Attach' }).click();
+
+  // Wait a moment for promo code operations to complete
+  await organizerPage.waitForTimeout(2000);
+
+  // Now duplicate the event using shared logic
+  await performEventDuplication(organizerPage, eventTitle);
+
+  // Go to Promote tab to verify promo codes were duplicated
+  await organizerPage.getByRole('link', { name: 'Promote' }).click();
+
+  // Dynamically find and click the unique promo code that was created
+  const promoCodeFound = await findAndClickPromoCode(organizerPage, uniquePromoCode);
+  
+  if (!promoCodeFound) {
+    throw new Error(`Could not find the created promo code "${uniquePromoCode}" in the duplicated event`);
+  }
+
+  // Return a locator to verify we're on the duplicated event's promote page
+  return organizerPage.getByRole('button', { name: 'Add Promo Code' });
 }
 
 export async function resendConfirmationEmail(organizerPage: Page) {
