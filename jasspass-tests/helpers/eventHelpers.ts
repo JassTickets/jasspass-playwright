@@ -36,71 +36,33 @@ function generateUniquePromoCode(): string {
   return `${EVENT_PLAYWRIGHT_PROMO_CODE}${timestamp}`;
 }
 
-// Helper function to find and click a specific promo code with pagination support
+// Helper function to search and click a specific event promo code
+async function searchAndClickEventPromoCode(
+  organizerPage: Page,
+  promoCode: string
+): Promise<void> {
+  await organizerPage
+    .getByRole('textbox', { name: 'Search Promo Codes' })
+    .click();
+  await organizerPage
+    .getByRole('textbox', { name: 'Search Promo Codes' })
+    .fill(promoCode);
+  await organizerPage.getByRole('heading', { name: promoCode }).click();
+  console.log(`Found and clicked event promo code "${promoCode}" using search`);
+}
+
+// Helper function to find and click a specific promo code using search
 async function findAndClickPromoCode(
   organizerPage: Page,
   promoCode: string
 ): Promise<boolean> {
-  let found = false;
-  let currentPage = 1;
-  const maxPages = 10; // Safety limit to prevent infinite loops
-
-  while (!found && currentPage <= maxPages) {
-    // Look for the promo code on the current page
-    const promoCodeHeading = organizerPage.getByRole('heading', {
-      name: promoCode,
-    });
-    const promoCodeCount = await promoCodeHeading.count();
-
-    if (promoCodeCount > 0) {
-      // Found the promo code, click it
-      await promoCodeHeading.click();
-      found = true;
-      console.log(
-        `Found and clicked promo code "${promoCode}" on page ${currentPage}`
-      );
-      break;
-    }
-
-    // Check if there's a "Next" button to go to the next page
-    const nextButton = organizerPage
-      .getByRole('button', { name: 'Next' })
-      .first();
-    const nextButtonCount = await nextButton.count();
-
-    if (nextButtonCount > 0) {
-      // Check if the next button is enabled/clickable
-      const isDisabled = await nextButton.isDisabled();
-      if (!isDisabled) {
-        await nextButton.click();
-        await organizerPage.waitForTimeout(1000); // Wait for page to load
-        currentPage++;
-        console.log(
-          `Navigated to page ${currentPage} looking for promo code "${promoCode}"`
-        );
-      } else {
-        // Next button is disabled, we've reached the last page
-        console.log(
-          `Reached last page (${currentPage}) without finding promo code "${promoCode}"`
-        );
-        break;
-      }
-    } else {
-      // No next button found, this might be the only page or last page
-      console.log(
-        `No pagination found, promo code "${promoCode}" not found on current page`
-      );
-      break;
-    }
+  try {
+    await searchAndClickEventPromoCode(organizerPage, promoCode);
+    return true;
+  } catch (error) {
+    console.warn(`Promo code "${promoCode}" not found using search: ${error}`);
+    return false;
   }
-
-  if (!found) {
-    console.warn(
-      `Promo code "${promoCode}" not found after searching ${currentPage} pages`
-    );
-  }
-
-  return found;
 }
 
 export async function createEvent(
@@ -340,7 +302,7 @@ export async function editEventBasics(organizerPage: Page) {
   await organizerPage
     .locator('#long-description_ifr')
     .contentFrame()
-    .getByText('Join us for the Toronto')
+    .getByLabel('Rich Text Area')
     .click();
   await organizerPage
     .locator('#long-description_ifr')
@@ -469,18 +431,9 @@ export async function manageEventPromoCodes(organizerPage: Page) {
   await organizerPage.getByLabel('Select a Ticket Type').selectOption('all');
   await organizerPage.getByRole('button', { name: 'Attach' }).click();
 
-  // Now, find the promo code using the findPromoCode helper
-  const promoCodeFound = await findAndClickPromoCode(
-    organizerPage,
-    uniquePromoCode
-  );
-  if (!promoCodeFound) {
-    throw new Error(
-      `Could not find the created promo code "${uniquePromoCode}"`
-    );
-  }
-
-  // Modify promo code settings
+  //Timeout
+  await organizerPage.waitForTimeout(3000);
+  await searchAndClickEventPromoCode(organizerPage, uniquePromoCode);
   await organizerPage
     .locator('div')
     .filter({ hasText: /^0 \/ UnlimitedActive$/ })
@@ -491,32 +444,38 @@ export async function manageEventPromoCodes(organizerPage: Page) {
     .filter({ hasText: /^0 \/Unlimited$/ })
     .getByRole('checkbox')
     .uncheck();
-
-  // Press tab
   await organizerPage
     .locator('div')
     .filter({ hasText: /^0 \/Unlimited$/ })
     .getByRole('checkbox')
     .press('Tab');
-
-  await organizerPage.getByRole('spinbutton').fill(EVENT_PROMO_LIMIT);
+  await organizerPage
+    .locator('div')
+    .filter({ hasText: /^0 \/Unlimited$/ })
+    .getByRole('spinbutton')
+    .fill('1');
+  await organizerPage
+    .locator('div')
+    .filter({ hasText: /^0 \/Unlimited$/ })
+    .getByRole('spinbutton')
+    .press('Tab');
+  await organizerPage
+    .locator('div')
+    .filter({ hasText: /^Active$/ })
+    .click();
   await organizerPage
     .locator('div')
     .filter({ hasText: /^Active$/ })
     .getByRole('checkbox')
     .uncheck();
   await organizerPage.getByRole('button', { name: 'Update' }).click();
+  // Timeout
+  await organizerPage.waitForTimeout(3000);
 
-  // Detach promo code
+  // Verify that "Inactive" and "/ 1" are visible on the page
+  await expect(organizerPage.getByText('Inactive')).toBeVisible();
+  await expect(organizerPage.getByText('/ 1')).toBeVisible();
   await organizerPage.getByRole('button', { name: 'Detach' }).click();
-
-  // Delete promo code
-  await organizerPage
-    .locator('div')
-    .filter({ hasText: /^Add to Event$/ })
-    .getByRole('img')
-    .nth(1)
-    .click();
 
   // Return confirmation message
   return organizerPage.getByText('No promo codes found for this');
