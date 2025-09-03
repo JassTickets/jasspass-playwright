@@ -3,6 +3,7 @@ import {
   selectFirstOrganizer,
   accessStripeFinance,
 } from '../../helpers/organizerHelpers';
+import { PLAYWRIGHT_BOT_STRIPE_CONNECT_ID } from '../../constants';
 
 test.setTimeout(60_000);
 
@@ -13,6 +14,11 @@ test('accessFinanceStripe', async ({ page }) => {
 
   // Sign in and select first organizer
   await selectFirstOrganizer(page);
+
+  await page
+    .getByRole('textbox', { name: 'acct_xxx...' })
+    .fill(PLAYWRIGHT_BOT_STRIPE_CONNECT_ID);
+  await page.getByRole('button', { name: 'Save' }).click();
 
   await page.getByRole('link', { name: 'Manage' }).click();
 

@@ -37,28 +37,37 @@ function generateUniquePromoCode(): string {
 }
 
 // Helper function to find and click a specific promo code with pagination support
-async function findAndClickPromoCode(organizerPage: Page, promoCode: string): Promise<boolean> {
+async function findAndClickPromoCode(
+  organizerPage: Page,
+  promoCode: string
+): Promise<boolean> {
   let found = false;
   let currentPage = 1;
   const maxPages = 10; // Safety limit to prevent infinite loops
 
   while (!found && currentPage <= maxPages) {
     // Look for the promo code on the current page
-    const promoCodeHeading = organizerPage.getByRole('heading', { name: promoCode });
+    const promoCodeHeading = organizerPage.getByRole('heading', {
+      name: promoCode,
+    });
     const promoCodeCount = await promoCodeHeading.count();
-    
+
     if (promoCodeCount > 0) {
       // Found the promo code, click it
       await promoCodeHeading.click();
       found = true;
-      console.log(`Found and clicked promo code "${promoCode}" on page ${currentPage}`);
+      console.log(
+        `Found and clicked promo code "${promoCode}" on page ${currentPage}`
+      );
       break;
     }
 
     // Check if there's a "Next" button to go to the next page
-    const nextButton = organizerPage.getByRole('button', { name: 'Next' }).first();
+    const nextButton = organizerPage
+      .getByRole('button', { name: 'Next' })
+      .first();
     const nextButtonCount = await nextButton.count();
-    
+
     if (nextButtonCount > 0) {
       // Check if the next button is enabled/clickable
       const isDisabled = await nextButton.isDisabled();
@@ -66,21 +75,29 @@ async function findAndClickPromoCode(organizerPage: Page, promoCode: string): Pr
         await nextButton.click();
         await organizerPage.waitForTimeout(1000); // Wait for page to load
         currentPage++;
-        console.log(`Navigated to page ${currentPage} looking for promo code "${promoCode}"`);
+        console.log(
+          `Navigated to page ${currentPage} looking for promo code "${promoCode}"`
+        );
       } else {
         // Next button is disabled, we've reached the last page
-        console.log(`Reached last page (${currentPage}) without finding promo code "${promoCode}"`);
+        console.log(
+          `Reached last page (${currentPage}) without finding promo code "${promoCode}"`
+        );
         break;
       }
     } else {
       // No next button found, this might be the only page or last page
-      console.log(`No pagination found, promo code "${promoCode}" not found on current page`);
+      console.log(
+        `No pagination found, promo code "${promoCode}" not found on current page`
+      );
       break;
     }
   }
 
   if (!found) {
-    console.warn(`Promo code "${promoCode}" not found after searching ${currentPage} pages`);
+    console.warn(
+      `Promo code "${promoCode}" not found after searching ${currentPage} pages`
+    );
   }
 
   return found;
@@ -442,18 +459,28 @@ export async function manageEventPromoCodes(organizerPage: Page) {
 
   // Add to event - use search approach to find the specific promo code
   await organizerPage
-    .getByRole('textbox', { name: 'Search promo codes...' })
+    .getByRole('textbox', { name: 'Search your organizer promo codes...' })
     .click();
   await organizerPage
-    .getByRole('textbox', { name: 'Search promo codes...' })
+    .getByRole('textbox', { name: 'Search your organizer promo codes...' })
     .fill(uniquePromoCode);
   await organizerPage.getByText(uniquePromoCode).click();
   await organizerPage.getByRole('button', { name: 'Add to Event' }).click();
   await organizerPage.getByLabel('Select a Ticket Type').selectOption('all');
   await organizerPage.getByRole('button', { name: 'Attach' }).click();
 
+  // Now, find the promo code using the findPromoCode helper
+  const promoCodeFound = await findAndClickPromoCode(
+    organizerPage,
+    uniquePromoCode
+  );
+  if (!promoCodeFound) {
+    throw new Error(
+      `Could not find the created promo code "${uniquePromoCode}"`
+    );
+  }
+
   // Modify promo code settings
-  await organizerPage.getByRole('heading', { name: uniquePromoCode }).click();
   await organizerPage
     .locator('div')
     .filter({ hasText: /^0 \/ UnlimitedActive$/ })
@@ -464,7 +491,14 @@ export async function manageEventPromoCodes(organizerPage: Page) {
     .filter({ hasText: /^0 \/Unlimited$/ })
     .getByRole('checkbox')
     .uncheck();
-  await organizerPage.getByRole('spinbutton').click();
+
+  // Press tab
+  await organizerPage
+    .locator('div')
+    .filter({ hasText: /^0 \/Unlimited$/ })
+    .getByRole('checkbox')
+    .press('Tab');
+
   await organizerPage.getByRole('spinbutton').fill(EVENT_PROMO_LIMIT);
   await organizerPage
     .locator('div')
@@ -790,10 +824,10 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
 
   // Add to event - use search approach to find the specific promo code
   await organizerPage
-    .getByRole('textbox', { name: 'Search promo codes...' })
+    .getByRole('textbox', { name: 'Search your organizer promo codes...' })
     .click();
   await organizerPage
-    .getByRole('textbox', { name: 'Search promo codes...' })
+    .getByRole('textbox', { name: 'Search your organizer promo codes...' })
     .fill(uniquePromoCode);
   await organizerPage.getByText(uniquePromoCode).click();
   await organizerPage.getByRole('button', { name: 'Add to Event' }).click();
@@ -810,10 +844,15 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
   await organizerPage.getByRole('link', { name: 'Promote' }).click();
 
   // Dynamically find and click the unique promo code that was created
-  const promoCodeFound = await findAndClickPromoCode(organizerPage, uniquePromoCode);
-  
+  const promoCodeFound = await findAndClickPromoCode(
+    organizerPage,
+    uniquePromoCode
+  );
+
   if (!promoCodeFound) {
-    throw new Error(`Could not find the created promo code "${uniquePromoCode}" in the duplicated event`);
+    throw new Error(
+      `Could not find the created promo code "${uniquePromoCode}" in the duplicated event`
+    );
   }
 
   // Return a locator to verify we're on the duplicated event's promote page
