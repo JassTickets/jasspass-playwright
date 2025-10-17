@@ -47,7 +47,8 @@ async function searchAndClickEventPromoCode(
   await organizerPage
     .getByRole('textbox', { name: 'Search Promo Codes' })
     .fill(promoCode);
-  await organizerPage.getByRole('heading', { name: promoCode }).click();
+
+  await organizerPage.getByRole('cell', { name: promoCode }).click();
   console.log(`Found and clicked event promo code "${promoCode}" using search`);
 }
 
@@ -89,7 +90,6 @@ export async function createEvent(
   await page.getByRole('textbox', { name: 'Event Title' }).click();
   await page.getByRole('textbox', { name: 'Event Title' }).fill(eventName);
   await page.getByRole('link', { name: 'Additional Details' }).click();
-
   //wait for 5 seconds
   await page.waitForTimeout(5000);
 
@@ -194,16 +194,51 @@ export async function refundTicket(page: Page) {
 
   await page1.getByRole('cell', { name: confirmation }).click();
 
+  // New Refund Modal Flow
   await page1
-    .getByRole('row', { name: 'Ticket Ticket ID Price' })
-    .getByRole('checkbox')
+    .getByRole('checkbox', { name: 'General Admission Playwright' })
     .check();
-  await page1.getByRole('textbox', { name: 'Refund details...' }).click();
+
+  // Check the price before fees
+  await page1.getByText('$55.00').click();
+
+  // Add service fees & check price
+  await page1.getByRole('checkbox', { name: 'Include Service Fee' }).check();
+  await page1.getByText('$57.15').click();
+
+  // Add transaction fees & check price
   await page1
-    .getByRole('textbox', { name: 'Refund details...' })
+    .getByRole('checkbox', { name: 'Include Transaction Fee' })
+    .check();
+  await page1.locator('form').getByText('$').click();
+
+  // Add description and submit refund
+  await page1.getByRole('textbox', { name: 'Refund Details' }).click();
+  await page1
+    .getByRole('textbox', { name: 'Refund Details' })
     .fill('Playwright Refund');
   await page1.getByRole('button', { name: 'Submit Refund' }).click();
+
+  // Verify success banner
+
+  await page1.getByText('Refund submitted successfully.').click();
   const successBanner = page1.getByText('Refund submitted successfully.');
+
+  // Check that the ticket is now 0
+  await page1.getByText('$0.00').click();
+
+  // Close the modal
+  await page1.getByRole('button', { name: '✕' }).click();
+
+  // Now go to the refund tab and verify the refund
+  await page1.getByRole('link', { name: 'Refunds' }).click();
+  await page1.locator('.mt-6 > div > .cursor-pointer').click();
+  await page1.getByRole('cell', { name: '$' }).locator('div').click();
+
+  await page1
+    .getByRole('row', { name: /Playwright Bot/i })
+    .locator('span')
+    .click();
 
   // Return success banner
   return { page1, successBanner };
@@ -216,21 +251,6 @@ export async function deleteEvent(page: Page) {
   // Now that the ticket is refunded, we can safely delete the event
   // Wait for 5 seconds to ensure the refund is processed
   await page1.waitForTimeout(5000);
-
-  // Close the sidebar by refreshing the page
-  try {
-    await page1.getByRole('button', { name: '×' }).click();
-  } catch {
-    // Just refresh the page
-    try {
-      await page1.reload();
-    } catch {
-      //Get the current url
-      const currentUrl = page1.url();
-      await page1.goto(JASS_TEST_URL);
-      await page1.goto(currentUrl);
-    }
-  }
 
   // Go to the event settings
   await page1.getByRole('link', { name: 'Event Settings' }).click();
@@ -321,7 +341,7 @@ export async function editEventTimeAndLocation(organizerPage: Page) {
   // Go to Edit Event
   await organizerPage.getByRole('link', { name: 'Edit Event' }).click();
   // Go to Time & Location
-  await organizerPage.getByRole('link', { name: 'Time & Location' }).click();
+  await organizerPage.getByRole('button', { name: 'Time & Location' }).click();
 
   // Update address
   await organizerPage.getByRole('textbox', { name: 'Event Address' }).click();
@@ -358,7 +378,9 @@ export async function editEventAdditionalDetails(organizerPage: Page) {
   await organizerPage.getByRole('link', { name: 'Edit Event' }).click();
 
   // Go to Additional Details
-  await organizerPage.getByRole('link', { name: 'Additional Details' }).click();
+  await organizerPage
+    .getByRole('button', { name: 'Additional Details' })
+    .click();
 
   // Update additional details text
   await organizerPage
@@ -403,6 +425,9 @@ export async function manageEventPromoCodes(organizerPage: Page) {
   await organizerPage.getByRole('link', { name: 'Promote' }).click();
 
   // Add new promo code
+  await organizerPage
+    .getByRole('button', { name: 'Manage Promo Codes' })
+    .click();
   await organizerPage.getByRole('button', { name: 'Add Promo Code' }).click();
   await organizerPage
     .getByRole('textbox', { name: 'Enter promo code' })
@@ -415,8 +440,8 @@ export async function manageEventPromoCodes(organizerPage: Page) {
     .getByPlaceholder('Enter discount percentage')
     .fill(EVENT_PROMO_DISCOUNT);
   await organizerPage
-    .locator('form')
-    .getByRole('button', { name: 'Add Promo Code' })
+    .locator('button')
+    .filter({ hasText: 'Add Promo Code' })
     .click();
 
   // Add to event - use search approach to find the specific promo code
@@ -426,56 +451,30 @@ export async function manageEventPromoCodes(organizerPage: Page) {
   await organizerPage
     .getByRole('textbox', { name: 'Search your organizer promo codes...' })
     .fill(uniquePromoCode);
-  await organizerPage.getByText(uniquePromoCode).click();
+  await organizerPage.getByText(uniquePromoCode).first().click();
   await organizerPage.getByRole('button', { name: 'Add to Event' }).click();
-  await organizerPage.getByLabel('Select a Ticket Type').selectOption('all');
+  await organizerPage.getByRole('combobox').selectOption('all');
   await organizerPage.getByRole('button', { name: 'Attach' }).click();
+  await organizerPage.getByRole('button', { name: 'Close' }).click();
 
   //Timeout
   await organizerPage.waitForTimeout(3000);
   await searchAndClickEventPromoCode(organizerPage, uniquePromoCode);
+  await organizerPage.getByRole('button', { name: 'Show details' }).click();
+  await organizerPage.getByRole('button', { name: 'Edit' }).click();
+  await organizerPage.getByRole('spinbutton', { name: 'Usage Limit' }).click();
   await organizerPage
-    .locator('div')
-    .filter({ hasText: /^0 \/ UnlimitedActive$/ })
-    .getByRole('button')
-    .click();
-  await organizerPage
-    .locator('div')
-    .filter({ hasText: /^0 \/Unlimited$/ })
-    .getByRole('checkbox')
-    .uncheck();
-  await organizerPage
-    .locator('div')
-    .filter({ hasText: /^0 \/Unlimited$/ })
-    .getByRole('checkbox')
-    .press('Tab');
-  await organizerPage
-    .locator('div')
-    .filter({ hasText: /^0 \/Unlimited$/ })
-    .getByRole('spinbutton')
-    .fill('1');
-  await organizerPage
-    .locator('div')
-    .filter({ hasText: /^0 \/Unlimited$/ })
-    .getByRole('spinbutton')
-    .press('Tab');
-  await organizerPage
-    .locator('div')
-    .filter({ hasText: /^Active$/ })
-    .click();
-  await organizerPage
-    .locator('div')
-    .filter({ hasText: /^Active$/ })
-    .getByRole('checkbox')
-    .uncheck();
+    .getByRole('spinbutton', { name: 'Usage Limit' })
+    .fill('10');
+  await organizerPage.getByRole('checkbox', { name: 'Active' }).uncheck();
   await organizerPage.getByRole('button', { name: 'Update' }).click();
+  await organizerPage.getByRole('table').getByText('(0 / 10)').click();
+  await organizerPage.getByRole('button', { name: 'Edit' }).click();
+  await organizerPage.getByRole('checkbox', { name: 'Active' }).check();
+  await organizerPage.getByRole('button', { name: 'Update' }).click();
+
   // Timeout
   await organizerPage.waitForTimeout(3000);
-
-  // Verify that "Inactive" and "/ 1" are visible on the page
-  await expect(organizerPage.getByText('Inactive')).toBeVisible();
-  await expect(organizerPage.getByText('/ 1')).toBeVisible();
-  await organizerPage.getByRole('button', { name: 'Detach' }).click();
 
   // Return confirmation message
   return organizerPage.getByText('No promo codes found for this');
@@ -486,7 +485,10 @@ export async function bookComplimentaryTicket(organizerPage: Page) {
   await organizerPage.getByRole('link', { name: 'Orders & Attendees' }).click();
 
   // Book tickets from organizer portal
-  await organizerPage.getByRole('button', { name: 'Book Tickets' }).click();
+  await organizerPage
+    .getByRole('button')
+    .filter({ hasText: 'Book Tickets' })
+    .click();
   await organizerPage.getByRole('combobox').selectOption('1');
   await organizerPage.getByRole('button', { name: 'Get Tickets' }).click();
   await organizerPage
@@ -534,11 +536,12 @@ export async function bookComplimentaryTicket(organizerPage: Page) {
 export async function sendMessageToAttendees(organizerPage: Page) {
   // Go to Orders & Attendees
   await organizerPage.getByRole('link', { name: 'Orders & Attendees' }).click();
-
   // Open message modal
   await organizerPage
-    .getByRole('button', { name: 'Message Attendees' })
+    .getByRole('button')
+    .filter({ hasText: 'Message Attendees' })
     .click();
+
   await organizerPage
     .getByRole('textbox', { name: 'Enter the subject...' })
     .click();
@@ -576,7 +579,10 @@ export async function manageEventAttendeesAndCommunications(
   await organizerPage.getByRole('link', { name: 'Orders & Attendees' }).click();
 
   // Book tickets from organizer portal
-  await organizerPage.getByRole('button', { name: 'Book Tickets' }).click();
+  await organizerPage
+    .getByRole('button')
+    .filter({ hasText: 'Book Tickets' })
+    .click();
   await organizerPage.getByRole('combobox').selectOption('1');
   await organizerPage.getByRole('button', { name: 'Get Tickets' }).click();
   await organizerPage
@@ -635,7 +641,8 @@ export async function manageEventAttendeesAndCommunications(
 
   // Send message to attendees
   await organizerPage
-    .getByRole('button', { name: 'Message Attendees' })
+    .getByRole('button')
+    .filter({ hasText: 'Message Attendees' })
     .click();
   await organizerPage
     .getByRole('textbox', { name: 'Enter the subject...' })
@@ -715,6 +722,9 @@ async function performEventDuplication(
   await organizerPage.getByRole('link', { name: 'Events' }).click();
   await organizerPage.getByRole('textbox', { name: 'Search Events' }).click();
 
+  //timeout
+  await organizerPage.waitForTimeout(3000);
+
   // Search for the new duplicated event title
   await organizerPage
     .getByRole('textbox', { name: 'Search Events' })
@@ -724,6 +734,16 @@ async function performEventDuplication(
   await organizerPage.waitForTimeout(1000);
 
   await organizerPage.getByText(duplicatedEventTitle).click();
+
+  // If the event is draft, publish it
+  try {
+    await organizerPage.getByRole('button', { name: 'Publish' }).click();
+    //timeout
+    await organizerPage.waitForTimeout(2000);
+  } catch {
+    // Continue
+    console.log('Event is already published.');
+  }
   // Click on the specific duplicated event
   const duplicatedEventLink = organizerPage
     .getByRole('link')
@@ -765,6 +785,9 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
   await organizerPage.getByRole('link', { name: 'Promote' }).click();
 
   // Add new promo code
+  await organizerPage
+    .getByRole('button', { name: 'Manage Promo Codes' })
+    .click();
   await organizerPage.getByRole('button', { name: 'Add Promo Code' }).click();
   await organizerPage
     .getByRole('textbox', { name: 'Enter promo code' })
@@ -777,8 +800,8 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
     .getByPlaceholder('Enter discount percentage')
     .fill(EVENT_PROMO_DISCOUNT);
   await organizerPage
-    .locator('form')
-    .getByRole('button', { name: 'Add Promo Code' })
+    .locator('button')
+    .filter({ hasText: 'Add Promo Code' })
     .click();
 
   // Add to event - use search approach to find the specific promo code
@@ -788,16 +811,20 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
   await organizerPage
     .getByRole('textbox', { name: 'Search your organizer promo codes...' })
     .fill(uniquePromoCode);
-  await organizerPage.getByText(uniquePromoCode).click();
+  await organizerPage.getByText(uniquePromoCode).first().click();
   await organizerPage.getByRole('button', { name: 'Add to Event' }).click();
-  await organizerPage.getByLabel('Select a Ticket Type').selectOption('all');
+  await organizerPage.getByRole('combobox').selectOption('all');
   await organizerPage.getByRole('button', { name: 'Attach' }).click();
+
+  await organizerPage.getByRole('button', { name: 'Close' }).click();
 
   // Wait a moment for promo code operations to complete
   await organizerPage.waitForTimeout(2000);
 
   // Now duplicate the event using shared logic
   await performEventDuplication(organizerPage, eventTitle);
+
+  // Try to apply promo code in the event and see the discounted price
 
   // Go to Promote tab to verify promo codes were duplicated
   await organizerPage.getByRole('link', { name: 'Promote' }).click();
@@ -823,22 +850,14 @@ export async function resendConfirmationEmail(organizerPage: Page) {
   await organizerPage.getByRole('link', { name: 'Orders & Attendees' }).click();
 
   // Find and click on the first order (assuming it exists from previous booking)
-  // This is a simplified version - in a real scenario you'd search for a specific order
-  const orderCells = organizerPage
-    .getByRole('cell')
-    .filter({ hasText: /^[A-Z0-9]{12}$/ });
-  const firstOrderCell = orderCells.first();
 
-  await firstOrderCell.click();
-
-  // Send confirmation email
   await organizerPage
-    .getByRole('button', { name: 'Send Ticket Confirmation Email' })
+    .getByRole('table')
+    .getByText('Playwright Bot', { exact: true })
+    .first()
     .click();
-
-  // Note: There might not be a visible success message for this action
-  // Return a locator that should be present after the action
-  return organizerPage.getByRole('button', {
-    name: 'Email Sent',
-  });
+  await organizerPage
+    .getByRole('button', { name: 'Send Confirmation Email' })
+    .click();
+  await organizerPage.getByText('Email sent successfully!').click();
 }

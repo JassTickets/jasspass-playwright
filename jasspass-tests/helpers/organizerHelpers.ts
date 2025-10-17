@@ -123,9 +123,12 @@ export async function addPerformer(page: Page) {
   await page.getByRole('button', { name: 'Performers' }).click();
   await page.getByRole('button', { name: 'Add Performer' }).click();
   await page.getByRole('textbox', { name: 'Enter performer name' }).click();
+
+  //generate a random performer name
+  const randomPerformerName = `${TEST_PERFORMER_NAME} ${Date.now()}`;
   await page
     .getByRole('textbox', { name: 'Enter performer name' })
-    .fill(TEST_PERFORMER_NAME);
+    .fill(randomPerformerName);
   await page.getByRole('textbox', { name: 'e.g., DJ, Singer, Band' }).click();
   await page
     .getByRole('textbox', { name: 'e.g., DJ, Singer, Band' })
@@ -136,21 +139,38 @@ export async function addPerformer(page: Page) {
     .fill(TEST_PERFORMER_BIO);
   await page.getByRole('button', { name: 'Add Performer' }).nth(1).click();
 
-  return page.getByRole('heading', { name: TEST_PERFORMER_NAME });
+  // Check that it was added
+
+  // Timeout
+  await page.waitForTimeout(1000);
+
+  // Search for the performer
+  await page.getByRole('textbox', { name: 'Search performers...' }).click();
+  await page
+    .getByRole('textbox', { name: 'Search performers...' })
+    .fill(randomPerformerName);
+  await page
+    .getByRole('heading', { name: randomPerformerName })
+    .first()
+    .click();
+
+  // return the performer name
+  return randomPerformerName;
 }
 
-export async function editPerformer(page: Page) {
-  await page.getByRole('heading', { name: TEST_PERFORMER_NAME }).click();
+export async function editPerformer(
+  page: Page,
+  performerName: string
+): Promise<string> {
+  await page.getByRole('heading', { name: performerName }).click();
+  await page.locator('.flex > div:nth-child(2) > svg').first().click();
+  // Generate a new random performer name
+  const newRandomPerformerName = `${NEW_PERFORMER_NAME} ${Date.now()}`;
   await page
     .locator('div')
     .filter({ hasText: /^Name$/ })
     .getByRole('textbox')
-    .click();
-  await page
-    .locator('div')
-    .filter({ hasText: /^Name$/ })
-    .getByRole('textbox')
-    .fill(NEW_PERFORMER_NAME);
+    .fill(newRandomPerformerName);
   await page
     .locator('div')
     .filter({ hasText: /^Role$/ })
@@ -171,20 +191,30 @@ export async function editPerformer(page: Page) {
     .getByRole('button')
     .click();
 
-  return page.getByRole('heading', { name: NEW_PERFORMER_NAME });
+  // Clear the search and search for the new performer name
+  await page.getByRole('textbox', { name: 'Search performers...' }).clear();
+  await page
+    .getByRole('textbox', { name: 'Search performers...' })
+    .fill(newRandomPerformerName);
+
+  // Return the new performer name
+  return newRandomPerformerName;
 }
 
 export async function deletePerformer(page: Page) {
   await page.locator('svg:nth-child(2)').first().click();
 }
 
-export async function addPromoCode(page: Page) {
+export async function addPromoCode(page: Page): Promise<string> {
   await page.getByRole('button', { name: 'Promo Codes' }).click();
   await page.getByRole('button', { name: 'Add Promo Code' }).click();
   await page.getByRole('textbox', { name: 'Enter promo code' }).click();
+
+  // random promo code
+  const randomPromoCode = `${PROMO_CODE}${Date.now()}`;
   await page
     .getByRole('textbox', { name: 'Enter promo code' })
-    .fill(PROMO_CODE);
+    .fill(randomPromoCode);
   await page.getByPlaceholder('Enter discount percentage').click();
   await page
     .getByPlaceholder('Enter discount percentage')
@@ -194,15 +224,21 @@ export async function addPromoCode(page: Page) {
     .getByRole('button', { name: 'Add Promo Code' })
     .click();
 
-  return page.getByText(PROMO_CODE);
+  return randomPromoCode;
 }
 
-export async function editPromoCode(page: Page) {
-  await page.getByText(PROMO_CODE).click();
+export async function editPromoCode(
+  page: Page,
+  promoCode: string
+): Promise<string> {
+  await page.getByText(promoCode).first().click();
   await page.getByRole('textbox', { name: 'Code', exact: true }).click();
+
+  // Generate a new random promo code
+  const newRandomPromoCode = `${NEW_PROMO_CODE}${Date.now()}`;
   await page
     .getByRole('textbox', { name: 'Code', exact: true })
-    .fill(NEW_PROMO_CODE);
+    .fill(newRandomPromoCode);
   await page.getByRole('spinbutton', { name: 'Discount Percentage' }).click();
   await page
     .getByRole('spinbutton', { name: 'Discount Percentage' })
@@ -220,7 +256,7 @@ export async function editPromoCode(page: Page) {
     .getByRole('button')
     .click();
 
-  return page.getByText(NEW_PROMO_CODE);
+  return newRandomPromoCode;
 }
 
 export async function deletePromoCode(page: Page) {

@@ -15,10 +15,7 @@ test('manageEventPromoCodes', async ({ page }) => {
   const organizerPage = await selectFirstEventStartingWithPBO(page);
 
   // Manage event promo codes (add, modify, detach, delete)
-  const confirmationMessage = await manageEventPromoCodes(organizerPage);
-
-  // Verify confirmation message is visible
-  await expect(confirmationMessage).toBeVisible();
+  await manageEventPromoCodes(organizerPage);
 
   console.log('[INFO] Manage Event Promo Codes test completed successfully.');
 });

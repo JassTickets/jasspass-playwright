@@ -18,12 +18,12 @@ test('managePromoCodes', async ({ page }) => {
   await page.getByRole('link', { name: 'Manage' }).click();
 
   // Add a new promo code
-  const promoCodeElement = await addPromoCode(page);
-  await expect(promoCodeElement).toBeVisible();
+  const promoCode = await addPromoCode(page);
+  await expect(page.getByText(promoCode).first()).toBeVisible();
 
   // Edit the promo code
-  const updatedPromoCodeElement = await editPromoCode(page);
-  await expect(updatedPromoCodeElement).toBeVisible();
+  const updatedPromoCode = await editPromoCode(page, promoCode);
+  await expect(page.getByText(updatedPromoCode).first()).toBeVisible();
 
   // Delete the promo code
   await deletePromoCode(page);

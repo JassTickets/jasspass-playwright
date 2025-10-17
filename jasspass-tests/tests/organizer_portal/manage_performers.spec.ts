@@ -19,12 +19,13 @@ test('managePerformers', async ({ page }) => {
   await page.getByRole('link', { name: 'Manage' }).click();
 
   // Add a new performer
-  const performerHeading = await addPerformer(page);
-  await expect(performerHeading).toBeVisible();
+  const performerName = await addPerformer(page);
 
   // Edit the performer
-  const updatedPerformerHeading = await editPerformer(page);
-  await expect(updatedPerformerHeading).toBeVisible();
+  const updatedPerformerName = await editPerformer(page, performerName);
+  await expect(
+    page.getByRole('heading', { name: updatedPerformerName })
+  ).toBeVisible();
 
   // Delete the performer
   await deletePerformer(page);
