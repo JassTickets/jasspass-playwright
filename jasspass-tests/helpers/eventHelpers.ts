@@ -706,13 +706,16 @@ async function performEventDuplication(
   await eventNameField.clear(); // Clear existing text
   await eventNameField.fill(duplicatedEventTitle);
 
-  // Set the new date
   await organizerPage
-    .getByRole('textbox', { name: 'New Start Date and Time' })
+    .locator('div')
+    .filter({ hasText: /^New End Date and Time$/ })
+    .getByRole('textbox')
     .click();
 
   await organizerPage
-    .getByRole('textbox', { name: 'New Start Date and Time' })
+    .locator('div')
+    .filter({ hasText: /^New Start Date and Time$/ })
+    .getByRole('textbox')
     .fill('2040-08-20T10:00');
 
   // Complete the duplication
