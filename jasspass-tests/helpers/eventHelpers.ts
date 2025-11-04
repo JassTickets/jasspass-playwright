@@ -518,9 +518,14 @@ export async function bookComplimentaryTicket(organizerPage: Page) {
 
   // Accept terms
   try {
-    await organizerPage
-      .getByRole('checkbox', { name: 'I agree to appear in the' })
-      .check();
+    const whoIsGoingCheckbox = organizerPage.getByRole('checkbox', {
+      name: 'I agree to appear in the',
+    });
+    if ((await whoIsGoingCheckbox.count()) > 0) {
+      await whoIsGoingCheckbox.check();
+    } else {
+      console.log('Who Is Going is disabled. Continuing...');
+    }
   } catch {
     console.log('Who Is Going is disabled. Continuing...');
   }
@@ -622,9 +627,14 @@ export async function manageEventAttendeesAndCommunications(
 
   // Accept terms
   try {
-    await organizerPage
-      .getByRole('checkbox', { name: 'I agree to appear in the' })
-      .check();
+    const whoIsGoingCheckbox = organizerPage.getByRole('checkbox', {
+      name: 'I agree to appear in the',
+    });
+    if ((await whoIsGoingCheckbox.count()) > 0) {
+      await whoIsGoingCheckbox.check();
+    } else {
+      console.log('Who Is Going is disabled. Continuing...');
+    }
   } catch {
     console.log('Who Is Going is disabled. Continuing...');
   }
