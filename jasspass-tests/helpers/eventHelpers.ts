@@ -549,6 +549,8 @@ export async function sendMessageToAttendees(organizerPage: Page) {
     .getByRole('textbox', { name: 'Enter the subject...' })
     .fill(MESSAGE_SUBJECT);
 
+  // Click next
+  await organizerPage.getByRole('button', { name: 'Next' }).click();
   // Fill message body
   await organizerPage
     .locator('iframe[title="Rich Text Area"]')
