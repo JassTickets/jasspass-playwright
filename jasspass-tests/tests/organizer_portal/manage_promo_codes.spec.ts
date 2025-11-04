@@ -19,10 +19,18 @@ test('managePromoCodes', async ({ page }) => {
 
   // Add a new promo code
   const promoCode = await addPromoCode(page);
+  await page
+    .getByRole('textbox', { name: 'Search your organizer promo' })
+    .fill(promoCode);
   await expect(page.getByText(promoCode).first()).toBeVisible();
 
   // Edit the promo code
   const updatedPromoCode = await editPromoCode(page, promoCode);
+
+  // Search the new promo code
+  await page
+    .getByRole('textbox', { name: 'Search your organizer promo' })
+    .fill(updatedPromoCode);
   await expect(page.getByText(updatedPromoCode).first()).toBeVisible();
 
   // Delete the promo code
