@@ -1,0 +1,6 @@
+- Test Custom Checkout
+- Test Promo Code discount amounts
+- Test Fees Amount (create framework to test with taxes, with discount, with fees, absorbing fees, etc etc)
+- Test Promoters & Verify that they get paid
+- Test Partners & Verify that they get paid
+- Test External Purchases (create, approve, reject)

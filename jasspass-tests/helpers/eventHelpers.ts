@@ -517,18 +517,6 @@ export async function bookComplimentaryTicket(organizerPage: Page) {
   await organizerPage.locator('#phone-input').fill(ATTENDEE_PHONE);
 
   // Accept terms
-  try {
-    const whoIsGoingCheckbox = organizerPage.getByRole('checkbox', {
-      name: 'I agree to appear in the',
-    });
-    if ((await whoIsGoingCheckbox.count()) > 0) {
-      await whoIsGoingCheckbox.check();
-    } else {
-      console.log('Who Is Going is disabled. Continuing...');
-    }
-  } catch {
-    console.log('Who Is Going is disabled. Continuing...');
-  }
 
   await organizerPage
     .locator('div')
@@ -672,6 +660,9 @@ export async function manageEventAttendeesAndCommunications(
   await organizerPage
     .getByRole('textbox', { name: 'Enter the subject...' })
     .fill(uniqueSubject);
+
+  // Click next
+  await organizerPage.getByRole('button', { name: 'Next' }).click();
 
   // Fill message body
   await organizerPage
