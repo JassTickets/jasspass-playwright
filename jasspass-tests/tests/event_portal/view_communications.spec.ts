@@ -26,6 +26,9 @@ test('viewEventCommunications', async ({ page }) => {
   await organizerPage
     .getByRole('textbox', { name: 'Enter the subject...' })
     .fill(randomSubject);
+
+  // Click next
+  await organizerPage.getByRole('button', { name: 'Next' }).click();
   await organizerPage
     .locator('iframe[title="Rich Text Area"]')
     .contentFrame()
