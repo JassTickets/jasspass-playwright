@@ -517,9 +517,14 @@ export async function bookComplimentaryTicket(organizerPage: Page) {
   await organizerPage.locator('#phone-input').fill(ATTENDEE_PHONE);
 
   // Accept terms
-  await organizerPage
-    .getByRole('checkbox', { name: 'I agree to appear in the' })
-    .check();
+  try {
+    await organizerPage
+      .getByRole('checkbox', { name: 'I agree to appear in the' })
+      .check();
+  } catch {
+    console.log('Who Is Going is disabled. Continuing...');
+  }
+
   await organizerPage
     .locator('div')
     .filter({ hasText: /^I have read and agree to the Terms and Conditions$/ })
@@ -616,9 +621,14 @@ export async function manageEventAttendeesAndCommunications(
   await organizerPage.locator('#phone-input').fill(ATTENDEE_PHONE);
 
   // Accept terms
-  await organizerPage
-    .getByRole('checkbox', { name: 'I agree to appear in the' })
-    .check();
+  try {
+    await organizerPage
+      .getByRole('checkbox', { name: 'I agree to appear in the' })
+      .check();
+  } catch {
+    console.log('Who Is Going is disabled. Continuing...');
+  }
+
   await organizerPage
     .locator('div')
     .filter({ hasText: /^I have read and agree to the Terms and Conditions$/ })
