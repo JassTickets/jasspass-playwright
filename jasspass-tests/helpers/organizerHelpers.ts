@@ -44,7 +44,10 @@ export async function createOrganizer(
   await page.waitForTimeout(500);
 
   await page.goto(JASS_TEST_CHANGE_ORG_URL);
-  await page.getByRole('button', { name: 'Create Organizer Profile' }).click();
+  await page
+    .getByRole('button', { name: 'Create Organizer Profile' })
+    .first()
+    .click();
 
   // fill out fields
   await page
