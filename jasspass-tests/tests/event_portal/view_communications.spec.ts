@@ -29,16 +29,8 @@ test('viewEventCommunications', async ({ page }) => {
 
   // Click next
   await organizerPage.getByRole('button', { name: 'Next' }).click();
-  await organizerPage
-    .locator('iframe[title="Rich Text Area"]')
-    .contentFrame()
-    .locator('html')
-    .click();
-  await organizerPage
-    .locator('iframe[title="Rich Text Area"]')
-    .contentFrame()
-    .getByLabel('Rich Text Area')
-    .fill(randomSubject);
+  await organizerPage.locator('#message-body').click();
+  await organizerPage.locator('#message-body').fill(randomSubject);
   await organizerPage.getByRole('button', { name: 'Send' }).click();
   await organizerPage.getByText('Message sent successfully!').click();
   await organizerPage.getByRole('button', { name: 'Close' }).click();

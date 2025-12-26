@@ -319,16 +319,8 @@ export async function editEventBasics(organizerPage: Page) {
     .fill(eventTitleWithTimestamp);
 
   // Update long description
-  await organizerPage
-    .locator('#long-description_ifr')
-    .contentFrame()
-    .getByLabel('Rich Text Area')
-    .click();
-  await organizerPage
-    .locator('#long-description_ifr')
-    .contentFrame()
-    .getByLabel('Rich Text Area')
-    .fill(EVENT_NEW_DESCRIPTION);
+  await organizerPage.locator('#long-description').click();
+  await organizerPage.locator('#long-description').fill(EVENT_NEW_DESCRIPTION);
 
   // Save changes
   await organizerPage.getByRole('button', { name: 'Save Changes' }).click();
@@ -383,15 +375,9 @@ export async function editEventAdditionalDetails(organizerPage: Page) {
     .click();
 
   // Update additional details text
+  await organizerPage.locator('#post-checkout-message').click();
   await organizerPage
-    .locator('iframe[title="Rich Text Area"]')
-    .contentFrame()
-    .getByText('Thanks. See you soon!')
-    .click();
-  await organizerPage
-    .locator('iframe[title="Rich Text Area"]')
-    .contentFrame()
-    .getByLabel('Rich Text Area')
+    .locator('#post-checkout-message')
     .fill(EVENT_NEW_ADDITIONAL_DETAILS);
 
   // Update tax rate
@@ -549,17 +535,10 @@ export async function sendMessageToAttendees(organizerPage: Page) {
 
   // Click next
   await organizerPage.getByRole('button', { name: 'Next' }).click();
+
   // Fill message body
-  await organizerPage
-    .locator('iframe[title="Rich Text Area"]')
-    .contentFrame()
-    .getByRole('paragraph')
-    .click();
-  await organizerPage
-    .locator('iframe[title="Rich Text Area"]')
-    .contentFrame()
-    .getByLabel('Rich Text Area')
-    .fill(MESSAGE_BODY);
+  await organizerPage.locator('#message-body').click();
+  await organizerPage.locator('#message-body').fill(MESSAGE_BODY);
 
   // Send message
   await organizerPage.getByRole('button', { name: 'Send' }).click();
@@ -665,16 +644,8 @@ export async function manageEventAttendeesAndCommunications(
   await organizerPage.getByRole('button', { name: 'Next' }).click();
 
   // Fill message body
-  await organizerPage
-    .locator('iframe[title="Rich Text Area"]')
-    .contentFrame()
-    .getByRole('paragraph')
-    .click();
-  await organizerPage
-    .locator('iframe[title="Rich Text Area"]')
-    .contentFrame()
-    .getByLabel('Rich Text Area')
-    .fill(MESSAGE_BODY);
+  await organizerPage.locator('#message-body').click();
+  await organizerPage.locator('#message-body').fill(MESSAGE_BODY);
 
   // Send message
   await organizerPage.getByRole('button', { name: 'Send' }).click();
