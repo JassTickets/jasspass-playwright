@@ -68,7 +68,9 @@ export async function createOrganizer(
   await page
     .getByRole('textbox', { name: 'Organizer Address *' })
     .fill(CONTACT_ADDRESS);
-
+  await page
+    .getByRole('checkbox', { name: 'I agree to the Organizer' })
+    .check();
   // submit and wait for navigation to the new organizer’s page
   await page.getByRole('button', { name: 'Create Organizer' }).click();
 
