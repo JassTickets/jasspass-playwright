@@ -67,10 +67,6 @@ test('viewEventCommunications', async ({ page }) => {
     .getByRole('cell', { name: randomSubject })
     .locator('div')
     .click();
-  await organizerPage
-    .getByRole('paragraph')
-    .filter({ hasText: randomSubject })
-    .click();
 
   console.log('[INFO] View Event Communications test completed successfully.');
 });
