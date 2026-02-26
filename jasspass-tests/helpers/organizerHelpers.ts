@@ -270,29 +270,59 @@ export async function deletePromoCode(page: Page) {
 
 export async function addTeamMember(page: Page) {
   await page.getByRole('button', { name: 'Team' }).click();
-  await page.getByRole('button', { name: 'Add Representative' }).click();
-  await page.locator('#email1').click();
-  await page.locator('#email1').fill(TEAM_MEMBER_EMAIL);
-  await page.getByRole('button', { name: 'Add Representative' }).click();
-  await page.getByRole('radio', { name: 'Organizer Owner' }).check();
-  await page.getByRole('button', { name: 'Add Representative' }).click();
 
-  return page.getByRole('row', { name: 'Diego Santosuosso' });
+  const configurePoliciesButton = page.getByRole('button', {
+    name: /Configure Policies/i,
+  });
+
+  if ((await configurePoliciesButton.count()) > 0) {
+    await page.locator('#email1').click();
+    await page.locator('#email1').fill(TEAM_MEMBER_EMAIL);
+    await configurePoliciesButton.first().click();
+
+    const selectAllPoliciesButton = page.getByRole('button', {
+      name: /Select All Policies/i,
+    });
+    if ((await selectAllPoliciesButton.count()) > 0) {
+      await selectAllPoliciesButton.first().click();
+    }
+
+    await page.getByRole('button', { name: 'Add Representative' }).last().click();
+  } else {
+    // Backward-compatible flow with modal + role selection.
+    await page.getByRole('button', { name: 'Add Representative' }).click();
+    await page.locator('#email1').click();
+    await page.locator('#email1').fill(TEAM_MEMBER_EMAIL);
+    await page.getByRole('button', { name: 'Add Representative' }).click();
+    await page.getByRole('radio', { name: 'Organizer Owner' }).check();
+    await page.getByRole('button', { name: 'Add Representative' }).click();
+  }
+
+  return page.getByRole('row', { name: new RegExp(TEAM_MEMBER_EMAIL, 'i') });
 }
 
 export async function editTeamMemberRole(page: Page) {
-  await page
-    .getByRole('row', { name: 'Diego Santosuosso' })
-    .getByRole('button')
-    .first()
-    .click();
-  await page.getByRole('radio', { name: 'Organizer Admin' }).check();
-  await page.getByRole('button', { name: 'Save' }).click();
+  const representativeRow = page.getByRole('row', {
+    name: new RegExp(TEAM_MEMBER_EMAIL, 'i'),
+  });
+  await representativeRow.getByRole('button').first().click();
+
+  const organizerAdminRadio = page.getByRole('radio', {
+    name: 'Organizer Admin',
+  });
+
+  if ((await organizerAdminRadio.count()) > 0) {
+    // Backward-compatible modal flow.
+    await organizerAdminRadio.check();
+    await page.getByRole('button', { name: 'Save' }).click();
+  } else {
+    await page.getByRole('button', { name: 'Add Representative' }).last().click();
+  }
 }
 
 export async function deleteTeamMember(page: Page) {
   await page
-    .getByRole('row', { name: 'Diego Santosuosso' })
+    .getByRole('row', { name: new RegExp(TEAM_MEMBER_EMAIL, 'i') })
     .getByRole('button')
     .nth(1)
     .click();

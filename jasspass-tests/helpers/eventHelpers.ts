@@ -93,8 +93,21 @@ export async function createEvent(
   //wait for 5 seconds
   await page.waitForTimeout(5000);
 
-  await page.getByText('Publish').click();
-  await page.getByRole('button', { name: 'Publish as Live Event' }).click();
+  // New UI has direct publish buttons; older UI used a publish menu.
+  const livePublishButton = page
+    .getByRole('button', { name: /Publish as Live/i })
+    .first();
+  const livePublishButtonCount = await livePublishButton.count();
+
+  if (livePublishButtonCount > 0) {
+    await livePublishButton.click();
+  } else {
+    await page.getByRole('button', { name: /^Publish$/ }).click();
+    await page
+      .getByRole('button', { name: /Publish as Live/i })
+      .first()
+      .click();
+  }
 
   //wait for 5 seconds
   await page.waitForTimeout(5000);
@@ -271,26 +284,40 @@ export async function selectFirstEventStartingWithPBO(
 
   // Go to events page
   await page.goto(`${JASS_TEST_URL}/events`);
-  await page.getByRole('textbox', { name: 'Search events' }).click();
-  await page.getByRole('textbox', { name: 'Search events' }).fill('PBO');
+  const searchEventsInput = page.getByRole('textbox', { name: 'Search events' });
+  await searchEventsInput.click();
+  await searchEventsInput.fill(EVENT_NAME_PREFIX);
 
   // Wait for search results to load
   await page.waitForTimeout(1000);
 
-  // Find the first event link that starts with "PBO - Event" using a more specific name pattern
-  // This will match any link that starts with "PBO - Event" followed by anything
-  const eventLink = page.getByRole('link', { name: /^PBO - Event/ }).first();
+  // Prefer event names created by this suite.
+  const preferredEventLink = page
+    .getByRole('link', { name: new RegExp(`^${EVENT_NAME_PREFIX}`) })
+    .first();
+  let eventCount = await preferredEventLink.count();
 
-  // Check if any event was found
-  const eventCount = await eventLink.count();
+  // Fallback to any PBO event if naming convention changed.
+  if (eventCount === 0) {
+    await searchEventsInput.fill(ORGANIZER_NAME_PREFIX.trim());
+    await page.waitForTimeout(1000);
+  }
+
+  const fallbackEventLink = page.getByRole('link', { name: /^PBO/i }).first();
+  eventCount = eventCount > 0 ? eventCount : await fallbackEventLink.count();
+
   if (eventCount === 0) {
     throw new Error(
-      `No events found starting with "PBO - Event". Please ensure test events are available.`
+      `No events found for "${EVENT_NAME_PREFIX}" (or fallback "PBO"). Please ensure test events are available.`
     );
   }
 
   // Click the first event found
-  await eventLink.click();
+  if ((await preferredEventLink.count()) > 0) {
+    await preferredEventLink.click();
+  } else {
+    await fallbackEventLink.click();
+  }
 
   // Wait for the event page to load properly
   await page.waitForTimeout(2000);
