@@ -39,7 +39,7 @@ function generateUniquePromoCode(): string {
 // Helper function to search and click a specific event promo code
 async function searchAndClickEventPromoCode(
   organizerPage: Page,
-  promoCode: string
+  promoCode: string,
 ): Promise<void> {
   await organizerPage
     .getByRole('textbox', { name: 'Search Promo Codes' })
@@ -55,7 +55,7 @@ async function searchAndClickEventPromoCode(
 // Helper function to find and click a specific promo code using search
 async function findAndClickPromoCode(
   organizerPage: Page,
-  promoCode: string
+  promoCode: string,
 ): Promise<boolean> {
   try {
     await searchAndClickEventPromoCode(organizerPage, promoCode);
@@ -72,7 +72,7 @@ export async function createEvent(
     eventName = ORGANIZER_NAME_PREFIX +
       'Event-' +
       Math.random().toString(36).substring(2, 15),
-  } = {}
+  } = {},
 ): Promise<string> {
   //Timeout for 3 seconds
   await page.waitForTimeout(3000);
@@ -96,8 +96,10 @@ export async function createEvent(
   await page.getByText('Publish as Live Event').click();
   // Handle optional Skip button with proper Playwright approach
   const skipButton = page.getByRole('button', { name: 'Skip' });
-  const isSkipVisible = await skipButton.isVisible({ timeout: 3000 }).catch(() => false);
-  
+  const isSkipVisible = await skipButton
+    .isVisible({ timeout: 3000 })
+    .catch(() => false);
+
   if (isSkipVisible) {
     console.log('Skip button found, clicking...');
     await skipButton.click();
@@ -320,7 +322,7 @@ export async function deleteEvent(page: Page) {
 }
 
 export async function selectFirstEventStartingWithPBO(
-  page: Page
+  page: Page,
 ): Promise<Page> {
   // Sign in first
   await signIn(page);
@@ -330,7 +332,9 @@ export async function selectFirstEventStartingWithPBO(
 
   // Go to events page
   await page.goto(`${JASS_TEST_URL}/events`);
-  const searchEventsInput = page.getByRole('textbox', { name: 'Search events' });
+  const searchEventsInput = page.getByRole('textbox', {
+    name: 'Search events',
+  });
   await searchEventsInput.click();
   await searchEventsInput.fill(EVENT_NAME_PREFIX);
 
@@ -354,7 +358,7 @@ export async function selectFirstEventStartingWithPBO(
 
   if (eventCount === 0) {
     throw new Error(
-      `No events found for "${EVENT_NAME_PREFIX}" (or fallback "PBO"). Please ensure test events are available.`
+      `No events found for "${EVENT_NAME_PREFIX}" (or fallback "PBO"). Please ensure test events are available.`,
     );
   }
 
@@ -443,6 +447,10 @@ export async function editEventAdditionalDetails(organizerPage: Page) {
   await organizerPage.getByRole('link', { name: 'Edit Event' }).click();
 
   // Go to Additional Details
+  await organizerPage;
+  await organizerPage.getByRole('link', { name: 'Edit Event' }).click();
+
+  // Go to Additional Details
   await organizerPage
     .getByRole('button', { name: 'Additional Details' })
     .click();
@@ -507,13 +515,13 @@ export async function manageEventPromoCodes(organizerPage: Page) {
   await organizerPage
     .getByRole('textbox', { name: 'Search your organizer promo' })
     .click();
-  
+
   //timeout
   await organizerPage.waitForTimeout(2000);
   await organizerPage
     .getByRole('textbox', { name: 'Search your organizer promo' })
     .fill(uniquePromoCode);
-  
+
   //timeout
   await organizerPage.waitForTimeout(2000);
   await organizerPage.getByText(uniquePromoCode).first().click();
@@ -633,7 +641,7 @@ export async function sendMessageToAttendees(organizerPage: Page) {
 }
 
 export async function manageEventAttendeesAndCommunications(
-  organizerPage: Page
+  organizerPage: Page,
 ) {
   // Generate a random 4-character string to append to the subject
   const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -753,7 +761,7 @@ export async function manageEventAttendeesAndCommunications(
 // Helper function for event duplication logic
 async function performEventDuplication(
   organizerPage: Page,
-  originalEventTitle: string
+  originalEventTitle: string,
 ) {
   // Generate timestamp for unique naming
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -877,13 +885,13 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
   await organizerPage
     .getByRole('textbox', { name: 'Search your organizer promo' })
     .click();
-  
+
   //timeout
   await organizerPage.waitForTimeout(2000);
   await organizerPage
     .getByRole('textbox', { name: 'Search your organizer promo' })
     .fill(uniquePromoCode);
-  
+
   //timeout
   await organizerPage.waitForTimeout(2000);
   await organizerPage.getByText(uniquePromoCode).first().click();
@@ -891,7 +899,6 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
 
   await organizerPage.getByRole('combobox').selectOption('all');
   await organizerPage.getByRole('button', { name: 'Attach' }).click();
-
 
   // Wait a moment for promo code operations to complete
   await organizerPage.waitForTimeout(2000);
@@ -907,12 +914,12 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
   // Dynamically find and click the unique promo code that was created
   const promoCodeFound = await findAndClickPromoCode(
     organizerPage,
-    uniquePromoCode
+    uniquePromoCode,
   );
 
   if (!promoCodeFound) {
     throw new Error(
-      `Could not find the created promo code "${uniquePromoCode}" in the duplicated event`
+      `Could not find the created promo code "${uniquePromoCode}" in the duplicated event`,
     );
   }
 
@@ -944,65 +951,91 @@ export async function resendConfirmationEmail(organizerPage: Page) {
 export async function verifyOperatorAccess(page: Page, eventName?: string) {
   // Navigate to operator's event view
   await page.getByRole('button').filter({ hasText: /^$/ }).click();
-  await page.locator('div').filter({ hasText: /^My Events$/ }).first().click();
-  
+  await page
+    .locator('div')
+    .filter({ hasText: /^My Events$/ })
+    .first()
+    .click();
+
   // Search for the specific event or default to PBO events
   const searchTerm = eventName || EVENT_NAME_PREFIX;
   await page.getByRole('textbox', { name: 'Search events' }).fill(searchTerm);
   await page.waitForTimeout(1000);
-  
+
   // Click the first event found - use specific event name if provided
   if (eventName) {
     await page.getByRole('heading', { name: eventName }).first().click();
   } else {
-    await page.getByRole('heading', { name: new RegExp(EVENT_NAME_PREFIX) }).first().click();
+    await page
+      .getByRole('heading', { name: new RegExp(EVENT_NAME_PREFIX) })
+      .first()
+      .click();
   }
   await page.getByRole('button', { name: 'Go to event' }).click();
-  
+
   // Wait for event page to load
   await page.waitForTimeout(2000);
-  
+
   // Verify dashboard access
-  await expect(page.getByText(/Gross Revenue.*Net Revenue.*Event Views/)).toBeVisible();
-  
+  await expect(
+    page.getByText(/Gross Revenue.*Net Revenue.*Event Views/),
+  ).toBeVisible();
+
   // Verify order management
   await page.getByRole('link', { name: 'Orders & Attendees' }).click();
-  const orderCell = page.getByRole('cell').filter({ hasText: /#[A-Z0-9]+/ }).first();
-  if (await orderCell.count() > 0) {
+  const orderCell = page
+    .getByRole('cell')
+    .filter({ hasText: /#[A-Z0-9]+/ })
+    .first();
+  if ((await orderCell.count()) > 0) {
     await orderCell.click();
     await page.getByRole('button', { name: 'Send Confirmation Email' }).click();
     await expect(page.getByText('Email sent successfully!')).toBeVisible();
     await page.getByRole('button', { name: '✕' }).click();
   }
-  
+
   // Check attendees tab
   await page.getByRole('button', { name: 'Attendees' }).click();
-  await expect(page.getByRole('row').filter({ hasText: /General Admission|Active|Not Scanned/ })).toBeVisible({ timeout: 10000 });
-  
+  await expect(
+    page
+      .getByRole('row')
+      .filter({ hasText: /General Admission|Active|Not Scanned/ }),
+  ).toBeVisible({ timeout: 10000 });
+
   // Verify ticket type management
   await page.getByRole('link', { name: 'Ticket Types' }).click();
-  await expect(page.getByRole('cell', { name: 'General Admission' })).toBeVisible();
-  
+  await expect(
+    page.getByRole('cell', { name: 'General Admission' }),
+  ).toBeVisible();
+
   // Test creating a new ticket type
   await page.getByRole('button', { name: 'Add Ticket Type' }).click();
   const timestamp = Date.now();
   const ticketTypeName = `Operator Test ${timestamp.toString().slice(-4)}`;
   await page.getByRole('textbox', { name: 'Enter type' }).fill(ticketTypeName);
   await page.getByPlaceholder('Enter quantity').fill('5');
-  await page.locator('div').filter({ hasText: /^Price \(\$\)$/ }).getByPlaceholder('0.00').fill('25.00');
+  await page
+    .locator('div')
+    .filter({ hasText: /^Price \(\$\)$/ })
+    .getByPlaceholder('0.00')
+    .fill('25.00');
   await page.getByRole('button', { name: 'Add Ticket Type' }).nth(1).click();
   await expect(page.getByText('Ticket Type added successfully')).toBeVisible();
-  
+
   // Verify event editing
   await page.getByRole('link', { name: 'Edit Event' }).click();
-  const originalTitle = await page.getByRole('textbox', { name: 'Event Title*' }).inputValue();
+  const originalTitle = await page
+    .getByRole('textbox', { name: 'Event Title*' })
+    .inputValue();
   const newTitle = `${originalTitle} (Operator Edit)`;
   await page.getByRole('textbox', { name: 'Event Title*' }).fill(newTitle);
   await page.getByRole('button', { name: 'Save Changes' }).click();
   await expect(page.getByText('Event updated successfully')).toBeVisible();
-  
+
   // Verify refunds and settings access
   await page.getByRole('link', { name: 'Refunds' }).click();
   await page.getByRole('link', { name: 'Event Settings' }).click();
-  await expect(page.getByRole('heading', { name: 'Widget Generator' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Widget Generator' }),
+  ).toBeVisible();
 }
