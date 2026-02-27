@@ -93,20 +93,12 @@ export async function createEvent(
   //wait for 5 seconds
   await page.waitForTimeout(5000);
 
-  // New UI has direct publish buttons; older UI used a publish menu.
-  const livePublishButton = page
-    .getByRole('button', { name: /Publish as Live/i })
-    .first();
-  const livePublishButtonCount = await livePublishButton.count();
-
-  if (livePublishButtonCount > 0) {
-    await livePublishButton.click();
-  } else {
-    await page.getByRole('button', { name: /^Publish$/ }).click();
-    await page
-      .getByRole('button', { name: /Publish as Live/i })
-      .first()
-      .click();
+  await page.getByText('Publish as Live Event').click();
+  try{
+    await page.getByRole('button', { name: 'Skip' }).click();  
+  }
+  catch{
+    console.log('Skip button not found, continuing...');
   }
 
   //wait for 5 seconds
