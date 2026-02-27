@@ -44,6 +44,8 @@ export async function createOrganizer(
   await page.waitForTimeout(500);
 
   await page.goto(JASS_TEST_CHANGE_ORG_URL);
+  // wait for 0.5 seconds
+  await page.waitForTimeout(500);
   await page
     .getByRole('button', { name: 'Create Organizer Profile' })
     .first()
@@ -274,6 +276,9 @@ export async function addTeamMember(page: Page) {
   const configurePoliciesButton = page.getByRole('button', {
     name: /Configure Policies/i,
   });
+
+  // Wait for 0.5 seconds
+  await page.waitForTimeout(500);
 
   if ((await configurePoliciesButton.count()) > 0) {
     await page.locator('#email1').click();

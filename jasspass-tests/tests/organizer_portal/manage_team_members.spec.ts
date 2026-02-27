@@ -21,9 +21,15 @@ test('manageTeamMembers', async ({ page }) => {
   const teamMemberRow = await addTeamMember(page);
   await expect(teamMemberRow).toBeVisible();
 
+  // Wait for 0.5 seconds to ensure the team member is added before proceeding
+  await page.waitForTimeout(500);
+
   // Edit the team member role
   await editTeamMemberRole(page);
 
+  // Wait for 0.5 seconds to ensure the role is updated before proceeding
+  await page.waitForTimeout(500);
+  
   // Delete the team member
   await deleteTeamMember(page);
 
