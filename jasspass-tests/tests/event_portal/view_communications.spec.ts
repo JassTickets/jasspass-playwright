@@ -63,9 +63,12 @@ test('viewEventCommunications', async ({ page }) => {
     .getByRole('textbox', { name: 'Search emails...' })
     .fill(randomSubject);
 
+  // Wait for 2 seconds
+  await organizerPage.waitForTimeout(2000);
   await organizerPage
     .getByRole('cell', { name: randomSubject })
     .locator('div')
+    .first()
     .click();
 
   console.log('[INFO] View Event Communications test completed successfully.');

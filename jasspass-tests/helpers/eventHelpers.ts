@@ -862,8 +862,12 @@ export async function resendConfirmationEmail(organizerPage: Page) {
     .getByText('Playwright Bot', { exact: true })
     .first()
     .click();
+  // wait for 2 seconds
+  await organizerPage.waitForTimeout(2000);
   await organizerPage
     .getByRole('button', { name: 'Send Confirmation Email' })
     .click();
+  // wait for 2 seconds
+  await organizerPage.waitForTimeout(2000);
   await organizerPage.getByText('Email sent successfully!').click();
 }
