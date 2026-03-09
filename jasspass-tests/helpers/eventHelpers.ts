@@ -94,10 +94,14 @@ export async function createEvent(
   await page.waitForTimeout(5000);
 
   await page.getByText('Publish as Live Event').click();
-  try{
-    await page.getByRole('button', { name: 'Skip' }).click();  
-  }
-  catch{
+  // Handle optional Skip button with proper Playwright approach
+  const skipButton = page.getByRole('button', { name: 'Skip' });
+  const isSkipVisible = await skipButton.isVisible({ timeout: 3000 }).catch(() => false);
+  
+  if (isSkipVisible) {
+    console.log('Skip button found, clicking...');
+    await skipButton.click();
+  } else {
     console.log('Skip button not found, continuing...');
   }
 
@@ -451,16 +455,22 @@ export async function manageEventPromoCodes(organizerPage: Page) {
 
   // Add to event - use search approach to find the specific promo code
   await organizerPage
-    .getByRole('textbox', { name: 'Search your organizer promo codes...' })
+    .getByRole('textbox', { name: 'Search your organizer promo' })
     .click();
+  
+  //timeout
+  await organizerPage.waitForTimeout(2000);
   await organizerPage
-    .getByRole('textbox', { name: 'Search your organizer promo codes...' })
+    .getByRole('textbox', { name: 'Search your organizer promo' })
     .fill(uniquePromoCode);
+  
+  //timeout
+  await organizerPage.waitForTimeout(2000);
   await organizerPage.getByText(uniquePromoCode).first().click();
   await organizerPage.getByRole('button', { name: 'Add to Event' }).click();
+
   await organizerPage.getByRole('combobox').selectOption('all');
   await organizerPage.getByRole('button', { name: 'Attach' }).click();
-  await organizerPage.getByRole('button', { name: 'Close' }).click();
 
   //Timeout
   await organizerPage.waitForTimeout(3000);
@@ -812,17 +822,23 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
 
   // Add to event - use search approach to find the specific promo code
   await organizerPage
-    .getByRole('textbox', { name: 'Search your organizer promo codes...' })
+    .getByRole('textbox', { name: 'Search your organizer promo' })
     .click();
+  
+  //timeout
+  await organizerPage.waitForTimeout(2000);
   await organizerPage
-    .getByRole('textbox', { name: 'Search your organizer promo codes...' })
+    .getByRole('textbox', { name: 'Search your organizer promo' })
     .fill(uniquePromoCode);
+  
+  //timeout
+  await organizerPage.waitForTimeout(2000);
   await organizerPage.getByText(uniquePromoCode).first().click();
   await organizerPage.getByRole('button', { name: 'Add to Event' }).click();
+
   await organizerPage.getByRole('combobox').selectOption('all');
   await organizerPage.getByRole('button', { name: 'Attach' }).click();
 
-  await organizerPage.getByRole('button', { name: 'Close' }).click();
 
   // Wait a moment for promo code operations to complete
   await organizerPage.waitForTimeout(2000);
