@@ -9,7 +9,7 @@ test('signIn', async ({ page }) => {
   console.log('[INFO] Executing Sign-in test...');
   await signIn(page);
   //timeout
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(1000);
   await expect(page).toHaveURL(/portal/);
   console.log('[INFO] Sign-in test completed successfully.');
 });
