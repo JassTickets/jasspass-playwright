@@ -40,12 +40,12 @@ export async function createOrganizer(
   // log in and open the create-organizer form
   await signIn(page);
 
-  // wait for 0.5 seconds
-  await page.waitForTimeout(500);
+  // wait for 4 seconds
+  await page.waitForTimeout(4000);
 
   await page.goto(JASS_TEST_CHANGE_ORG_URL);
-  // wait for 0.5 seconds
-  await page.waitForTimeout(500);
+  // wait for 2 seconds
+  await page.waitForTimeout(2000);
   await page
     .getByRole('button', { name: 'Create Organizer Profile' })
     .first()
@@ -379,4 +379,53 @@ export async function deleteOrganizer(
   await page1.getByRole('link', { name: 'Manage' }).click();
   await page1.getByRole('button', { name: 'Delete' }).click();
   await page1.getByRole('button', { name: 'Delete' }).click();
+}
+
+export async function addOperatorWithAllPolicies(page: Page, operatorEmail: string) {
+  // Navigate to Event Operators tab
+  await page.getByRole('link', { name: 'Event Operators' }).click();
+  
+  // Add operator email
+  await page.getByRole('textbox', { name: 'Email address' }).fill(operatorEmail);
+  await page.getByRole('button', { name: 'Add Operator' }).click();
+
+  // Check all available policies
+  const policies = [
+    'Read Event',
+    'Update Event', 
+    'Delete Event',
+    { name: 'Read Ticket', exact: true },
+    'Scan Ticket',
+    'Read Ticket Type',
+    'Create Ticket Type',
+    'Update Ticket Type', 
+    'Delete Ticket Type',
+    'Read Transaction',
+    'Read Refund',
+    'Read External Purchase',
+    'Update External Purchase'
+  ];
+
+  for (const policy of policies) {
+    if (typeof policy === 'string') {
+      await page.getByRole('checkbox', { name: policy }).check();
+    } else {
+      await page.getByRole('checkbox', policy).check();
+    }
+  }
+
+  // Save policies
+  await page.getByRole('button', { name: 'Save Policies' }).click();
+}
+
+export async function testOperatorPoliciesFlow(organizerPage: Page, operatorPage: Page, operatorEmail: string, eventName?: string) {
+  // Add operator with all policies
+  await addOperatorWithAllPolicies(organizerPage, operatorEmail);
+  
+  // Wait for policies to be saved
+  await organizerPage.waitForTimeout(2000);
+
+  // Test operator access using the event helper function
+  const { verifyOperatorAccess } = await import('./eventHelpers');
+  await verifyOperatorAccess(operatorPage, eventName);
 }

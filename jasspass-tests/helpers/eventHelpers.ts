@@ -168,6 +168,56 @@ export async function purchaseTicket(page: Page) {
   await page.getByRole('img', { name: 'Ticket QR Code' }).click();
 }
 
+export async function purchaseTicketForEvent(page: Page, eventId: string) {
+  // Navigate to the event page
+  await page.goto(`${JASS_TEST_URL}/event/${eventId}`);
+
+  // Select ticket and proceed
+  await page.getByRole('combobox').selectOption('1');
+  await page.getByRole('button', { name: 'Buy Tickets' }).click();
+
+  // Fill buyer information
+  await page.getByRole('textbox', { name: 'First Name *' }).fill(CONTACT_NAME);
+  await page.getByRole('textbox', { name: 'Last Name *' }).fill('Client');
+  await page
+    .getByRole('textbox', { name: 'Email Address *' })
+    .fill(PLAYWRIGHT_BOT_EMAIL);
+  await page.locator('#phone-input').fill(CONTACT_PHONE_NUMBER);
+
+  // Accept terms and pay
+  await page
+    .locator('div')
+    .filter({ hasText: /^I have read and agree to the Terms and Conditions$/ })
+    .locator('#tosAccepted')
+    .check();
+
+  await page.getByRole('button', { name: 'Proceed to Payment' }).click();
+
+  // Wait briefly to ensure Stripe iframes are loaded
+  await page.waitForTimeout(3000);
+
+  // Fill Stripe card fields
+  await fillIndividualStripeFields(page);
+
+  //wait 2 seconds
+  await page.waitForTimeout(2000);
+  await page.getByRole('button', { name: 'Checkout' }).click();
+
+  //Wait for 5 seconds
+  await page.waitForTimeout(5000);
+
+  // Go to success page and trigger ticket confirmation
+  await page.waitForURL(/\/payment\/success\//);
+
+  // Close the modal (if any):
+  try {
+    await page.getByRole('button', { name: 'Close' }).click();
+  } catch {
+    // Don't do anything
+  }
+  await page.getByRole('img', { name: 'Ticket QR Code' }).click();
+}
+
 export async function refundTicket(page: Page) {
   // Purchase a ticket first
   await purchaseTicket(page);
@@ -476,7 +526,7 @@ export async function manageEventPromoCodes(organizerPage: Page) {
   await organizerPage.waitForTimeout(3000);
   await searchAndClickEventPromoCode(organizerPage, uniquePromoCode);
   await organizerPage.getByRole('button', { name: 'Show details' }).click();
-  await organizerPage.getByRole('button', { name: 'Edit' }).click();
+  await organizerPage.getByRole('button', { name: 'Edit' }).first().click();
   await organizerPage.getByRole('spinbutton', { name: 'Usage Limit' }).click();
   await organizerPage
     .getByRole('spinbutton', { name: 'Usage Limit' })
@@ -484,7 +534,7 @@ export async function manageEventPromoCodes(organizerPage: Page) {
   await organizerPage.getByRole('checkbox', { name: 'Active' }).uncheck();
   await organizerPage.getByRole('button', { name: 'Update' }).click();
   await organizerPage.getByRole('table').getByText('(0 / 10)').click();
-  await organizerPage.getByRole('button', { name: 'Edit' }).click();
+  await organizerPage.getByRole('button', { name: 'Edit' }).first().click();
   await organizerPage.getByRole('checkbox', { name: 'Active' }).check();
   await organizerPage.getByRole('button', { name: 'Update' }).click();
 
@@ -504,7 +554,9 @@ export async function bookComplimentaryTicket(organizerPage: Page) {
     .getByRole('button')
     .filter({ hasText: 'Book Tickets' })
     .click();
-  await organizerPage.getByRole('combobox').selectOption('1');
+  //await for 2 seconds
+  await organizerPage.waitForTimeout(2000);
+  await organizerPage.getByRole('combobox').first().selectOption('1');
   await organizerPage.getByRole('button', { name: 'Get Tickets' }).click();
   await organizerPage
     .locator('label')
@@ -591,7 +643,7 @@ export async function manageEventAttendeesAndCommunications(
     .getByRole('button')
     .filter({ hasText: 'Book Tickets' })
     .click();
-  await organizerPage.getByRole('combobox').selectOption('1');
+  await organizerPage.getByRole('combobox').first().selectOption('1');
   await organizerPage.getByRole('button', { name: 'Get Tickets' }).click();
   await organizerPage
     .locator('label')
@@ -886,4 +938,70 @@ export async function resendConfirmationEmail(organizerPage: Page) {
   // wait for 2 seconds
   await organizerPage.waitForTimeout(2000);
   await organizerPage.getByText('Email sent successfully!').click();
+}
+
+export async function verifyOperatorAccess(page: Page, eventName?: string) {
+  // Navigate to operator's event view
+  await page.getByRole('button').filter({ hasText: /^$/ }).click();
+  await page.locator('div').filter({ hasText: /^My Events$/ }).first().click();
+  
+  // Search for the specific event or default to PBO events
+  const searchTerm = eventName || EVENT_NAME_PREFIX;
+  await page.getByRole('textbox', { name: 'Search events' }).fill(searchTerm);
+  await page.waitForTimeout(1000);
+  
+  // Click the first event found - use specific event name if provided
+  if (eventName) {
+    await page.getByRole('heading', { name: eventName }).first().click();
+  } else {
+    await page.getByRole('heading', { name: new RegExp(EVENT_NAME_PREFIX) }).first().click();
+  }
+  await page.getByRole('button', { name: 'Go to event' }).click();
+  
+  // Wait for event page to load
+  await page.waitForTimeout(2000);
+  
+  // Verify dashboard access
+  await expect(page.getByText(/Gross Revenue.*Net Revenue.*Event Views/)).toBeVisible();
+  
+  // Verify order management
+  await page.getByRole('link', { name: 'Orders & Attendees' }).click();
+  const orderCell = page.getByRole('cell').filter({ hasText: /#[A-Z0-9]+/ }).first();
+  if (await orderCell.count() > 0) {
+    await orderCell.click();
+    await page.getByRole('button', { name: 'Send Confirmation Email' }).click();
+    await expect(page.getByText('Email sent successfully!')).toBeVisible();
+    await page.getByRole('button', { name: '✕' }).click();
+  }
+  
+  // Check attendees tab
+  await page.getByRole('button', { name: 'Attendees' }).click();
+  await expect(page.getByRole('row').filter({ hasText: /General Admission|Active|Not Scanned/ })).toBeVisible({ timeout: 10000 });
+  
+  // Verify ticket type management
+  await page.getByRole('link', { name: 'Ticket Types' }).click();
+  await expect(page.getByRole('cell', { name: 'General Admission' })).toBeVisible();
+  
+  // Test creating a new ticket type
+  await page.getByRole('button', { name: 'Add Ticket Type' }).click();
+  const timestamp = Date.now();
+  const ticketTypeName = `Operator Test ${timestamp.toString().slice(-4)}`;
+  await page.getByRole('textbox', { name: 'Enter type' }).fill(ticketTypeName);
+  await page.getByPlaceholder('Enter quantity').fill('5');
+  await page.locator('div').filter({ hasText: /^Price \(\$\)$/ }).getByPlaceholder('0.00').fill('25.00');
+  await page.getByRole('button', { name: 'Add Ticket Type' }).nth(1).click();
+  await expect(page.getByText('Ticket Type added successfully')).toBeVisible();
+  
+  // Verify event editing
+  await page.getByRole('link', { name: 'Edit Event' }).click();
+  const originalTitle = await page.getByRole('textbox', { name: 'Event Title*' }).inputValue();
+  const newTitle = `${originalTitle} (Operator Edit)`;
+  await page.getByRole('textbox', { name: 'Event Title*' }).fill(newTitle);
+  await page.getByRole('button', { name: 'Save Changes' }).click();
+  await expect(page.getByText('Event updated successfully')).toBeVisible();
+  
+  // Verify refunds and settings access
+  await page.getByRole('link', { name: 'Refunds' }).click();
+  await page.getByRole('link', { name: 'Event Settings' }).click();
+  await expect(page.getByRole('heading', { name: 'Widget Generator' })).toBeVisible();
 }

@@ -22,3 +22,19 @@ export async function signIn(
   await page.getByRole('textbox', { name: 'Password' }).fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
 }
+
+export async function signOutIfSignedIn(page: Page) {
+  try {
+    // Try to find and click the profile dropdown
+    const profileDropdown = page.getByRole('button').filter({ hasText: /^$/ });
+    if ((await profileDropdown.count()) > 0) {
+      await profileDropdown.click();
+      const signOutOption = page.locator('div').filter({ hasText: /^Sign Out$/ }).first();
+      if ((await signOutOption.count()) > 0) {
+        await signOutOption.click();
+      }
+    }
+  } catch (error) {
+    console.log('Already signed out or sign out failed:', error);
+  }
+}
