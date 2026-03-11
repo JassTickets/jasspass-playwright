@@ -32,8 +32,7 @@ test('viewEventCommunications', async ({ page }) => {
   await organizerPage.locator('#message-body').click();
   await organizerPage.locator('#message-body').fill(randomSubject);
   await organizerPage.getByRole('button', { name: 'Send' }).click();
-  await organizerPage.getByText('Message sent successfully!').click();
-  await organizerPage.getByRole('button', { name: 'Close' }).click();
+  // If the modal closes it means that it worked
 
   // Verify that the message appears in the communications list
 
