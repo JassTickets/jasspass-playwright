@@ -622,10 +622,14 @@ export async function sendMessageToAttendees(organizerPage: Page) {
   await organizerPage.locator('#message-body').fill(MESSAGE_BODY);
 
   // Send message
-  await organizerPage.getByRole('button', { name: 'Send' }).click();
+  const sendButton = organizerPage.getByRole('button', { name: 'Send' });
+  await sendButton.click();
 
-  // Return success message
-  return organizerPage.getByText('Message sent successfully!');
+  // Success state: modal closes after the message is sent
+  await expect(sendButton).toBeHidden();
+
+  // Return modal send button locator for assertion at call sites
+  return sendButton;
 }
 
 export async function manageEventAttendeesAndCommunications(
@@ -729,14 +733,11 @@ export async function manageEventAttendeesAndCommunications(
   await organizerPage.locator('#message-body').fill(MESSAGE_BODY);
 
   // Send message
-  await organizerPage.getByRole('button', { name: 'Send' }).click();
+  const sendButton = organizerPage.getByRole('button', { name: 'Send' });
+  await sendButton.click();
 
-  // Verify success message
-  const successMessage = organizerPage.getByText('Message sent successfully!');
-  await successMessage.waitFor();
-
-  // Close the modal
-  await organizerPage.getByRole('button', { name: 'Close' }).click();
+  // Success state: modal closes after the message is sent
+  await expect(sendButton).toBeHidden();
 
   // Navigate to Communications tab to verify the message appears
   await organizerPage.getByRole('link', { name: 'Communications' }).click();
@@ -746,7 +747,7 @@ export async function manageEventAttendeesAndCommunications(
     name: uniqueSubject,
   });
 
-  return { confirmationHeading, successMessage, messageCell };
+  return { confirmationHeading, sendButton, messageCell };
 }
 
 // Helper function for event duplication logic

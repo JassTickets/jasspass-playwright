@@ -15,13 +15,10 @@ test('sendMessageToAttendees', async ({ page }) => {
   const organizerPage = await selectFirstEventStartingWithPBO(page);
 
   // Send message to attendees
-  const successMessage = await sendMessageToAttendees(organizerPage);
+  const sendButton = await sendMessageToAttendees(organizerPage);
 
-  // Verify success message is visible
-  await expect(successMessage).toBeVisible();
-
-  // Close the modal
-  await organizerPage.getByRole('button', { name: 'Close' }).click();
+  // Verify modal closed (Send button is no longer visible)
+  await expect(sendButton).toBeHidden();
 
   console.log('[INFO] Send Message to Attendees test completed successfully.');
 });

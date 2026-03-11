@@ -18,8 +18,11 @@ test('manageEventAttendeesAndCommunications', async ({ page }) => {
   const organizerPage = await selectFirstEventStartingWithPBO(page);
 
   // Execute the complete workflow: book ticket, send message, verify communications
-  const { confirmationHeading, successMessage, messageCell } =
+  const { sendButton, messageCell } =
     await manageEventAttendeesAndCommunications(organizerPage);
+
+  await expect(sendButton).toBeHidden();
+  await expect(messageCell).toBeVisible();
 
   console.log(
     '[INFO] Manage Event Attendees and Communications test completed successfully.'
