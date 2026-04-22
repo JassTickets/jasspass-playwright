@@ -16,7 +16,7 @@ test('managePerformers', async ({ page }) => {
   // Sign in and select first organizer
   await selectFirstOrganizer(page);
 
-  await page.getByRole('link', { name: 'Manage' }).click();
+  await page.getByRole('button', { name: 'Manage', exact: true }).click();
 
   // Add a new performer
   const performerName = await addPerformer(page);
@@ -24,7 +24,7 @@ test('managePerformers', async ({ page }) => {
   // Edit the performer
   const updatedPerformerName = await editPerformer(page, performerName);
   await expect(
-    page.getByRole('heading', { name: updatedPerformerName })
+    page.getByRole('heading', { name: updatedPerformerName }),
   ).toBeVisible();
 
   // Delete the performer

@@ -14,7 +14,7 @@ test('editOrganizerDetails', async ({ page }) => {
   // Sign in and select first organizer
   await selectFirstOrganizer(page);
 
-  await page.getByRole('link', { name: 'Manage' }).click();
+  await page.getByRole('button', { name: 'Manage', exact: true }).click();
 
   // Edit organizer details
   const successMessage = await editOrganizerDetails(page);

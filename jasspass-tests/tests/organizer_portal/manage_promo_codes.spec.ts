@@ -15,7 +15,7 @@ test('managePromoCodes', async ({ page }) => {
 
   // Sign in and select first organizer
   await selectFirstOrganizer(page);
-  await page.getByRole('link', { name: 'Manage' }).click();
+  await page.getByRole('button', { name: 'Manage', exact: true }).click();
 
   // Add a new promo code
   const promoCode = await addPromoCode(page);

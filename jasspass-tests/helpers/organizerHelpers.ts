@@ -35,7 +35,7 @@ export async function createOrganizer(
     email = PLAYWRIGHT_BOT_EMAIL,
     organizerName = ORGANIZER_NAME_PREFIX +
       Math.random().toString(36).substring(2, 15),
-  } = {}
+  } = {},
 ): Promise<string> {
   // log in and open the create-organizer form
   await signIn(page);
@@ -107,18 +107,22 @@ export async function selectFirstOrganizer(page: Page) {
 
 export async function editOrganizerDetails(page: Page) {
   const timestamp = Date.now().toString();
-  await page.getByRole('link', { name: 'Manage' }).click();
-  await page.getByRole('textbox', { name: 'Organizer Profile Name *' }).click();
   await page
-    .getByRole('textbox', { name: 'Organizer Profile Name *' })
+    .getByRole('button', { name: 'Manage', exact: true })
+    .nth(0)
+    .click();
+
+  await page.getByRole('textbox', { name: 'Organizer Profile Name*' }).click();
+  await page
+    .getByRole('textbox', { name: 'Organizer Profile Name*' })
     .fill(NEW_ORGANIZER_NAME);
-  await page.getByRole('textbox', { name: 'Contact Name *' }).click();
+  await page.getByRole('textbox', { name: 'Contact Name*' }).click();
   await page
-    .getByRole('textbox', { name: 'Contact Name *' })
+    .getByRole('textbox', { name: 'Contact Name*' })
     .fill(NEW_CONTACT_NAME + timestamp);
-  await page.getByRole('textbox', { name: 'Organizer Address *' }).click();
+  await page.getByRole('textbox', { name: 'Organizer Address*' }).click();
   await page
-    .getByRole('textbox', { name: 'Organizer Address *' })
+    .getByRole('textbox', { name: 'Organizer Address*' })
     .fill(NEW_CONTACT_ADDRESS);
   await page.getByRole('button', { name: 'Save Changes' }).click();
 
@@ -156,10 +160,8 @@ export async function addPerformer(page: Page) {
   await page
     .getByRole('textbox', { name: 'Search performers...' })
     .fill(randomPerformerName);
-  await page
-    .getByRole('heading', { name: randomPerformerName })
-    .first()
-    .click();
+
+  await page.getByText(randomPerformerName).click();
 
   // return the performer name
   return randomPerformerName;
@@ -167,9 +169,9 @@ export async function addPerformer(page: Page) {
 
 export async function editPerformer(
   page: Page,
-  performerName: string
+  performerName: string,
 ): Promise<string> {
-  await page.getByRole('heading', { name: performerName }).click();
+  await page.getByText(performerName).click();
   await page.locator('.flex > div:nth-child(2) > svg').first().click();
   // Generate a new random performer name
   const newRandomPerformerName = `${NEW_PERFORMER_NAME} ${Date.now()}`;
@@ -236,7 +238,7 @@ export async function addPromoCode(page: Page): Promise<string> {
 
 export async function editPromoCode(
   page: Page,
-  promoCode: string
+  promoCode: string,
 ): Promise<string> {
   await page.getByText(promoCode).first().click();
   await page.getByRole('textbox', { name: 'Code', exact: true }).click();
@@ -292,7 +294,10 @@ export async function addTeamMember(page: Page) {
       await selectAllPoliciesButton.first().click();
     }
 
-    await page.getByRole('button', { name: 'Add Representative' }).last().click();
+    await page
+      .getByRole('button', { name: 'Add Representative' })
+      .last()
+      .click();
   } else {
     // Backward-compatible flow with modal + role selection.
     await page.getByRole('button', { name: 'Add Representative' }).click();
@@ -310,6 +315,7 @@ export async function editTeamMemberRole(page: Page) {
   const representativeRow = page.getByRole('row', {
     name: new RegExp(TEAM_MEMBER_EMAIL, 'i'),
   });
+
   await representativeRow.getByRole('button').first().click();
 
   const organizerAdminRadio = page.getByRole('radio', {
@@ -321,16 +327,18 @@ export async function editTeamMemberRole(page: Page) {
     await organizerAdminRadio.check();
     await page.getByRole('button', { name: 'Save' }).click();
   } else {
-    await page.getByRole('button', { name: 'Add Representative' }).last().click();
+    await page
+      .getByRole('button', { name: 'Add Representative' })
+      .last()
+      .click();
   }
 }
 
 export async function deleteTeamMember(page: Page) {
-  await page
-    .getByRole('row', { name: new RegExp(TEAM_MEMBER_EMAIL, 'i') })
-    .getByRole('button')
-    .nth(1)
-    .click();
+  const representativeRow = page.getByRole('row', {
+    name: new RegExp(TEAM_MEMBER_EMAIL, 'i'),
+  });
+  await representativeRow.getByRole('button').nth(1).click();
   await page.getByRole('button', { name: 'Delete' }).click();
 }
 
@@ -349,7 +357,7 @@ export async function editOrganizer(
     email = PLAYWRIGHT_BOT_EMAIL,
     organizerName = ORGANIZER_NAME_PREFIX +
       Math.random().toString(36).substring(2, 15),
-  } = {}
+  } = {},
 ): Promise<string> {
   // log in and open the create-organizer form
   await signIn(page);
@@ -369,41 +377,46 @@ export async function deleteOrganizer(
     email = PLAYWRIGHT_BOT_EMAIL,
     organizerName = ORGANIZER_NAME_PREFIX +
       Math.random().toString(36).substring(2, 15),
-  } = {}
+  } = {},
 ) {
   // This will delete the event, ensuring that the organizer can be deleted
   const { page1 } = await deleteEvent(page);
   // Wait for 3 seconds
   await page1.waitForTimeout(3000);
 
-  await page1.getByRole('link', { name: 'Manage' }).click();
+  await page1.getByRole('button', { name: 'Manage', exact: true }).click();
   await page1.getByRole('button', { name: 'Delete' }).click();
   await page1.getByRole('button', { name: 'Delete' }).click();
 }
 
-export async function addOperatorWithAllPolicies(page: Page, operatorEmail: string) {
+export async function addOperatorWithAllPolicies(
+  page: Page,
+  operatorEmail: string,
+) {
   // Navigate to Event Operators tab
-  await page.getByRole('link', { name: 'Event Operators' }).click();
-  
+  await page.getByRole('button', { name: 'Event Operators' }).click();
+
   // Add operator email
-  await page.getByRole('textbox', { name: 'Email address' }).fill(operatorEmail);
+  await page
+    .getByRole('textbox', { name: 'Email address' })
+    .fill(operatorEmail);
   await page.getByRole('button', { name: 'Add Operator' }).click();
 
   // Check all available policies
   const policies = [
     'Read Event',
-    'Update Event', 
+    'Update Event',
     'Delete Event',
     { name: 'Read Ticket', exact: true },
     'Scan Ticket',
     'Read Ticket Type',
     'Create Ticket Type',
-    'Update Ticket Type', 
+    'Update Ticket Type',
     'Delete Ticket Type',
     'Read Transaction',
     'Read Refund',
     'Read External Purchase',
-    'Update External Purchase'
+    'Update External Purchase',
   ];
 
   for (const policy of policies) {
@@ -418,10 +431,15 @@ export async function addOperatorWithAllPolicies(page: Page, operatorEmail: stri
   await page.getByRole('button', { name: 'Save Policies' }).click();
 }
 
-export async function testOperatorPoliciesFlow(organizerPage: Page, operatorPage: Page, operatorEmail: string, eventName?: string) {
+export async function testOperatorPoliciesFlow(
+  organizerPage: Page,
+  operatorPage: Page,
+  operatorEmail: string,
+  eventName?: string,
+) {
   // Add operator with all policies
   await addOperatorWithAllPolicies(organizerPage, operatorEmail);
-  
+
   // Wait for policies to be saved
   await organizerPage.waitForTimeout(2000);
 

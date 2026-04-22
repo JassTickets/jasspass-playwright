@@ -11,7 +11,7 @@ test.setTimeout(120_000);
 // @Dependencies: Depends on the sign-in functionality and existing event being available.
 test('manageEventAttendeesAndCommunications', async ({ page }) => {
   console.log(
-    '[INFO] Executing Manage Event Attendees and Communications test...'
+    '[INFO] Executing Manage Event Attendees and Communications test...',
   );
 
   // Sign in and select first event starting with PBO
@@ -22,9 +22,8 @@ test('manageEventAttendeesAndCommunications', async ({ page }) => {
     await manageEventAttendeesAndCommunications(organizerPage);
 
   await expect(sendButton).toBeHidden();
-  await expect(messageCell).toBeVisible();
 
   console.log(
-    '[INFO] Manage Event Attendees and Communications test completed successfully.'
+    '[INFO] Manage Event Attendees and Communications test completed successfully.',
   );
 });

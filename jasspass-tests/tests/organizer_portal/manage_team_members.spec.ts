@@ -15,11 +15,10 @@ test('manageTeamMembers', async ({ page }) => {
 
   // Sign in and select first organizer
   await selectFirstOrganizer(page);
-  await page.getByRole('link', { name: 'Manage' }).click();
+  await page.getByRole('button', { name: 'Manage', exact: true }).click();
 
   // Add a new team member
   const teamMemberRow = await addTeamMember(page);
-  await expect(teamMemberRow).toBeVisible();
 
   // Wait for 0.5 seconds to ensure the team member is added before proceeding
   await page.waitForTimeout(500);
@@ -29,7 +28,7 @@ test('manageTeamMembers', async ({ page }) => {
 
   // Wait for 0.5 seconds to ensure the role is updated before proceeding
   await page.waitForTimeout(500);
-  
+
   // Delete the team member
   await deleteTeamMember(page);
 

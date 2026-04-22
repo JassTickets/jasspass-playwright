@@ -20,7 +20,7 @@ test('accessFinanceStripe', async ({ page }) => {
     .fill(PLAYWRIGHT_BOT_STRIPE_CONNECT_ID);
   await page.getByRole('button', { name: 'Save' }).click();
 
-  await page.getByRole('link', { name: 'Manage' }).click();
+  await page.getByRole('button', { name: 'Manage', exact: true }).click();
 
   // Access Stripe finance dashboard
   const stripePage = await accessStripeFinance(page);

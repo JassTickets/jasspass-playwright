@@ -5,6 +5,7 @@ test.setTimeout(60_000);
 
 // @Description: This test verifies that viewing event communications functionality works correctly.
 // @Dependencies: Depends on the sign-in functionality and existing event being available.
+
 test('viewEventCommunications', async ({ page }) => {
   console.log('[INFO] Executing View Event Communications test...');
 
@@ -12,13 +13,14 @@ test('viewEventCommunications', async ({ page }) => {
   const organizerPage = await selectFirstEventStartingWithPBO(page);
 
   // Navigate to Communications tab
-  await organizerPage.getByRole('link', { name: 'Communications' }).click();
+  await organizerPage.getByRole('button', { name: 'Communications' }).click();
   // Generate a random test subject and body
   const randomSubject = `Test Email Subject ${Date.now()}`;
 
   // Send a test email
   await organizerPage
-    .getByRole('button', { name: 'Message Attendees' })
+    .getByRole('button')
+    .filter({ hasText: 'Message Attendees' })
     .click();
   await organizerPage
     .getByRole('textbox', { name: 'Enter the subject...' })
@@ -39,21 +41,13 @@ test('viewEventCommunications', async ({ page }) => {
   // Refresh
   await organizerPage
     .locator('div')
-    .filter({ hasText: /^Message Attendees$/ })
-    .getByRole('img')
-    .first()
+    .filter({ hasText: /^OutboundInbound$/ })
+    .getByRole('button')
+    .nth(2)
     .click();
 
   // Timeout
   await organizerPage.waitForTimeout(1000);
-
-  // Refresh to ensure the email is visible
-  await organizerPage
-    .locator('div')
-    .filter({ hasText: /^Message Attendees$/ })
-    .getByRole('img')
-    .first()
-    .click();
 
   await organizerPage
     .getByRole('textbox', { name: 'Search emails...' })
@@ -63,12 +57,8 @@ test('viewEventCommunications', async ({ page }) => {
     .fill(randomSubject);
 
   // Wait for 2 seconds
-  await organizerPage.waitForTimeout(2000);
-  await organizerPage
-    .getByRole('cell', { name: randomSubject })
-    .locator('div')
-    .first()
-    .click();
+
+  await organizerPage.getByRole('heading', { name: randomSubject }).click();
 
   console.log('[INFO] View Event Communications test completed successfully.');
 });
