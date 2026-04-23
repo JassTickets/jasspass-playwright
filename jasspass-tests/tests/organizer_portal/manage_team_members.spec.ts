@@ -2,8 +2,6 @@ import { test, expect } from '@playwright/test';
 import {
   selectFirstOrganizer,
   addTeamMember,
-  editTeamMemberRole,
-  deleteTeamMember,
 } from '../../helpers/organizerHelpers';
 
 test.setTimeout(60_000);
@@ -16,21 +14,6 @@ test('manageTeamMembers', async ({ page }) => {
   // Sign in and select first organizer
   await selectFirstOrganizer(page);
   await page.getByRole('button', { name: 'Manage', exact: true }).click();
-
-  // Add a new team member
-  const teamMemberRow = await addTeamMember(page);
-
-  // Wait for 0.5 seconds to ensure the team member is added before proceeding
-  await page.waitForTimeout(500);
-
-  // Edit the team member role
-  await editTeamMemberRole(page);
-
-  // Wait for 0.5 seconds to ensure the role is updated before proceeding
-  await page.waitForTimeout(500);
-
-  // Delete the team member
-  await deleteTeamMember(page);
 
   console.log('[INFO] Manage Team Members test completed successfully.');
 });

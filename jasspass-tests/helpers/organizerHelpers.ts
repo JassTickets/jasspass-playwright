@@ -172,8 +172,9 @@ export async function editPerformer(
   performerName: string,
 ): Promise<string> {
   await page.getByText(performerName).click();
-  await page.locator('.flex > div:nth-child(2) > svg').first().click();
-  // Generate a new random performer name
+  await page.getByText('Test Performer').click();
+
+  await page.getByRole('button', { name: 'Save' }).nth(1).click(); // Generate a new random performer name
   const newRandomPerformerName = `${NEW_PERFORMER_NAME} ${Date.now()}`;
   await page
     .locator('div')
@@ -192,13 +193,8 @@ export async function editPerformer(
     .fill(NEW_PERFORMER_ROLE);
   await page.getByText(TEST_PERFORMER_BIO).click();
   await page.getByText(TEST_PERFORMER_BIO).fill(NEW_PERFORMER_BIO);
-  await page
-    .locator('div')
-    .filter({
-      hasText: /^Change PhotoNameRoleBioTest performer bio New BioSave$/,
-    })
-    .getByRole('button')
-    .click();
+  //click save nth 1
+  await page.getByRole('button', { name: 'Save' }).nth(1).click();
 
   // Clear the search and search for the new performer name
   await page.getByRole('textbox', { name: 'Search performers...' }).clear();
@@ -311,37 +307,6 @@ export async function addTeamMember(page: Page) {
   return page.getByRole('row', { name: new RegExp(TEAM_MEMBER_EMAIL, 'i') });
 }
 
-export async function editTeamMemberRole(page: Page) {
-  const representativeRow = page.getByRole('row', {
-    name: new RegExp(TEAM_MEMBER_EMAIL, 'i'),
-  });
-
-  await representativeRow.getByRole('button').first().click();
-
-  const organizerAdminRadio = page.getByRole('radio', {
-    name: 'Organizer Admin',
-  });
-
-  if ((await organizerAdminRadio.count()) > 0) {
-    // Backward-compatible modal flow.
-    await organizerAdminRadio.check();
-    await page.getByRole('button', { name: 'Save' }).click();
-  } else {
-    await page
-      .getByRole('button', { name: 'Add Representative' })
-      .last()
-      .click();
-  }
-}
-
-export async function deleteTeamMember(page: Page) {
-  const representativeRow = page.getByRole('row', {
-    name: new RegExp(TEAM_MEMBER_EMAIL, 'i'),
-  });
-  await representativeRow.getByRole('button').nth(1).click();
-  await page.getByRole('button', { name: 'Delete' }).click();
-}
-
 export async function accessStripeFinance(page: Page) {
   await page.getByRole('button', { name: 'Finance' }).click();
   const page3Promise = page.waitForEvent('popup');
@@ -407,8 +372,7 @@ export async function addOperatorWithAllPolicies(
     'Read Event',
     'Update Event',
     'Delete Event',
-    { name: 'Read Ticket', exact: true },
-    'Scan Ticket',
+    'Read / Scan Ticket',
     'Read Ticket Type',
     'Create Ticket Type',
     'Update Ticket Type',

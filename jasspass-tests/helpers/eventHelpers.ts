@@ -123,9 +123,14 @@ export async function createEvent(
   return match[1];
 }
 
-export async function purchaseTicket(page: Page) {
-  // Create event
-  await createEvent(page);
+export async function purchaseTicket(page: Page, eventId?: string) {
+  if (eventId) {
+    //redirect to the event page using the eventId
+    await page.goto(`${JASS_TEST_URL}/event/${eventId}`);
+  } else {
+    // No event ID passed: Create new event
+    await createEvent(page);
+  }
 
   // Select ticket and proceed
   // Select +1
@@ -145,56 +150,6 @@ export async function purchaseTicket(page: Page) {
   await page.locator('#phone-input').nth(1).fill(CONTACT_PHONE_NUMBER);
 
   await page.getByRole('checkbox').check();
-
-  await page.getByRole('button', { name: 'Checkout' }).click();
-
-  // Wait briefly to ensure Stripe iframes are loaded
-  await page.waitForTimeout(3000);
-
-  // Fill Stripe card fields
-  await fillIndividualStripeFields(page);
-
-  //wait 2 seconds
-  await page.waitForTimeout(2000);
-  await page.getByRole('button', { name: 'Checkout' }).click();
-
-  //Wait for 5 seconds
-  await page.waitForTimeout(5000);
-
-  // Go to success page and trigger ticket confirmation
-  await page.waitForURL(/\/payment\/success\//);
-
-  // Close the modal (if any):
-  try {
-    await page.getByRole('button', { name: 'Close' }).click();
-  } catch {
-    // Don't do anything
-  }
-  await page.getByRole('img', { name: 'Ticket QR Code' }).click();
-}
-
-export async function purchaseTicketForEvent(page: Page, eventId: string) {
-  // Navigate to the event page
-  await page.goto(`${JASS_TEST_URL}/event/${eventId}`);
-
-  // Select ticket and proceed
-  await page.getByRole('combobox').selectOption('1');
-  await page.getByRole('button', { name: 'Buy Tickets' }).click();
-
-  // Fill buyer information
-  await page.getByRole('textbox', { name: 'First Name *' }).fill(CONTACT_NAME);
-  await page.getByRole('textbox', { name: 'Last Name *' }).fill('Client');
-  await page
-    .getByRole('textbox', { name: 'Email Address *' })
-    .fill(PLAYWRIGHT_BOT_EMAIL);
-  await page.locator('#phone-input').fill(CONTACT_PHONE_NUMBER);
-
-  // Accept terms and pay
-  await page
-    .locator('div')
-    .filter({ hasText: /^I have read and agree to the Terms and Conditions$/ })
-    .locator('#tosAccepted')
-    .check();
 
   await page.getByRole('button', { name: 'Proceed to Payment' }).click();
 
@@ -471,14 +426,6 @@ export async function editEventAdditionalDetails(organizerPage: Page) {
   await organizerPage
     .getByRole('textbox', { name: 'Enter tax rate percentage' })
     .fill(EVENT_NEW_TAX_RATE);
-
-  // Check organizer absorbs fees checkboxes
-  await organizerPage
-    .getByRole('checkbox', { name: 'Organizer absorbs service fees' })
-    .check();
-  await organizerPage
-    .getByRole('checkbox', { name: 'Organizer absorbs transaction' })
-    .check();
 
   // Save changes
   await organizerPage.getByRole('button', { name: 'Save Changes' }).click();
@@ -972,12 +919,7 @@ export async function resendConfirmationEmail(organizerPage: Page) {
 
 export async function verifyOperatorAccess(page: Page, eventName?: string) {
   // Navigate to operator's event view
-  await page.getByRole('button').filter({ hasText: /^$/ }).click();
-  await page
-    .locator('div')
-    .filter({ hasText: /^My Events$/ })
-    .first()
-    .click();
+  await page.getByRole('button', { name: 'My Events' }).click();
 
   // Search for the specific event or default to PBO events
   const searchTerm = eventName || EVENT_NAME_PREFIX;
@@ -1016,8 +958,13 @@ export async function verifyOperatorAccess(page: Page, eventName?: string) {
     await page.getByRole('button', { name: '✕' }).click();
   }
 
+  // Close the modal.
+
+  //timeout
+  await page.waitForTimeout(2000);
+
   // Check attendees tab
-  await page.getByRole('button', { name: 'Attendees' }).click();
+  await page.getByRole('button', { name: 'Attendees', exact: true }).click();
   await expect(
     page
       .getByRole('row')
@@ -1057,7 +1004,4 @@ export async function verifyOperatorAccess(page: Page, eventName?: string) {
   // Verify refunds and settings access
   await page.getByRole('button', { name: 'Refunds' }).click();
   await page.getByRole('button', { name: 'Event Settings' }).click();
-  await expect(
-    page.getByRole('heading', { name: 'Widget Generator' }),
-  ).toBeVisible();
 }

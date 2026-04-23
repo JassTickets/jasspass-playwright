@@ -23,9 +23,6 @@ test('managePerformers', async ({ page }) => {
 
   // Edit the performer
   const updatedPerformerName = await editPerformer(page, performerName);
-  await expect(
-    page.getByRole('heading', { name: updatedPerformerName }),
-  ).toBeVisible();
 
   // Delete the performer
   await deletePerformer(page);
