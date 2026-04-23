@@ -473,7 +473,9 @@ export async function manageEventPromoCodes(organizerPage: Page) {
   await organizerPage.getByText(uniquePromoCode).first().click();
   await organizerPage.getByRole('button', { name: 'Add to Event' }).click();
 
-  await organizerPage.getByRole('combobox').selectOption('all');
+  await organizerPage
+    .getByRole('checkbox', { name: 'Attach to All Ticket Types' })
+    .check();
   await organizerPage.getByRole('button', { name: 'Attach' }).click();
 
   //Timeout
@@ -864,7 +866,9 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
   await organizerPage.getByText(uniquePromoCode).first().click();
   await organizerPage.getByRole('button', { name: 'Add to Event' }).click();
 
-  await organizerPage.getByRole('combobox').selectOption('all');
+  await organizerPage
+    .getByRole('checkbox', { name: 'Attach to All Ticket Types' })
+    .check();
   await organizerPage.getByRole('button', { name: 'Attach' }).click();
 
   // Wait a moment for promo code operations to complete
