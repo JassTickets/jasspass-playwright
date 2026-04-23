@@ -33,6 +33,8 @@ test('viewEventCommunications', async ({ page }) => {
   await organizerPage.getByRole('button', { name: 'Next' }).click();
   await organizerPage.locator('#message-body').click();
   await organizerPage.locator('#message-body').fill(randomSubject);
+  //timeout
+  await organizerPage.waitForTimeout(2000);
   await organizerPage.getByRole('button', { name: 'Send' }).click();
   // If the modal closes it means that it worked
 
