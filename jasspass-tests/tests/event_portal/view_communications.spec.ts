@@ -57,7 +57,7 @@ test('viewEventCommunications', async ({ page }) => {
     .fill(randomSubject);
 
   // Wait for 2 seconds
-
+  await organizerPage.waitForTimeout(2000);
   await organizerPage.getByRole('heading', { name: randomSubject }).click();
 
   console.log('[INFO] View Event Communications test completed successfully.');
