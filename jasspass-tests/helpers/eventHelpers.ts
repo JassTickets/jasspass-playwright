@@ -25,9 +25,9 @@ import {
   ATTENDEE_PHONE,
   MESSAGE_SUBJECT,
   MESSAGE_BODY,
-  PLAYWRIGHT_ACTIVE_STRIPE_ORGANIZER_ID,
 } from '../constants';
 import { signIn } from './auth';
+import { createOrganizer } from './organizerHelpers';
 import { fillIndividualStripeFields } from './stripeHelpers';
 
 // Helper function to generate unique promo code with timestamp
@@ -76,15 +76,9 @@ export async function createEvent(
 ): Promise<string> {
   //Timeout for 3 seconds
   await page.waitForTimeout(3000);
-  await signIn(page);
+  await createOrganizer(page);
 
-  await page.goto(
-    `${JASS_TEST_URL}/portal/organizer/company/${PLAYWRIGHT_ACTIVE_STRIPE_ORGANIZER_ID}`
-  );
-
-  // Wait for the organizer route to initialize selected organizer state.
-  await page.waitForTimeout(2000);
-  await page.goto(`${JASS_TEST_URL}/portal/create-event`);
+  await page.getByRole('button', { name: 'New Event' }).click();
 
   //wait for 5 seconds
   await page.waitForTimeout(5000);
