@@ -25,9 +25,9 @@ import {
   ATTENDEE_PHONE,
   MESSAGE_SUBJECT,
   MESSAGE_BODY,
+  PLAYWRIGHT_ACTIVE_STRIPE_ORGANIZER_ID,
 } from '../constants';
 import { signIn } from './auth';
-import { createOrganizer } from './organizerHelpers';
 import { fillIndividualStripeFields } from './stripeHelpers';
 
 // Helper function to generate unique promo code with timestamp
@@ -39,7 +39,7 @@ function generateUniquePromoCode(): string {
 // Helper function to search and click a specific event promo code
 async function searchAndClickEventPromoCode(
   organizerPage: Page,
-  promoCode: string,
+  promoCode: string
 ): Promise<void> {
   await organizerPage
     .getByRole('textbox', { name: 'Search Promo Codes' })
@@ -55,7 +55,7 @@ async function searchAndClickEventPromoCode(
 // Helper function to find and click a specific promo code using search
 async function findAndClickPromoCode(
   organizerPage: Page,
-  promoCode: string,
+  promoCode: string
 ): Promise<boolean> {
   try {
     await searchAndClickEventPromoCode(organizerPage, promoCode);
@@ -72,16 +72,22 @@ export async function createEvent(
     eventName = ORGANIZER_NAME_PREFIX +
       'Event-' +
       Math.random().toString(36).substring(2, 15),
-  } = {},
+  } = {}
 ): Promise<string> {
   //Timeout for 3 seconds
   await page.waitForTimeout(3000);
-  await createOrganizer(page);
+  await signIn(page);
 
-  await page.getByRole('button', { name: 'New Event' }).click();
+  await page.goto(
+    `${JASS_TEST_URL}/portal/organizer/company/${PLAYWRIGHT_ACTIVE_STRIPE_ORGANIZER_ID}`
+  );
+
+  // Wait for the organizer route to initialize selected organizer state.
+  await page.waitForTimeout(2000);
+  await page.goto(`${JASS_TEST_URL}/portal/create-event`);
 
   //wait for 0.5 seconds
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(5000);
 
   // Select advanced mode
   await page
@@ -96,7 +102,35 @@ export async function createEvent(
   await page.getByRole('button').filter({ hasText: 'Additional' }).click(); //wait for 5 seconds
   await page.waitForTimeout(5000);
 
+  const createEventResponsePromise = page.waitForResponse((response) => {
+    return (
+      response.request().method() === 'POST' &&
+      response.url().includes('/api/protected/events')
+    );
+  });
+
   await page.getByText('Publish as Live Event').click();
+
+  const createEventResponse = await createEventResponsePromise;
+  const createEventRequest = createEventResponse.request();
+
+  console.log('[CREATE EVENT RESPONSE STATUS]', createEventResponse.status());
+  console.log('[CREATE EVENT RESPONSE URL]', createEventResponse.url());
+
+  const requestBody = createEventRequest.postData() ?? '';
+  const payloadMatch = requestBody.match(
+    /name="request"\r?\n\r?\n([\s\S]*?)\r?\n--/
+  );
+
+  console.log(
+    '[CREATE EVENT REQUEST PAYLOAD]',
+    payloadMatch ? JSON.parse(payloadMatch[1]) : requestBody
+  );
+
+  console.log(
+    '[CREATE EVENT RESPONSE BODY]',
+    await createEventResponse.text().catch(() => '<unreadable>')
+  );
   // Handle optional Skip button with proper Playwright approach
   const skipButton = page.getByRole('button', { name: 'Skip' });
   const isSkipVisible = await skipButton
@@ -124,6 +158,7 @@ export async function createEvent(
 }
 
 export async function purchaseTicket(page: Page, eventId?: string) {
+  console.log('starting purchase ticket flow with eventId:', eventId);
   if (eventId) {
     //redirect to the event page using the eventId
     await page.goto(`${JASS_TEST_URL}/event/${eventId}`);
@@ -149,18 +184,17 @@ export async function purchaseTicket(page: Page, eventId?: string) {
     .fill(PLAYWRIGHT_BOT_EMAIL);
   await page.locator('#phone-input').nth(1).fill(CONTACT_PHONE_NUMBER);
 
-  await page.getByRole('checkbox').check();
-
   await page.getByRole('button', { name: 'Proceed to Payment' }).click();
 
-  // Wait briefly to ensure Stripe iframes are loaded
-  await page.waitForTimeout(3000);
+  await expect(page.getByText('Payment Information')).toBeVisible({
+    timeout: 15000,
+  });
 
   // Fill Stripe card fields
   await fillIndividualStripeFields(page);
 
-  //wait 2 seconds
-  await page.waitForTimeout(2000);
+  await page.locator('#tosAccepted').check();
+
   await page.getByRole('button', { name: 'Checkout' }).click();
 
   //Wait for 5 seconds
@@ -280,7 +314,7 @@ export async function deleteEvent(page: Page) {
 }
 
 export async function selectFirstEventStartingWithPBO(
-  page: Page,
+  page: Page
 ): Promise<Page> {
   // Sign in first
   await signIn(page);
@@ -316,7 +350,7 @@ export async function selectFirstEventStartingWithPBO(
 
   if (eventCount === 0) {
     throw new Error(
-      `No events found for "${EVENT_NAME_PREFIX}" (or fallback "PBO"). Please ensure test events are available.`,
+      `No events found for "${EVENT_NAME_PREFIX}" (or fallback "PBO"). Please ensure test events are available.`
     );
   }
 
@@ -603,7 +637,7 @@ export async function sendMessageToAttendees(organizerPage: Page) {
 }
 
 export async function manageEventAttendeesAndCommunications(
-  organizerPage: Page,
+  organizerPage: Page
 ) {
   // Generate a random 4-character string to append to the subject
   const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -731,7 +765,7 @@ export async function manageEventAttendeesAndCommunications(
 // Helper function for event duplication logic
 async function performEventDuplication(
   organizerPage: Page,
-  originalEventTitle: string,
+  originalEventTitle: string
 ) {
   // Generate timestamp for unique naming
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -885,12 +919,12 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
   // Dynamically find and click the unique promo code that was created
   const promoCodeFound = await findAndClickPromoCode(
     organizerPage,
-    uniquePromoCode,
+    uniquePromoCode
   );
 
   if (!promoCodeFound) {
     throw new Error(
-      `Could not find the created promo code "${uniquePromoCode}" in the duplicated event`,
+      `Could not find the created promo code "${uniquePromoCode}" in the duplicated event`
     );
   }
 
@@ -946,7 +980,7 @@ export async function verifyOperatorAccess(page: Page, eventName?: string) {
 
   // Verify dashboard access
   await expect(
-    page.getByText(/Gross Revenue.*Net Revenue.*Event Views/),
+    page.getByText(/Gross Revenue.*Net Revenue.*Event Views/)
   ).toBeVisible();
 
   // Verify order management
@@ -972,13 +1006,13 @@ export async function verifyOperatorAccess(page: Page, eventName?: string) {
   await expect(
     page
       .getByRole('row')
-      .filter({ hasText: /General Admission|Active|Not Scanned/ }),
+      .filter({ hasText: /General Admission|Active|Not Scanned/ })
   ).toBeVisible({ timeout: 10000 });
 
   // Verify ticket type management
   await page.getByRole('button', { name: 'Ticket Types' }).click();
   await expect(
-    page.getByRole('cell', { name: 'General Admission' }),
+    page.getByRole('cell', { name: 'General Admission' })
   ).toBeVisible();
 
   // Test creating a new ticket type

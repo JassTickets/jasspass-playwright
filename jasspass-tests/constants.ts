@@ -11,6 +11,7 @@ export const CONTACT_NAME = 'Playwright Bot';
 export const CONTACT_ADDRESS = 'Playwright Bot St, 1234';
 export const CONTACT_PHONE_NUMBER = '(646) 789-9045';
 export const PLAYWRIGHT_BOT_STRIPE_CONNECT_ID = 'acct_1R48E5B2utfhUzfT';
+export const PLAYWRIGHT_ACTIVE_STRIPE_ORGANIZER_ID = '6a208a842c4fe7a8595a15ea';
 
 export const signIn = 'Sign In';
 

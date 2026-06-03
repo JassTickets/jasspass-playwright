@@ -21,6 +21,7 @@ export async function signIn(
   await page.getByRole('textbox', { name: 'Email' }).fill(email);
   await page.getByRole('textbox', { name: 'Password' }).fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.waitForURL(/\/portal/, { timeout: 30000 });
 }
 
 export async function signOutIfSignedIn(page: Page) {
@@ -29,7 +30,10 @@ export async function signOutIfSignedIn(page: Page) {
     const profileDropdown = page.getByRole('button').filter({ hasText: /^$/ });
     if ((await profileDropdown.count()) > 0) {
       await profileDropdown.click();
-      const signOutOption = page.locator('div').filter({ hasText: /^Sign Out$/ }).first();
+      const signOutOption = page
+        .locator('div')
+        .filter({ hasText: /^Sign Out$/ })
+        .first();
       if ((await signOutOption.count()) > 0) {
         await signOutOption.click();
       }
