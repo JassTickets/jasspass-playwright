@@ -86,7 +86,7 @@ export async function createEvent(
   await page.waitForTimeout(2000);
   await page.goto(`${JASS_TEST_URL}/portal/create-event`);
 
-  //wait for 0.5 seconds
+  //wait for 5 seconds
   await page.waitForTimeout(5000);
 
   // Select advanced mode
@@ -112,29 +112,23 @@ export async function createEvent(
   await page.getByText('Publish as Live Event').click();
 
   const createEventResponse = await createEventResponsePromise;
-  const createEventRequest = createEventResponse.request();
 
-  console.log('[CREATE EVENT RESPONSE STATUS]', createEventResponse.status());
-  console.log('[CREATE EVENT RESPONSE URL]', createEventResponse.url());
+  const createEventResponseBody = await createEventResponse
+    .text()
+    .catch(() => '<unreadable>');
 
-  const requestBody = createEventRequest.postData() ?? '';
-  const payloadMatch = requestBody.match(
-    /name="request"\r?\n\r?\n([\s\S]*?)\r?\n--/
-  );
+  const createEventResponseJson = JSON.parse(createEventResponseBody);
+  const eventId = createEventResponseJson.Event?.Id;
+  if (!eventId) {
+    throw new Error(
+      `Could not parse event ID from create-event response: ${createEventResponseBody}`
+    );
+  }
 
-  console.log(
-    '[CREATE EVENT REQUEST PAYLOAD]',
-    payloadMatch ? JSON.parse(payloadMatch[1]) : requestBody
-  );
-
-  console.log(
-    '[CREATE EVENT RESPONSE BODY]',
-    await createEventResponse.text().catch(() => '<unreadable>')
-  );
   // Handle optional Skip button with proper Playwright approach
   const skipButton = page.getByRole('button', { name: 'Skip' });
   const isSkipVisible = await skipButton
-    .isVisible({ timeout: 3000 })
+    .isVisible({ timeout: 10000 })
     .catch(() => false);
 
   if (isSkipVisible) {
@@ -144,17 +138,11 @@ export async function createEvent(
     console.log('Skip button not found, continuing...');
   }
 
-  //wait for 5 seconds
-  await page.waitForTimeout(5000);
+  await page.goto(`${JASS_TEST_URL}/event/${eventId}`);
 
   const url = page.url();
   console.log(`New event URL: ${url}`);
-
-  const match = url.match(/event\/([^/]+)/);
-  if (!match) {
-    throw new Error(`Could not parse event ID from URL: ${url}`);
-  }
-  return match[1];
+  return eventId;
 }
 
 export async function purchaseTicket(page: Page, eventId?: string) {
