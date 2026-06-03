@@ -52,23 +52,25 @@ export async function createOrganizer(
     .click();
 
   // fill out fields
-  await page
-    .getByRole('textbox', { name: 'Organizer Profile Name *' })
-    .fill(organizerName);
 
+  await page.getByRole('textbox', { name: 'Organizer Profile Name*' }).click();
+  await page
+    .getByRole('textbox', { name: 'Organizer Profile Name*' })
+    .fill(organizerName);
   // Robust country selection with fallback
   const randomCountry = getRandomCountry();
   await selectCountryRobust(page, randomCountry);
 
+  await page.getByRole('textbox', { name: 'Contact Name*' }).fill(CONTACT_NAME);
   await page
-    .getByRole('textbox', { name: 'Contact Name *' })
-    .fill(CONTACT_NAME);
-  await page
-    .getByRole('textbox', { name: 'Organizer Profile Email *' })
+    .getByRole('textbox', { name: 'Organizer Profile Email*' })
     .fill(email);
   await page.locator('#phone-input').fill(CONTACT_PHONE_NUMBER);
+
+  await page.getByRole('textbox', { name: 'Company Address' }).click();
+  await page.getByRole('textbox', { name: 'Company Address' }).click();
   await page
-    .getByRole('textbox', { name: 'Organizer Address *' })
+    .getByRole('textbox', { name: 'Company Address' })
     .fill(CONTACT_ADDRESS);
   await page
     .getByRole('checkbox', { name: 'I agree to the Organizer' })
