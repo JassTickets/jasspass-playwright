@@ -154,7 +154,7 @@ export async function purchaseTicket(page: Page, eventId?: string) {
   await page.getByRole('button').filter({ hasText: /^$/ }).nth(2).click();
   //Timeout
   await page.waitForTimeout(2000);
-  await page.getByRole('button', { name: 'Buy Tickets' }).click();
+  await page.locator('[data-checkout-cta="true"]').first().click();
 
   // Fill buyer information
   await page
@@ -360,6 +360,15 @@ export async function selectFirstEventStartingWithPBO(
 export async function editEventBasics(organizerPage: Page) {
   // Go to Edit Event
   await organizerPage.getByRole('button', { name: 'Edit Event' }).click();
+
+  const reloadButton = organizerPage.getByRole('button', { name: /reload/i });
+  if (await reloadButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await reloadButton.click();
+  }
+
+  await expect(
+    organizerPage.locator('.absolute.inset-0.z-10.bg-black\\/60')
+  ).toHaveCount(0);
 
   // Update event title with timestamp for uniqueness
   await organizerPage.getByRole('textbox', { name: 'Event Title' }).click();
