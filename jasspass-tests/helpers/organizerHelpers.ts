@@ -122,10 +122,8 @@ export async function editOrganizerDetails(page: Page) {
   await page
     .getByRole('textbox', { name: 'Contact Name*' })
     .fill(NEW_CONTACT_NAME + timestamp);
-  await page.getByRole('textbox', { name: 'Organizer Address*' }).click();
-  await page
-    .getByRole('textbox', { name: 'Organizer Address*' })
-    .fill(NEW_CONTACT_ADDRESS);
+  await page.locator('input[name="address"]').click();
+  await page.locator('input[name="address"]').fill(NEW_CONTACT_ADDRESS);
   await page.getByRole('button', { name: 'Save Changes' }).click();
 
   // Wait for and return success message

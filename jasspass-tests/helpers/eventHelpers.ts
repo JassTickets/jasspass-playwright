@@ -387,10 +387,8 @@ export async function editEventTimeAndLocation(organizerPage: Page) {
   await organizerPage.getByRole('button', { name: 'Time & Location' }).click();
 
   // Update address
-  await organizerPage.getByRole('textbox', { name: 'Event Address' }).click();
-  await organizerPage
-    .getByRole('textbox', { name: 'Event Address' })
-    .fill(EVENT_NEW_ADDRESS);
+  await organizerPage.locator('input[name="address"]').click();
+  await organizerPage.locator('input[name="address"]').fill(EVENT_NEW_ADDRESS);
 
   // Update city
   await organizerPage.getByRole('textbox', { name: 'City' }).click();
