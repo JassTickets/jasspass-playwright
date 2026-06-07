@@ -177,13 +177,12 @@ export async function purchaseTicket(page: Page, eventId?: string) {
 
   await page.locator('#tosAccepted').check();
 
+  // Integration success signal: checkout must redirect to the payment success page.
+  const successUrlPromise = page.waitForURL(/\/payment\/success\//, {
+    timeout: 45000,
+  });
   await page.getByRole('button', { name: 'Checkout' }).click();
-
-  //Wait for 5 seconds
-  await page.waitForTimeout(5000);
-
-  // Go to success page and trigger ticket confirmation
-  await page.waitForURL(/\/payment\/success\//);
+  await successUrlPromise;
 
   // Close the modal (if any):
   try {
@@ -252,12 +251,19 @@ export async function refundTicket(page: Page) {
   await page1
     .getByRole('textbox', { name: 'Refund Details' })
     .fill('Playwright Refund');
+  // Integration success signal: refund POST must complete successfully.
+  const refundResponsePromise = page1.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/api/protected/refunds')
+  );
   await page1.getByRole('button', { name: 'Submit Refund' }).click();
+  const refundResponse = await refundResponsePromise;
+  expect(refundResponse.ok()).toBeTruthy();
 
-  // Verify success banner
-
-  await page1.getByText('Refund submitted successfully.').click();
+  // UI success signal: organizer sees refund confirmation after backend success.
   const successBanner = page1.getByText('Refund submitted successfully.');
+  await expect(successBanner).toBeVisible({ timeout: 15000 });
 
   // Check that the ticket is now 0
   await page1.getByText('$0.00').click();
@@ -424,19 +430,24 @@ export async function editEventTimeAndLocation(organizerPage: Page) {
 }
 
 export async function editEventAdditionalDetails(organizerPage: Page) {
-  // Go to Edit Event
+  // Wait for the event portal edit tab to be ready before editing details.
+  await expect(
+    organizerPage.getByRole('button', { name: 'Edit Event' })
+  ).toBeVisible({ timeout: 15000 });
   await organizerPage.getByRole('button', { name: 'Edit Event' }).click();
 
-  // Go to Additional Details
-  await organizerPage;
-  await organizerPage.getByRole('button', { name: 'Edit Event' }).click();
-
-  // Go to Additional Details
+  // Wait for the additional details form before applying the existing edits.
+  await expect(
+    organizerPage.getByRole('button', { name: 'Additional Details' })
+  ).toBeVisible({ timeout: 15000 });
   await organizerPage
     .getByRole('button', { name: 'Additional Details' })
     .click();
 
   // Update additional details text
+  await expect(organizerPage.locator('#post-checkout-message')).toBeVisible({
+    timeout: 15000,
+  });
   await organizerPage.locator('#post-checkout-message').click();
   await organizerPage
     .locator('#post-checkout-message')
