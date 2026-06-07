@@ -611,8 +611,8 @@ export async function sendMessageToAttendees(organizerPage: Page) {
   await organizerPage.getByRole('button', { name: 'Next' }).click();
 
   // Fill message body
-  await organizerPage.locator('#message-body').click();
-  await organizerPage.locator('#message-body').fill(MESSAGE_BODY);
+  await organizerPage.locator('#message-body-inline').click();
+  await organizerPage.locator('#message-body-inline').fill(MESSAGE_BODY);
 
   // Send message
   const sendButton = organizerPage.getByRole('button', { name: 'Send' });
@@ -730,8 +730,8 @@ export async function manageEventAttendeesAndCommunications(
   await organizerPage.getByRole('button', { name: 'Next' }).click();
 
   // Fill message body
-  await organizerPage.locator('#message-body').click();
-  await organizerPage.locator('#message-body').fill(MESSAGE_BODY);
+  await organizerPage.locator('#message-body-inline').click();
+  await organizerPage.locator('#message-body-inline').fill(MESSAGE_BODY);
 
   // Send message
   const sendButton = organizerPage.getByRole('button', { name: 'Send' });

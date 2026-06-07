@@ -31,8 +31,8 @@ test('viewEventCommunications', async ({ page }) => {
 
   // Click next
   await organizerPage.getByRole('button', { name: 'Next' }).click();
-  await organizerPage.locator('#message-body').click();
-  await organizerPage.locator('#message-body').fill(randomSubject);
+  await organizerPage.locator('#message-body-inline').click();
+  await organizerPage.locator('#message-body-inline').fill(randomSubject);
   //timeout
   await organizerPage.waitForTimeout(2000);
   await organizerPage.getByRole('button', { name: 'Send' }).click();
