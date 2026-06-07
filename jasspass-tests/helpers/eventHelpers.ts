@@ -66,6 +66,17 @@ async function findAndClickPromoCode(
   }
 }
 
+async function reloadStaleEventDataIfPresent(organizerPage: Page) {
+  const reloadButton = organizerPage.getByRole('button', { name: /reload/i });
+  if (await reloadButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await reloadButton.click();
+  }
+
+  await expect(
+    organizerPage.locator('.absolute.inset-0.z-10.bg-black\\/60')
+  ).toHaveCount(0);
+}
+
 export async function createEvent(
   page: Page,
   {
@@ -363,15 +374,7 @@ export async function selectFirstEventStartingWithPBO(
 export async function editEventBasics(organizerPage: Page) {
   // Go to Edit Event
   await organizerPage.getByRole('button', { name: 'Edit Event' }).click();
-
-  const reloadButton = organizerPage.getByRole('button', { name: /reload/i });
-  if (await reloadButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await reloadButton.click();
-  }
-
-  await expect(
-    organizerPage.locator('.absolute.inset-0.z-10.bg-black\\/60')
-  ).toHaveCount(0);
+  await reloadStaleEventDataIfPresent(organizerPage);
 
   // Update event title with timestamp for uniqueness
   await organizerPage.getByRole('textbox', { name: 'Event Title' }).click();
@@ -395,8 +398,11 @@ export async function editEventBasics(organizerPage: Page) {
 export async function editEventTimeAndLocation(organizerPage: Page) {
   // Go to Edit Event
   await organizerPage.getByRole('button', { name: 'Edit Event' }).click();
+  await reloadStaleEventDataIfPresent(organizerPage);
+
   // Go to Time & Location
   await organizerPage.getByRole('button', { name: 'Time & Location' }).click();
+  await reloadStaleEventDataIfPresent(organizerPage);
 
   // Update address
   await organizerPage.locator('input[name="address"]').click();
