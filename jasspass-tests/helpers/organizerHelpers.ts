@@ -1,5 +1,5 @@
 // tests/helpers/organizers.ts
-import { Page } from '@playwright/test';
+import { expect, Page } from '@playwright/test';
 import {
   JASS_TEST_CHANGE_ORG_URL,
   PLAYWRIGHT_BOT_EMAIL,
@@ -40,12 +40,10 @@ export async function createOrganizer(
   // log in and open the create-organizer form
   await signIn(page);
 
-  // wait for 4 seconds
-  await page.waitForTimeout(4000);
-
   await page.goto(JASS_TEST_CHANGE_ORG_URL);
-  // wait for 2 seconds
-  await page.waitForTimeout(2000);
+  await expect(
+    page.getByRole('button', { name: 'Create Organizer Profile' }).first()
+  ).toBeVisible({ timeout: 30000 });
   await page
     .getByRole('button', { name: 'Create Organizer Profile' })
     .first()
@@ -101,10 +99,13 @@ export async function createOrganizer(
 
 export async function selectFirstOrganizer(page: Page) {
   await signIn(page);
-  await page.waitForTimeout(500);
 
   // Click the first organizer that contains PBO prefix
-  await page.getByText(new RegExp(ORGANIZER_NAME_PREFIX)).first().click();
+  const organizerLink = page
+    .getByText(new RegExp(ORGANIZER_NAME_PREFIX))
+    .first();
+  await expect(organizerLink).toBeVisible({ timeout: 30000 });
+  await organizerLink.click();
 }
 
 export async function editOrganizerDetails(page: Page) {

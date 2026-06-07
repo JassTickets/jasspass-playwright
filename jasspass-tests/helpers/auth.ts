@@ -1,5 +1,4 @@
-import { Page } from '@playwright/test';
-import { constants } from 'buffer';
+import { expect, Page } from '@playwright/test';
 import {
   PLAYWRIGHT_BOT_EMAIL,
   PLAYWRIGHT_BOT_PASSWORD,
@@ -12,16 +11,26 @@ export async function signIn(
     baseURL = JASS_TEST_URL,
     email = PLAYWRIGHT_BOT_EMAIL,
     password = PLAYWRIGHT_BOT_PASSWORD,
+    targetPath = '/portal/organizer',
   } = {}
 ) {
-  await page.goto(baseURL + '/signin');
-  //wait for 0.5 seconds
-  await page.waitForTimeout(500);
+  await page.goto(baseURL + '/signin', { waitUntil: 'domcontentloaded' });
 
   await page.getByRole('textbox', { name: 'Email' }).fill(email);
   await page.getByRole('textbox', { name: 'Password' }).fill(password);
+  const loginResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/api/public/auth/login')
+  );
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await page.waitForURL(/\/portal/, { timeout: 30000 });
+  const loginResponse = await loginResponsePromise;
+  expect(loginResponse.ok()).toBeTruthy();
+
+  await page.waitForURL((url) => !url.pathname.includes('/signin'), {
+    timeout: 30000,
+  });
+  await page.goto(`${baseURL}${targetPath}`, { waitUntil: 'domcontentloaded' });
 }
 
 export async function signOutIfSignedIn(page: Page) {

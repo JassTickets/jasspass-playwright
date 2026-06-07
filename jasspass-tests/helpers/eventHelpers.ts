@@ -307,9 +307,6 @@ export async function selectFirstEventStartingWithPBO(
   // Sign in first
   await signIn(page);
 
-  // Wait for 5 seconds for sign in to load
-  await page.waitForTimeout(5000);
-
   // Go to events page
   await page.goto(`${JASS_TEST_URL}/events`);
   const searchEventsInput = page.getByRole('textbox', {
@@ -593,10 +590,26 @@ export async function bookComplimentaryTicket(organizerPage: Page) {
     .check();
 
   // Confirm booking
+  const complimentaryResponsePromise = organizerPage.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/tickets/complimentary')
+  );
+  const successUrlPromise = organizerPage.waitForURL(
+    /\/payment\/success\/event\//,
+    { timeout: 45000 }
+  );
   await organizerPage.getByRole('button', { name: 'Confirm' }).click();
+  const complimentaryResponse = await complimentaryResponsePromise;
+  expect(complimentaryResponse.ok()).toBeTruthy();
+  await successUrlPromise;
 
   // Return confirmation heading
-  return organizerPage.getByRole('heading', { name: 'Order Confirmed!' });
+  const confirmationHeading = organizerPage.getByRole('heading', {
+    name: 'Order Confirmed!',
+  });
+  await expect(confirmationHeading).toBeVisible({ timeout: 15000 });
+  return confirmationHeading;
 }
 
 export async function sendMessageToAttendees(organizerPage: Page) {
