@@ -5,6 +5,15 @@ import {
   JASS_TEST_URL,
 } from '../constants';
 
+async function gotoSignIn(page: Page, url: string) {
+  try {
+    await page.goto(url, { waitUntil: 'commit', timeout: 30000 });
+  } catch (error) {
+    console.warn(`Sign-in navigation failed once; retrying: ${error}`);
+    await page.goto(url, { waitUntil: 'commit', timeout: 30000 });
+  }
+}
+
 export async function signIn(
   page: Page,
   {
@@ -14,10 +23,31 @@ export async function signIn(
     targetPath = '/portal/organizer',
   } = {}
 ) {
-  await page.goto(baseURL + '/signin', { waitUntil: 'domcontentloaded' });
+  await gotoSignIn(page, baseURL + '/signin');
 
   const emailInput = page.getByRole('textbox', { name: 'Email' });
-  await expect(emailInput).toBeVisible({ timeout: 30000 });
+  const emailInputVisible = await emailInput
+    .isVisible({ timeout: 30000 })
+    .catch(() => false);
+
+  if (!emailInputVisible) {
+    await page.goto(`${baseURL}${targetPath}`, { waitUntil: 'domcontentloaded' });
+
+    if (!new URL(page.url()).pathname.includes('/signin')) {
+      return;
+    }
+
+    const redirectedEmailInputVisible = await emailInput
+      .isVisible({ timeout: 15000 })
+      .catch(() => false);
+
+    if (!redirectedEmailInputVisible) {
+      await gotoSignIn(page, baseURL + '/signin');
+    }
+
+    await expect(emailInput).toBeVisible({ timeout: 30000 });
+  }
+
   await emailInput.fill(email);
   await page.getByRole('textbox', { name: 'Password' }).fill(password);
   const loginResponsePromise = page.waitForResponse(

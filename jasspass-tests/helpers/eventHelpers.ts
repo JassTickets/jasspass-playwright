@@ -54,6 +54,71 @@ async function searchAndClickEventPromoCode(
   console.log(`Found and clicked event promo code "${promoCode}" using search`);
 }
 
+async function createPromoCodeInManagementModalAndAddToEvent(
+  organizerPage: Page,
+  promoCode: string
+): Promise<void> {
+  const promoCodeModal = organizerPage
+    .locator('div.fixed.inset-0.z-\\[9999\\]')
+    .filter({
+      has: organizerPage.getByRole('heading', { name: 'Manage Promo Codes' }),
+    })
+    .last();
+  await expect(promoCodeModal).toBeVisible({ timeout: 30000 });
+
+  await promoCodeModal
+    .getByRole('textbox', { name: 'Enter promo code' })
+    .fill(promoCode);
+  await promoCodeModal.getByRole('spinbutton').fill(EVENT_PROMO_DISCOUNT);
+
+  const createPromoCodeResponsePromise = organizerPage.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/api/protected/organizers/') &&
+      response.url().includes('/promocodes') &&
+      !response.url().includes('/attachments'),
+    { timeout: 30000 }
+  );
+  const refreshedPromoCodesResponsePromise = organizerPage.waitForResponse(
+    async (response) => {
+      if (
+        response.request().method() !== 'GET' ||
+        !response.url().includes('/api/protected/organizers/') ||
+        !response.url().includes('/promocodes') ||
+        response.url().includes('/attachments')
+      ) {
+        return false;
+      }
+
+      return (await response.text().catch(() => '')).includes(promoCode);
+    },
+    { timeout: 30000 }
+  );
+
+  await promoCodeModal
+    .locator('form')
+    .getByRole('button', { name: 'Add Promo Code' })
+    .click();
+  const createPromoCodeResponse = await createPromoCodeResponsePromise;
+  expect(createPromoCodeResponse.ok()).toBeTruthy();
+  const refreshedPromoCodesResponse = await refreshedPromoCodesResponsePromise;
+  expect(refreshedPromoCodesResponse.ok()).toBeTruthy();
+
+  const modalSearch = promoCodeModal.getByRole('textbox', {
+    name: 'Search your organizer promo',
+  });
+  await expect(modalSearch).toBeVisible({ timeout: 30000 });
+  await modalSearch.fill(promoCode);
+
+  await expect(
+    promoCodeModal.getByText(promoCode, { exact: true }).first()
+  ).toBeVisible({ timeout: 30000 });
+  await promoCodeModal
+    .getByRole('button', { name: 'Add to Event' })
+    .first()
+    .click();
+}
+
 // Helper function to find and click a specific promo code using search
 async function findAndClickPromoCode(
   organizerPage: Page,
@@ -425,7 +490,6 @@ export async function editEventTimeAndLocation(organizerPage: Page) {
   //Update postal code
   await organizerPage.getByRole('textbox', { name: 'Zip Code' }).click();
   await organizerPage.getByRole('textbox', { name: 'Zip Code' }).fill('M5A0M7');
-  await organizerPage.getByRole('button', { name: 'Save Changes' }).click();
 
   // Save changes
   await organizerPage.getByRole('button', { name: 'Save Changes' }).click();
@@ -484,31 +548,10 @@ export async function manageEventPromoCodes(organizerPage: Page) {
   await organizerPage
     .getByRole('button', { name: 'Manage Promo Codes' })
     .click();
-  await organizerPage.getByRole('button', { name: 'Add Promo Code' }).click();
-  await organizerPage
-    .getByRole('textbox', { name: 'Enter promo code' })
-    .click();
-  await organizerPage
-    .getByRole('textbox', { name: 'Enter promo code' })
-    .fill(uniquePromoCode);
-  await organizerPage.getByRole('spinbutton').click();
-  await organizerPage.getByRole('spinbutton').fill(EVENT_PROMO_DISCOUNT);
-
-  await organizerPage.getByRole('button', { name: 'Add Promo Code' }).click();
-
-  // Add to event - use search approach to find the specific promo code
-  await organizerPage
-    .getByRole('textbox', { name: 'Search your organizer promo' })
-    .click();
-
-  await organizerPage
-    .getByRole('textbox', { name: 'Search your organizer promo' })
-    .fill(uniquePromoCode);
-
-  const organizerPromoCode = organizerPage.getByText(uniquePromoCode).first();
-  await expect(organizerPromoCode).toBeVisible({ timeout: 30000 });
-  await organizerPromoCode.click();
-  await organizerPage.getByRole('button', { name: 'Add to Event' }).click();
+  await createPromoCodeInManagementModalAndAddToEvent(
+    organizerPage,
+    uniquePromoCode
+  );
 
   await organizerPage
     .getByRole('checkbox', { name: 'Attach to All Ticket Types' })
@@ -889,33 +932,10 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
   await organizerPage
     .getByRole('button', { name: 'Manage Promo Codes' })
     .click();
-  await organizerPage.getByRole('button', { name: 'Add Promo Code' }).click();
-  await organizerPage
-    .getByRole('textbox', { name: 'Enter promo code' })
-    .click();
-  await organizerPage
-    .getByRole('textbox', { name: 'Enter promo code' })
-    .fill(uniquePromoCode);
-  await organizerPage.getByRole('spinbutton').click();
-  await organizerPage.getByRole('spinbutton').fill(EVENT_PROMO_DISCOUNT);
-
-  await organizerPage.getByRole('button', { name: 'Add Promo Code' }).click();
-
-  // Add to event - use search approach to find the specific promo code
-  await organizerPage
-    .getByRole('textbox', { name: 'Search your organizer promo' })
-    .click();
-
-  //timeout
-  await organizerPage.waitForTimeout(2000);
-  await organizerPage
-    .getByRole('textbox', { name: 'Search your organizer promo' })
-    .fill(uniquePromoCode);
-
-  //timeout
-  await organizerPage.waitForTimeout(2000);
-  await organizerPage.getByText(uniquePromoCode).first().click();
-  await organizerPage.getByRole('button', { name: 'Add to Event' }).click();
+  await createPromoCodeInManagementModalAndAddToEvent(
+    organizerPage,
+    uniquePromoCode
+  );
 
   await organizerPage
     .getByRole('checkbox', { name: 'Attach to All Ticket Types' })
