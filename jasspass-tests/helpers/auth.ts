@@ -16,7 +16,9 @@ export async function signIn(
 ) {
   await page.goto(baseURL + '/signin', { waitUntil: 'domcontentloaded' });
 
-  await page.getByRole('textbox', { name: 'Email' }).fill(email);
+  const emailInput = page.getByRole('textbox', { name: 'Email' });
+  await expect(emailInput).toBeVisible({ timeout: 30000 });
+  await emailInput.fill(email);
   await page.getByRole('textbox', { name: 'Password' }).fill(password);
   const loginResponsePromise = page.waitForResponse(
     (response) =>

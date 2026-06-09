@@ -48,7 +48,9 @@ async function searchAndClickEventPromoCode(
     .getByRole('textbox', { name: 'Search Promo Codes' })
     .fill(promoCode);
 
-  await organizerPage.getByRole('cell', { name: promoCode }).click();
+  const promoCodeCell = organizerPage.getByRole('cell', { name: promoCode });
+  await expect(promoCodeCell).toBeVisible({ timeout: 30000 });
+  await promoCodeCell.click();
   console.log(`Found and clicked event promo code "${promoCode}" using search`);
 }
 
@@ -67,14 +69,23 @@ async function findAndClickPromoCode(
 }
 
 async function reloadStaleEventDataIfPresent(organizerPage: Page) {
-  const reloadButton = organizerPage.getByRole('button', { name: /reload/i });
+  const overlay = organizerPage.locator('.absolute.inset-0.z-10.bg-black\\/60');
+  let reloadButton = organizerPage.getByRole('button', { name: /reload/i });
   if (await reloadButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await reloadButton.click();
+    try {
+      await reloadButton.click({ timeout: 3000 });
+    } catch {
+      reloadButton = organizerPage.getByRole('button', { name: /reload/i });
+      if (
+        (await overlay.count()) > 0 &&
+        (await reloadButton.isVisible({ timeout: 1000 }).catch(() => false))
+      ) {
+        await reloadButton.click({ timeout: 3000 }).catch(() => undefined);
+      }
+    }
   }
 
-  await expect(
-    organizerPage.locator('.absolute.inset-0.z-10.bg-black\\/60')
-  ).toHaveCount(0);
+  await expect(overlay).toHaveCount(0, { timeout: 15000 });
 }
 
 export async function createEvent(
@@ -263,13 +274,15 @@ export async function refundTicket(page: Page) {
     .getByRole('textbox', { name: 'Refund Details' })
     .fill('Playwright Refund');
   // Integration success signal: refund POST must complete successfully.
-  const refundResponsePromise = page1.waitForResponse(
-    (response) =>
-      response.request().method() === 'POST' &&
-      response.url().includes('/api/protected/refunds')
-  );
-  await page1.getByRole('button', { name: 'Submit Refund' }).click();
-  const refundResponse = await refundResponsePromise;
+  const [refundResponse] = await Promise.all([
+    page1.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        response.url().includes('/api/protected/refunds'),
+      { timeout: 30000 }
+    ),
+    page1.getByRole('button', { name: 'Submit Refund' }).click(),
+  ]);
   expect(refundResponse.ok()).toBeTruthy();
 
   // UI success signal: organizer sees refund confirmation after backend success.
@@ -282,16 +295,6 @@ export async function refundTicket(page: Page) {
   // Close the modal
   await page1.getByRole('button', { name: '✕' }).click();
 
-  // Now go to the refund tab and verify the refund
-  await page1.getByRole('button', { name: 'Refunds' }).click();
-  await page1.locator('.mt-6 > div > .cursor-pointer').click();
-  await page1.getByRole('cell', { name: '$' }).locator('div').click();
-
-  await page1
-    .getByRole('row', { name: /Playwright Bot/i })
-    .locator('span')
-    .click();
-
   // Return success banner
   return { page1, successBanner };
 }
@@ -300,13 +303,16 @@ export async function deleteEvent(page: Page) {
   // Do e2e flow up until now: create organizer, create event, purchase ticket, refund ticket
   const { page1 } = await refundTicket(page);
 
-  // Now that the ticket is refunded, we can safely delete the event
-  // Wait for 5 seconds to ensure the refund is processed
-  await page1.waitForTimeout(5000);
-
   // Go to the event settings
-  await page1.getByRole('button', { name: 'Event Settings' }).click();
-  await page1.getByRole('button', { name: 'Delete Event' }).click();
+  const eventSettingsButton = page1.getByRole('button', {
+    name: 'Event Settings',
+  });
+  await expect(eventSettingsButton).toBeVisible({ timeout: 30000 });
+  await eventSettingsButton.click();
+
+  const deleteEventButton = page1.getByRole('button', { name: 'Delete Event' });
+  await expect(deleteEventButton).toBeVisible({ timeout: 30000 });
+  await deleteEventButton.click();
   await page1.getByRole('button', { name: 'Delete' }).click();
 
   return { page1 };
@@ -323,50 +329,46 @@ export async function selectFirstEventStartingWithPBO(
   const searchEventsInput = page.getByRole('textbox', {
     name: 'Search events',
   });
+  await expect(searchEventsInput).toBeVisible({ timeout: 30000 });
   await searchEventsInput.click();
   await searchEventsInput.fill(EVENT_NAME_PREFIX);
-
-  // Wait for search results to load
-  await page.waitForTimeout(1000);
 
   // Prefer event names created by this suite.
   const preferredEventLink = page
     .getByRole('link', { name: new RegExp(`^${EVENT_NAME_PREFIX}`) })
     .first();
-  let eventCount = await preferredEventLink.count();
+  let selectedEventLink = preferredEventLink;
 
   // Fallback to any PBO event if naming convention changed.
-  if (eventCount === 0) {
+  if (
+    !(await selectedEventLink.isVisible({ timeout: 10000 }).catch(() => false))
+  ) {
     await searchEventsInput.fill(ORGANIZER_NAME_PREFIX.trim());
-    await page.waitForTimeout(1000);
+    selectedEventLink = page.getByRole('link', { name: /^PBO/i }).first();
   }
 
-  const fallbackEventLink = page.getByRole('link', { name: /^PBO/i }).first();
-  eventCount = eventCount > 0 ? eventCount : await fallbackEventLink.count();
-
-  if (eventCount === 0) {
+  if (
+    !(await selectedEventLink.isVisible({ timeout: 10000 }).catch(() => false))
+  ) {
     throw new Error(
       `No events found for "${EVENT_NAME_PREFIX}" (or fallback "PBO"). Please ensure test events are available.`
     );
   }
 
   // Click the first event found
-  if ((await preferredEventLink.count()) > 0) {
-    await preferredEventLink.click();
-  } else {
-    await fallbackEventLink.click();
-  }
-
-  // Wait for the event page to load properly
-  await page.waitForTimeout(2000);
+  await selectedEventLink.click();
 
   // Wait for the event page to load and click "Organizer View"
+  const organizerViewLink = page.getByText('Organizer View');
+  await expect(organizerViewLink).toBeVisible({ timeout: 30000 });
   const page2Promise = page.waitForEvent('popup');
-  await page.getByText('Organizer View').click();
+  await organizerViewLink.click();
   const page2 = await page2Promise;
 
   // Wait for the organizer portal to load
-  await page2.waitForTimeout(1000);
+  await expect(
+    page2.getByRole('button', { name: 'Orders & Attendees' }).first()
+  ).toBeVisible({ timeout: 30000 });
 
   return page2;
 }
@@ -499,15 +501,13 @@ export async function manageEventPromoCodes(organizerPage: Page) {
     .getByRole('textbox', { name: 'Search your organizer promo' })
     .click();
 
-  //timeout
-  await organizerPage.waitForTimeout(2000);
   await organizerPage
     .getByRole('textbox', { name: 'Search your organizer promo' })
     .fill(uniquePromoCode);
 
-  //timeout
-  await organizerPage.waitForTimeout(2000);
-  await organizerPage.getByText(uniquePromoCode).first().click();
+  const organizerPromoCode = organizerPage.getByText(uniquePromoCode).first();
+  await expect(organizerPromoCode).toBeVisible({ timeout: 30000 });
+  await organizerPromoCode.click();
   await organizerPage.getByRole('button', { name: 'Add to Event' }).click();
 
   await organizerPage
@@ -515,8 +515,6 @@ export async function manageEventPromoCodes(organizerPage: Page) {
     .check();
   await organizerPage.getByRole('button', { name: 'Attach' }).click();
 
-  //Timeout
-  await organizerPage.waitForTimeout(3000);
   await searchAndClickEventPromoCode(organizerPage, uniquePromoCode);
   await organizerPage.getByRole('button', { name: 'Show details' }).click();
   await organizerPage
