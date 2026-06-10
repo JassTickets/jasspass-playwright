@@ -1,18 +1,18 @@
 import { test, expect } from '@playwright/test';
 import {
-  selectFirstEventStartingWithPBO,
+  createEventAndOpenOrganizerPortal,
   bookComplimentaryTicket,
 } from '../../helpers/eventHelpers';
 
-test.setTimeout(60_000);
+test.setTimeout(180_000);
 
 // @Description: This test verifies that booking complimentary tickets from organizer portal works correctly.
-// @Dependencies: Depends on the sign-in functionality and existing event being available.
+// @Dependencies: Depends on sign-in and create-event functionality.
 test('bookComplimentaryTicket', async ({ page }) => {
   console.log('[INFO] Executing Book Complimentary Ticket test...');
 
-  // Sign in and select first event starting with PBO
-  const organizerPage = await selectFirstEventStartingWithPBO(page);
+  // Create a fresh event so complimentary ticket inventory is isolated for this test.
+  const organizerPage = await createEventAndOpenOrganizerPortal(page);
 
   // Book complimentary ticket
   const confirmationHeading = await bookComplimentaryTicket(organizerPage);

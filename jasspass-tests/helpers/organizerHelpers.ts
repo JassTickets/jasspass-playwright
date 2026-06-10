@@ -84,7 +84,16 @@ export async function createOrganizer(
   await page
     .getByRole('textbox', { name: 'acct_xxx...' })
     .fill(PLAYWRIGHT_BOT_STRIPE_CONNECT_ID);
+  const stripeConnectResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/api/protected/organizers/') &&
+      response.url().includes('/stripe-connect'),
+    { timeout: 30000 }
+  );
   await page.getByRole('button', { name: 'Save' }).click();
+  const stripeConnectResponse = await stripeConnectResponsePromise;
+  expect(stripeConnectResponse.ok()).toBeTruthy();
 
   // parse out the ID from the URL
   const url = page.url();

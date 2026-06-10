@@ -438,6 +438,37 @@ export async function selectFirstEventStartingWithPBO(
   return page2;
 }
 
+export async function createEventAndOpenOrganizerPortal(
+  page: Page
+): Promise<Page> {
+  const eventId = await createEvent(page);
+
+  const eventResponse = await page.request.get(
+    `${JASS_TEST_URL}/api/public/events/${eventId}`,
+    { timeout: 30000 }
+  );
+  expect(eventResponse.ok()).toBeTruthy();
+
+  const eventResponseJson = await eventResponse.json();
+  const organizerId =
+    eventResponseJson.Event?.OrganizerId ?? eventResponseJson.OrganizerId;
+
+  if (!organizerId) {
+    throw new Error(
+      `Could not parse organizer ID from public event response for event ${eventId}`
+    );
+  }
+
+  await page.goto(
+    `${JASS_TEST_URL}/portal/organizer/company/${organizerId}/event/${eventId}`
+  );
+  await expect(
+    page.getByRole('button', { name: 'Orders & Attendees' }).first()
+  ).toBeVisible({ timeout: 30000 });
+
+  return page;
+}
+
 export async function editEventBasics(organizerPage: Page) {
   // Go to Edit Event
   await organizerPage.getByRole('button', { name: 'Edit Event' }).click();
