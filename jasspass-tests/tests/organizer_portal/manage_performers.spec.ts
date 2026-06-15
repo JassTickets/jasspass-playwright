@@ -25,7 +25,7 @@ test('managePerformers', async ({ page }) => {
   const updatedPerformerName = await editPerformer(page, performerName);
 
   // Delete the performer
-  await deletePerformer(page);
+  await deletePerformer(page, updatedPerformerName);
 
   console.log('[INFO] Manage Performers test completed successfully.');
 });

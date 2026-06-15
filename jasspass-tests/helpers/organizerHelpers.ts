@@ -35,7 +35,7 @@ export async function createOrganizer(
     email = PLAYWRIGHT_BOT_EMAIL,
     organizerName = ORGANIZER_NAME_PREFIX +
       Math.random().toString(36).substring(2, 15),
-  } = {},
+  } = {}
 ): Promise<string> {
   // log in and open the create-organizer form
   await signIn(page);
@@ -179,7 +179,7 @@ export async function addPerformer(page: Page) {
 
 export async function editPerformer(
   page: Page,
-  performerName: string,
+  performerName: string
 ): Promise<string> {
   await page.getByText(performerName).click();
   await page.getByText('Test Performer').click();
@@ -216,8 +216,11 @@ export async function editPerformer(
   return newRandomPerformerName;
 }
 
-export async function deletePerformer(page: Page) {
-  await page.locator('svg:nth-child(2)').first().click();
+export async function deletePerformer(page: Page, performerName: string) {
+  await page
+    .getByRole('button', { name: `Delete performer ${performerName}` })
+    .click();
+  await expect(page.getByText(performerName)).toBeHidden();
 }
 
 export async function addPromoCode(page: Page): Promise<string> {
@@ -244,7 +247,7 @@ export async function addPromoCode(page: Page): Promise<string> {
 
 export async function editPromoCode(
   page: Page,
-  promoCode: string,
+  promoCode: string
 ): Promise<string> {
   await page.getByText(promoCode).first().click();
   await page.getByRole('textbox', { name: 'Code', exact: true }).click();
@@ -274,8 +277,11 @@ export async function editPromoCode(
   return newRandomPromoCode;
 }
 
-export async function deletePromoCode(page: Page) {
-  await page.locator('svg:nth-child(2)').first().click();
+export async function deletePromoCode(page: Page, promoCode: string) {
+  await page
+    .getByRole('button', { name: `Delete promo code ${promoCode}` })
+    .click();
+  await expect(page.getByText(promoCode).first()).toBeHidden();
 }
 
 export async function addTeamMember(page: Page) {
@@ -332,7 +338,7 @@ export async function editOrganizer(
     email = PLAYWRIGHT_BOT_EMAIL,
     organizerName = ORGANIZER_NAME_PREFIX +
       Math.random().toString(36).substring(2, 15),
-  } = {},
+  } = {}
 ): Promise<string> {
   // log in and open the create-organizer form
   await signIn(page);
@@ -352,7 +358,7 @@ export async function deleteOrganizer(
     email = PLAYWRIGHT_BOT_EMAIL,
     organizerName = ORGANIZER_NAME_PREFIX +
       Math.random().toString(36).substring(2, 15),
-  } = {},
+  } = {}
 ) {
   // This will delete the event, ensuring that the organizer can be deleted
   const { page1 } = await deleteEvent(page);
@@ -366,7 +372,7 @@ export async function deleteOrganizer(
 
 export async function addOperatorWithAllPolicies(
   page: Page,
-  operatorEmail: string,
+  operatorEmail: string
 ) {
   // Navigate to Event Operators tab
   await page.getByRole('button', { name: 'Event Operators' }).click();
@@ -409,7 +415,7 @@ export async function testOperatorPoliciesFlow(
   organizerPage: Page,
   operatorPage: Page,
   operatorEmail: string,
-  eventName?: string,
+  eventName?: string
 ) {
   // Add operator with all policies
   await addOperatorWithAllPolicies(organizerPage, operatorEmail);

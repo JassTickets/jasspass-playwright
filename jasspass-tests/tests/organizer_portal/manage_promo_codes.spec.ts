@@ -34,7 +34,7 @@ test('managePromoCodes', async ({ page }) => {
   await expect(page.getByText(updatedPromoCode).first()).toBeVisible();
 
   // Delete the promo code
-  await deletePromoCode(page);
+  await deletePromoCode(page, updatedPromoCode);
 
   console.log('[INFO] Manage Promo Codes test completed successfully.');
 });
