@@ -35,7 +35,7 @@ test('viewEventCommunications', async ({ page }) => {
   await organizerPage.locator('#message-body-inline').fill(randomSubject);
   //timeout
   await organizerPage.waitForTimeout(2000);
-  await organizerPage.getByRole('button', { name: 'Send' }).click();
+  await organizerPage.getByRole('button', { name: 'Send', exact: true }).click();
   // If the modal closes it means that it worked
 
   // Verify that the message appears in the communications list

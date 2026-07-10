@@ -717,7 +717,7 @@ export async function sendMessageToAttendees(organizerPage: Page) {
   await organizerPage.locator('#message-body-inline').fill(MESSAGE_BODY);
 
   // Send message
-  const sendButton = organizerPage.getByRole('button', { name: 'Send' });
+  const sendButton = organizerPage.getByRole('button', { name: 'Send', exact: true });
   await sendButton.click();
 
   // Success state: modal closes after the message is sent
@@ -836,7 +836,7 @@ export async function manageEventAttendeesAndCommunications(
   await organizerPage.locator('#message-body-inline').fill(MESSAGE_BODY);
 
   // Send message
-  const sendButton = organizerPage.getByRole('button', { name: 'Send' });
+  const sendButton = organizerPage.getByRole('button', { name: 'Send', exact: true });
   await sendButton.click();
 
   // Success state: modal closes after the message is sent
