@@ -9,6 +9,8 @@ export const PLAYWRIGHT_BOT2_PASSWORD = 'PlaywrightBot@1234';
 export const ORGANIZER_NAME_PREFIX = 'PBO - ';
 export const CONTACT_NAME = 'Playwright Bot';
 export const CONTACT_ADDRESS = 'Playwright Bot St, 1234';
+export const CONTACT_CITY = 'Toronto';
+export const CONTACT_ZIP_CODE = 'M5A0M7';
 export const CONTACT_PHONE_NUMBER = '(646) 789-9045';
 export const PLAYWRIGHT_BOT_STRIPE_CONNECT_ID = 'acct_1R48E5B2utfhUzfT';
 

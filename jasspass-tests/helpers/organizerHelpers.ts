@@ -7,6 +7,8 @@ import {
   getRandomCountry,
   CONTACT_NAME,
   CONTACT_ADDRESS,
+  CONTACT_CITY,
+  CONTACT_ZIP_CODE,
   CONTACT_PHONE_NUMBER,
   PLAYWRIGHT_BOT_STRIPE_CONNECT_ID,
   NEW_ORGANIZER_NAME,
@@ -70,6 +72,11 @@ export async function createOrganizer(
   await page
     .getByRole('textbox', { name: 'Company Address' })
     .fill(CONTACT_ADDRESS);
+  await page.getByLabel(/Organizer City|City/i).fill(CONTACT_CITY);
+  await page.locator('li').filter({ hasText: CONTACT_CITY }).click();
+  await page
+    .getByLabel(/Organizer Zip\/Postal Code|Zip\/Postal Code|Zip Code/i)
+    .fill(CONTACT_ZIP_CODE);
   await page
     .getByRole('checkbox', { name: 'I agree to the Organizer' })
     .check();
