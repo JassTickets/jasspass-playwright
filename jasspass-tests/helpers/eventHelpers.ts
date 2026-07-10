@@ -690,7 +690,52 @@ export async function bookComplimentaryTicket(organizerPage: Page) {
   return confirmationHeading;
 }
 
+/**
+ * Guarantees the event has at least one attendee before a "message all
+ * attendees" flow. Messaging resolves recipients from the attendee list, so an
+ * event with zero attendees yields "No valid email addresses found". When the
+ * event is empty we book a complimentary ticket (free, no Stripe onboarding
+ * needed) to create a recipient, then return to the organizer portal.
+ */
+export async function ensureEventHasAttendee(organizerPage: Page): Promise<void> {
+  const portalUrl = organizerPage.url();
+  const eventId = portalUrl.match(/event\/([^/?#]+)/)?.[1];
+
+  let hasAttendee = false;
+  if (eventId) {
+    try {
+      const response = await organizerPage.request.get(
+        `${JASS_TEST_URL}/api/protected/events/${eventId}/tickets`
+      );
+      if (response.ok()) {
+        const tickets = await response.json();
+        hasAttendee = Array.isArray(tickets) && tickets.length > 0;
+      }
+    } catch {
+      // Fall through and book a ticket — booking is safe even if the check failed.
+      hasAttendee = false;
+    }
+  }
+
+  if (hasAttendee) return;
+
+  console.log(
+    '[INFO] Event has no attendees; booking a complimentary ticket to ensure a recipient exists.'
+  );
+  await bookComplimentaryTicket(organizerPage);
+
+  // bookComplimentaryTicket ends on the payment-success page; return to the
+  // organizer portal so the messaging flow can continue.
+  await organizerPage.goto(portalUrl);
+  await expect(
+    organizerPage.getByRole('button', { name: 'Orders & Attendees' }).first()
+  ).toBeVisible({ timeout: 30000 });
+}
+
 export async function sendMessageToAttendees(organizerPage: Page) {
+  // A "message all attendees" send needs at least one recipient.
+  await ensureEventHasAttendee(organizerPage);
+
   // Go to Orders & Attendees
   await organizerPage
     .getByRole('button', { name: 'Orders & Attendees' })
