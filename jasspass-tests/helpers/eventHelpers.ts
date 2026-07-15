@@ -39,7 +39,7 @@ function generateUniquePromoCode(): string {
 // Helper function to search and click a specific event promo code
 async function searchAndClickEventPromoCode(
   organizerPage: Page,
-  promoCode: string
+  promoCode: string,
 ): Promise<void> {
   await organizerPage
     .getByRole('textbox', { name: 'Search Promo Codes' })
@@ -56,7 +56,7 @@ async function searchAndClickEventPromoCode(
 
 async function createPromoCodeInManagementModalAndAddToEvent(
   organizerPage: Page,
-  promoCode: string
+  promoCode: string,
 ): Promise<void> {
   const promoCodeModal = organizerPage
     .locator('div.fixed.inset-0.z-\\[9999\\]')
@@ -77,7 +77,7 @@ async function createPromoCodeInManagementModalAndAddToEvent(
       response.url().includes('/api/protected/organizers/') &&
       response.url().includes('/promocodes') &&
       !response.url().includes('/attachments'),
-    { timeout: 30000 }
+    { timeout: 30000 },
   );
   const refreshedPromoCodesResponsePromise = organizerPage.waitForResponse(
     async (response) => {
@@ -92,7 +92,7 @@ async function createPromoCodeInManagementModalAndAddToEvent(
 
       return (await response.text().catch(() => '')).includes(promoCode);
     },
-    { timeout: 30000 }
+    { timeout: 30000 },
   );
 
   await promoCodeModal
@@ -111,7 +111,7 @@ async function createPromoCodeInManagementModalAndAddToEvent(
   await modalSearch.fill(promoCode);
 
   await expect(
-    promoCodeModal.getByText(promoCode, { exact: true }).first()
+    promoCodeModal.getByText(promoCode, { exact: true }).first(),
   ).toBeVisible({ timeout: 30000 });
   await promoCodeModal
     .getByRole('button', { name: 'Add to Event' })
@@ -122,7 +122,7 @@ async function createPromoCodeInManagementModalAndAddToEvent(
 // Helper function to find and click a specific promo code using search
 async function findAndClickPromoCode(
   organizerPage: Page,
-  promoCode: string
+  promoCode: string,
 ): Promise<boolean> {
   try {
     await searchAndClickEventPromoCode(organizerPage, promoCode);
@@ -159,7 +159,7 @@ export async function createEvent(
     eventName = ORGANIZER_NAME_PREFIX +
       'Event-' +
       Math.random().toString(36).substring(2, 15),
-  } = {}
+  } = {},
 ): Promise<string> {
   //Timeout for 3 seconds
   await page.waitForTimeout(3000);
@@ -202,7 +202,7 @@ export async function createEvent(
   const eventId = createEventResponseJson.Event?.Id;
   if (!eventId) {
     throw new Error(
-      `Could not parse event ID from create-event response: ${createEventResponseBody}`
+      `Could not parse event ID from create-event response: ${createEventResponseBody}`,
     );
   }
 
@@ -226,7 +226,10 @@ export async function createEvent(
   return eventId;
 }
 
-export async function purchaseTicket(page: Page, eventId?: string) {
+export async function purchaseTicket(
+  page: Page,
+  eventId?: string,
+): Promise<string | undefined> {
   console.log('starting purchase ticket flow with eventId:', eventId);
   if (eventId) {
     //redirect to the event page using the eventId
@@ -234,6 +237,20 @@ export async function purchaseTicket(page: Page, eventId?: string) {
   } else {
     // No event ID passed: Create new event
     await createEvent(page);
+  }
+
+  // Best-effort capture of the organizer name from the event page so callers that
+  // need it (e.g. operator-access checks) can reuse it. Returned optionally so the
+  // many callers that ignore the return value are unaffected.
+  let organizerName: string | undefined;
+  try {
+    const rawOrganizerName = await page
+      .getByText(new RegExp(ORGANIZER_NAME_PREFIX))
+      .first()
+      .textContent({ timeout: 5000 });
+    organizerName = rawOrganizerName?.trim() || undefined;
+  } catch {
+    // Organizer name not visible on this page; leave undefined.
   }
 
   // Select ticket and proceed
@@ -278,6 +295,8 @@ export async function purchaseTicket(page: Page, eventId?: string) {
     // Don't do anything
   }
   await page.getByRole('img', { name: 'Ticket QR Code' }).click();
+
+  return organizerName;
 }
 
 export async function refundTicket(page: Page) {
@@ -344,7 +363,7 @@ export async function refundTicket(page: Page) {
       (response) =>
         response.request().method() === 'POST' &&
         response.url().includes('/api/protected/refunds'),
-      { timeout: 30000 }
+      { timeout: 30000 },
     ),
     page1.getByRole('button', { name: 'Submit Refund' }).click(),
   ]);
@@ -384,7 +403,7 @@ export async function deleteEvent(page: Page) {
 }
 
 export async function selectFirstEventStartingWithPBO(
-  page: Page
+  page: Page,
 ): Promise<Page> {
   // Sign in first
   await signIn(page);
@@ -416,7 +435,7 @@ export async function selectFirstEventStartingWithPBO(
     !(await selectedEventLink.isVisible({ timeout: 10000 }).catch(() => false))
   ) {
     throw new Error(
-      `No events found for "${EVENT_NAME_PREFIX}" (or fallback "PBO"). Please ensure test events are available.`
+      `No events found for "${EVENT_NAME_PREFIX}" (or fallback "PBO"). Please ensure test events are available.`,
     );
   }
 
@@ -432,20 +451,20 @@ export async function selectFirstEventStartingWithPBO(
 
   // Wait for the organizer portal to load
   await expect(
-    page2.getByRole('button', { name: 'Orders & Attendees' }).first()
+    page2.getByRole('button', { name: 'Orders & Attendees' }).first(),
   ).toBeVisible({ timeout: 30000 });
 
   return page2;
 }
 
 export async function createEventAndOpenOrganizerPortal(
-  page: Page
+  page: Page,
 ): Promise<Page> {
   const eventId = await createEvent(page);
 
   const eventResponse = await page.request.get(
     `${JASS_TEST_URL}/api/public/events/${eventId}`,
-    { timeout: 30000 }
+    { timeout: 30000 },
   );
   expect(eventResponse.ok()).toBeTruthy();
 
@@ -455,15 +474,15 @@ export async function createEventAndOpenOrganizerPortal(
 
   if (!organizerId) {
     throw new Error(
-      `Could not parse organizer ID from public event response for event ${eventId}`
+      `Could not parse organizer ID from public event response for event ${eventId}`,
     );
   }
 
   await page.goto(
-    `${JASS_TEST_URL}/portal/organizer/company/${organizerId}/event/${eventId}`
+    `${JASS_TEST_URL}/portal/organizer/company/${organizerId}/event/${eventId}`,
   );
   await expect(
-    page.getByRole('button', { name: 'Orders & Attendees' }).first()
+    page.getByRole('button', { name: 'Orders & Attendees' }).first(),
   ).toBeVisible({ timeout: 30000 });
 
   return page;
@@ -532,13 +551,13 @@ export async function editEventTimeAndLocation(organizerPage: Page) {
 export async function editEventAdditionalDetails(organizerPage: Page) {
   // Wait for the event portal edit tab to be ready before editing details.
   await expect(
-    organizerPage.getByRole('button', { name: 'Edit Event' })
+    organizerPage.getByRole('button', { name: 'Edit Event' }),
   ).toBeVisible({ timeout: 15000 });
   await organizerPage.getByRole('button', { name: 'Edit Event' }).click();
 
   // Wait for the additional details form before applying the existing edits.
   await expect(
-    organizerPage.getByRole('button', { name: 'Additional Details' })
+    organizerPage.getByRole('button', { name: 'Additional Details' }),
   ).toBeVisible({ timeout: 15000 });
   await organizerPage
     .getByRole('button', { name: 'Additional Details' })
@@ -581,7 +600,7 @@ export async function manageEventPromoCodes(organizerPage: Page) {
     .click();
   await createPromoCodeInManagementModalAndAddToEvent(
     organizerPage,
-    uniquePromoCode
+    uniquePromoCode,
   );
 
   await organizerPage
@@ -671,11 +690,11 @@ export async function bookComplimentaryTicket(organizerPage: Page) {
   const complimentaryResponsePromise = organizerPage.waitForResponse(
     (response) =>
       response.request().method() === 'POST' &&
-      response.url().includes('/tickets/complimentary')
+      response.url().includes('/tickets/complimentary'),
   );
   const successUrlPromise = organizerPage.waitForURL(
     /\/payment\/success\/event\//,
-    { timeout: 45000 }
+    { timeout: 45000 },
   );
   await organizerPage.getByRole('button', { name: 'Confirm' }).click();
   const complimentaryResponse = await complimentaryResponsePromise;
@@ -690,7 +709,54 @@ export async function bookComplimentaryTicket(organizerPage: Page) {
   return confirmationHeading;
 }
 
+/**
+ * Guarantees the event has at least one attendee before a "message all
+ * attendees" flow. Messaging resolves recipients from the attendee list, so an
+ * event with zero attendees yields "No valid email addresses found". When the
+ * event is empty we book a complimentary ticket (free, no Stripe onboarding
+ * needed) to create a recipient, then return to the organizer portal.
+ */
+export async function ensureEventHasAttendee(
+  organizerPage: Page,
+): Promise<void> {
+  const portalUrl = organizerPage.url();
+  const eventId = portalUrl.match(/event\/([^/?#]+)/)?.[1];
+
+  let hasAttendee = false;
+  if (eventId) {
+    try {
+      const response = await organizerPage.request.get(
+        `${JASS_TEST_URL}/api/protected/events/${eventId}/tickets`,
+      );
+      if (response.ok()) {
+        const tickets = await response.json();
+        hasAttendee = Array.isArray(tickets) && tickets.length > 0;
+      }
+    } catch {
+      // Fall through and book a ticket — booking is safe even if the check failed.
+      hasAttendee = false;
+    }
+  }
+
+  if (hasAttendee) return;
+
+  console.log(
+    '[INFO] Event has no attendees; booking a complimentary ticket to ensure a recipient exists.',
+  );
+  await bookComplimentaryTicket(organizerPage);
+
+  // bookComplimentaryTicket ends on the payment-success page; return to the
+  // organizer portal so the messaging flow can continue.
+  await organizerPage.goto(portalUrl);
+  await expect(
+    organizerPage.getByRole('button', { name: 'Orders & Attendees' }).first(),
+  ).toBeVisible({ timeout: 30000 });
+}
+
 export async function sendMessageToAttendees(organizerPage: Page) {
+  // A "message all attendees" send needs at least one recipient.
+  await ensureEventHasAttendee(organizerPage);
+
   // Go to Orders & Attendees
   await organizerPage
     .getByRole('button', { name: 'Orders & Attendees' })
@@ -717,7 +783,10 @@ export async function sendMessageToAttendees(organizerPage: Page) {
   await organizerPage.locator('#message-body-inline').fill(MESSAGE_BODY);
 
   // Send message
-  const sendButton = organizerPage.getByRole('button', { name: 'Send' });
+  const sendButton = organizerPage.getByRole('button', {
+    name: 'Send',
+    exact: true,
+  });
   await sendButton.click();
 
   // Success state: modal closes after the message is sent
@@ -728,7 +797,7 @@ export async function sendMessageToAttendees(organizerPage: Page) {
 }
 
 export async function manageEventAttendeesAndCommunications(
-  organizerPage: Page
+  organizerPage: Page,
 ) {
   // Generate a random 4-character string to append to the subject
   const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -836,7 +905,10 @@ export async function manageEventAttendeesAndCommunications(
   await organizerPage.locator('#message-body-inline').fill(MESSAGE_BODY);
 
   // Send message
-  const sendButton = organizerPage.getByRole('button', { name: 'Send' });
+  const sendButton = organizerPage.getByRole('button', {
+    name: 'Send',
+    exact: true,
+  });
   await sendButton.click();
 
   // Success state: modal closes after the message is sent
@@ -856,7 +928,7 @@ export async function manageEventAttendeesAndCommunications(
 // Helper function for event duplication logic
 async function performEventDuplication(
   organizerPage: Page,
-  originalEventTitle: string
+  originalEventTitle: string,
 ) {
   // Generate timestamp for unique naming
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -965,7 +1037,7 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
     .click();
   await createPromoCodeInManagementModalAndAddToEvent(
     organizerPage,
-    uniquePromoCode
+    uniquePromoCode,
   );
 
   await organizerPage
@@ -987,12 +1059,12 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
   // Dynamically find and click the unique promo code that was created
   const promoCodeFound = await findAndClickPromoCode(
     organizerPage,
-    uniquePromoCode
+    uniquePromoCode,
   );
 
   if (!promoCodeFound) {
     throw new Error(
-      `Could not find the created promo code "${uniquePromoCode}" in the duplicated event`
+      `Could not find the created promo code "${uniquePromoCode}" in the duplicated event`,
     );
   }
 
@@ -1024,37 +1096,29 @@ export async function resendConfirmationEmail(organizerPage: Page) {
   await sendConfirmationButton.click();
 
   await expect(organizerPage.getByText('Email sent successfully!')).toBeVisible(
-    { timeout: 30000 }
+    { timeout: 30000 },
   );
   return sendConfirmationButton;
 }
 
-export async function verifyOperatorAccess(page: Page, eventName?: string) {
+export async function verifyOperatorAccess(
+  page: Page,
+  organizerName: string,
+  eventName?: string,
+) {
   // Navigate to operator's event view
-  await page.getByRole('button', { name: 'My Events' }).click();
-
-  // Search for the specific event or default to PBO events
-  const searchTerm = eventName || EVENT_NAME_PREFIX;
-  await page.getByRole('textbox', { name: 'Search events' }).fill(searchTerm);
-  await page.waitForTimeout(1000);
-
-  // Click the first event found - use specific event name if provided
-  if (eventName) {
-    await page.getByRole('heading', { name: eventName }).first().click();
-  } else {
-    await page
-      .getByRole('heading', { name: new RegExp(EVENT_NAME_PREFIX) })
-      .first()
-      .click();
-  }
-  await page.getByRole('button', { name: 'Go to event' }).click();
+  await page
+    .getByRole('textbox', { name: 'Search Organizers' })
+    .fill(organizerName);
+  await page.getByRole('heading', { name: organizerName }).click();
+  await page.getByRole('heading', { name: eventName }).click();
 
   // Wait for event page to load
   await page.waitForTimeout(2000);
 
   // Verify dashboard access
   await expect(
-    page.getByText(/Gross Revenue.*Net Revenue.*Event Views/)
+    page.getByText(/Gross Revenue.*Net Revenue.*Event Views/),
   ).toBeVisible();
 
   // Verify order management
@@ -1080,13 +1144,13 @@ export async function verifyOperatorAccess(page: Page, eventName?: string) {
   await expect(
     page
       .getByRole('row')
-      .filter({ hasText: /General Admission|Active|Not Scanned/ })
+      .filter({ hasText: /General Admission|Active|Not Scanned/ }),
   ).toBeVisible({ timeout: 10000 });
 
   // Verify ticket type management
   await page.getByRole('button', { name: 'Ticket Types' }).click();
   await expect(
-    page.getByRole('cell', { name: 'General Admission' })
+    page.getByRole('cell', { name: 'General Admission' }),
   ).toBeVisible();
 
   // Test creating a new ticket type
