@@ -37,14 +37,14 @@ export async function createOrganizer(
     email = PLAYWRIGHT_BOT_EMAIL,
     organizerName = ORGANIZER_NAME_PREFIX +
       Math.random().toString(36).substring(2, 15),
-  } = {}
+  } = {},
 ): Promise<string> {
   // log in and open the create-organizer form
   await signIn(page);
 
   await page.goto(JASS_TEST_CHANGE_ORG_URL);
   await expect(
-    page.getByRole('button', { name: 'Create Organizer Profile' }).first()
+    page.getByRole('button', { name: 'Create Organizer Profile' }).first(),
   ).toBeVisible({ timeout: 30000 });
   await page
     .getByRole('button', { name: 'Create Organizer Profile' })
@@ -103,14 +103,14 @@ export async function createOrganizer(
         response.request().method() === 'POST' &&
         response.url().includes('/api/protected/organizers/') &&
         response.url().includes('/stripe-connect'),
-      { timeout: 30000 }
+      { timeout: 30000 },
     );
     await page.getByRole('button', { name: 'Save' }).click();
     const stripeConnectResponse = await stripeConnectResponsePromise;
     expect(stripeConnectResponse.ok()).toBeTruthy();
   } else {
     console.log(
-      '[INFO] Stripe Connect debug form not present (production-gated env); skipping Connect ID override.'
+      '[INFO] Stripe Connect debug form not present (production-gated env); skipping Connect ID override.',
     );
   }
 
@@ -198,7 +198,7 @@ export async function addPerformer(page: Page) {
 
 export async function editPerformer(
   page: Page,
-  performerName: string
+  performerName: string,
 ): Promise<string> {
   await page.getByText(performerName).click();
   await page.getByText('Test Performer').click();
@@ -266,7 +266,7 @@ export async function addPromoCode(page: Page): Promise<string> {
 
 export async function editPromoCode(
   page: Page,
-  promoCode: string
+  promoCode: string,
 ): Promise<string> {
   await page.getByText(promoCode).first().click();
   await page.getByRole('textbox', { name: 'Code', exact: true }).click();
@@ -325,18 +325,15 @@ export async function addTeamMember(page: Page) {
       await selectAllPoliciesButton.first().click();
     }
 
-    await page
-      .getByRole('button', { name: 'Add Representative' })
-      .last()
-      .click();
+    await page.getByRole('button', { name: 'Add Team Member' }).last().click();
   } else {
     // Backward-compatible flow with modal + role selection.
-    await page.getByRole('button', { name: 'Add Representative' }).click();
+    await page.getByRole('button', { name: 'Add Team Member' }).click();
     await page.locator('#email1').click();
     await page.locator('#email1').fill(TEAM_MEMBER_EMAIL);
-    await page.getByRole('button', { name: 'Add Representative' }).click();
+    await page.getByRole('button', { name: 'Add Team Member' }).click();
     await page.getByRole('radio', { name: 'Organizer Owner' }).check();
-    await page.getByRole('button', { name: 'Add Representative' }).click();
+    await page.getByRole('button', { name: 'Add Team Member' }).click();
   }
 
   return page.getByRole('row', { name: new RegExp(TEAM_MEMBER_EMAIL, 'i') });
@@ -357,7 +354,7 @@ export async function editOrganizer(
     email = PLAYWRIGHT_BOT_EMAIL,
     organizerName = ORGANIZER_NAME_PREFIX +
       Math.random().toString(36).substring(2, 15),
-  } = {}
+  } = {},
 ): Promise<string> {
   // log in and open the create-organizer form
   await signIn(page);
@@ -377,7 +374,7 @@ export async function deleteOrganizer(
     email = PLAYWRIGHT_BOT_EMAIL,
     organizerName = ORGANIZER_NAME_PREFIX +
       Math.random().toString(36).substring(2, 15),
-  } = {}
+  } = {},
 ) {
   // This will delete the event, ensuring that the organizer can be deleted
   const { page1 } = await deleteEvent(page);
@@ -391,16 +388,16 @@ export async function deleteOrganizer(
 
 export async function addOperatorWithAllPolicies(
   page: Page,
-  operatorEmail: string
+  operatorEmail: string,
 ) {
-  // Navigate to Event Operators tab
-  await page.getByRole('button', { name: 'Event Operators' }).click();
+  // Navigate to Event Staff tab
+  await page.getByRole('button', { name: 'Event Staff' }).click();
 
   // Add operator email
   await page
     .getByRole('textbox', { name: 'Email address' })
     .fill(operatorEmail);
-  await page.getByRole('button', { name: 'Add Operator' }).click();
+  await page.getByRole('button', { name: 'Add Event Staff' }).click();
 
   // Check all available policies
   const policies = [
@@ -428,21 +425,4 @@ export async function addOperatorWithAllPolicies(
 
   // Save policies
   await page.getByRole('button', { name: 'Save Policies' }).click();
-}
-
-export async function testOperatorPoliciesFlow(
-  organizerPage: Page,
-  operatorPage: Page,
-  operatorEmail: string,
-  eventName?: string
-) {
-  // Add operator with all policies
-  await addOperatorWithAllPolicies(organizerPage, operatorEmail);
-
-  // Wait for policies to be saved
-  await organizerPage.waitForTimeout(2000);
-
-  // Test operator access using the event helper function
-  const { verifyOperatorAccess } = await import('./eventHelpers');
-  await verifyOperatorAccess(operatorPage, eventName);
 }

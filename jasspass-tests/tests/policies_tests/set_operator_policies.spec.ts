@@ -1,10 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { signIn, signOutIfSignedIn } from '../../helpers/auth';
-import {
-  selectFirstOrganizer,
-  testOperatorPoliciesFlow,
-  addOperatorWithAllPolicies,
-} from '../../helpers/organizerHelpers';
+import { addOperatorWithAllPolicies } from '../../helpers/organizerHelpers';
 import {
   createEvent,
   verifyOperatorAccess,
@@ -42,7 +38,13 @@ test('operator policies comprehensive flow', async ({ browser }) => {
 
     // Purchase a ticket to create orders and attendees for testing
     console.log('[INFO] Step 1.5: Purchasing ticket to create test data...');
-    await purchaseTicket(page1, eventId);
+    // purchaseTicket returns the organizer name so we can verify operator access below.
+    const organizerName = await purchaseTicket(page1, eventId);
+    if (!organizerName) {
+      throw new Error(
+        'Failed to capture organizer name from the purchase ticket flow',
+      );
+    }
 
     // Navigate to the event's organizer view
     await page1.goto(`${JASS_TEST_URL}/event/${eventId}`);
@@ -77,7 +79,7 @@ test('operator policies comprehensive flow', async ({ browser }) => {
     await page2.waitForTimeout(3000);
 
     // Verify operator access
-    await verifyOperatorAccess(page2, eventName);
+    await verifyOperatorAccess(page2, organizerName, eventName);
 
     console.log(
       '[INFO] Operator policies comprehensive flow test completed successfully!',
