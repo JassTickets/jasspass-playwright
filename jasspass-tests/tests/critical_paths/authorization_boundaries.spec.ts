@@ -131,7 +131,8 @@ test.describe('authorization boundaries', () => {
         representativePage.getByRole('heading', {
           name: created.name,
           exact: true,
-        })
+        }),
+        `The read-only representative should see events for the assigned organizer.`
       ).toBeVisible({ timeout: 30_000 });
       await expect(
         representativePage.getByRole('button', {
