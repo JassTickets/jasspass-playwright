@@ -942,7 +942,7 @@ export async function duplicateEvent(organizerPage: Page) {
   await performEventDuplication(organizerPage, eventTitle);
 
   // Return a locator to verify we're on the duplicated event page
-  return organizerPage.getByRole('link', { name: 'Edit Event' });
+  return organizerPage.getByRole('button', { name: 'Edit Event' });
 }
 
 export async function duplicateEventWithPromoCodes(organizerPage: Page) {

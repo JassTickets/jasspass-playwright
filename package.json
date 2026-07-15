@@ -8,5 +8,9 @@
     "@playwright/test": "^1.51.1",
     "@types/node": "^22.13.10"
   },
-  "scripts": {}
+  "scripts": {
+    "test:critical": "playwright test jasspass-tests/tests/critical_paths --project=chromium",
+    "test:critical:cross-browser": "playwright test jasspass-tests/tests/critical_paths",
+    "test:list": "playwright test --list"
+  }
 }

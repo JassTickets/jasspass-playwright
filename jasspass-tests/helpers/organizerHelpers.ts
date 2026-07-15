@@ -294,14 +294,19 @@ export async function deletePromoCode(page: Page, promoCode: string) {
 export async function addTeamMember(page: Page) {
   await page.getByRole('button', { name: 'Team' }).click();
 
+  const memberRow = page.getByRole('row', {
+    name: new RegExp(TEAM_MEMBER_EMAIL, 'i'),
+  });
+  if (await memberRow.isVisible({ timeout: 10_000 }).catch(() => false)) {
+    return memberRow;
+  }
+
   const configurePoliciesButton = page.getByRole('button', {
     name: /Configure Policies/i,
   });
 
-  // Wait for 0.5 seconds
-  await page.waitForTimeout(500);
-
   if ((await configurePoliciesButton.count()) > 0) {
+    await expect(page.locator('#email1')).toBeVisible({ timeout: 15_000 });
     await page.locator('#email1').click();
     await page.locator('#email1').fill(TEAM_MEMBER_EMAIL);
     await configurePoliciesButton.first().click();
@@ -327,7 +332,8 @@ export async function addTeamMember(page: Page) {
     await page.getByRole('button', { name: 'Add Representative' }).click();
   }
 
-  return page.getByRole('row', { name: new RegExp(TEAM_MEMBER_EMAIL, 'i') });
+  await expect(memberRow).toBeVisible({ timeout: 30_000 });
+  return memberRow;
 }
 
 export async function accessStripeFinance(page: Page) {

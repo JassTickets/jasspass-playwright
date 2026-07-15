@@ -15,7 +15,8 @@ test('duplicateEvent', async ({ page }) => {
   const organizerPage = await selectFirstEventStartingWithPBO(page);
 
   // Duplicate the event
-  await duplicateEvent(organizerPage);
+  const duplicatedEventEditButton = await duplicateEvent(organizerPage);
+  await expect(duplicatedEventEditButton).toBeVisible({ timeout: 30_000 });
 
   console.log('[INFO] Duplicate Event test completed successfully.');
 });

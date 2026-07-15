@@ -15,5 +15,14 @@ test('manageTeamMembers', async ({ page }) => {
   await selectFirstOrganizer(page);
   await page.getByRole('button', { name: 'Manage', exact: true }).click();
 
+  const memberRow = await addTeamMember(page);
+  await expect(memberRow).toBeVisible();
+
+  // Persisted-state assertion: the representative remains after a fresh read.
+  await page.reload();
+  await page.getByRole('button', { name: 'Manage', exact: true }).click();
+  await page.getByRole('button', { name: 'Team' }).click();
+  await expect(memberRow).toBeVisible({ timeout: 30_000 });
+
   console.log('[INFO] Manage Team Members test completed successfully.');
 });

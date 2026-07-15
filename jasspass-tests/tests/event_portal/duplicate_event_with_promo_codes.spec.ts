@@ -16,7 +16,9 @@ test('duplicateEventWithPromoCodes', async ({ page }) => {
   const organizerPage = await selectFirstEventStartingWithPBO(page);
 
   // Duplicate the event with promo codes (this also adds promo codes first)
-  await duplicateEventWithPromoCodes(organizerPage);
+  const addPromoCodeButton =
+    await duplicateEventWithPromoCodes(organizerPage);
+  await expect(addPromoCodeButton).toBeVisible({ timeout: 30_000 });
 
   console.log(
     '[INFO] Duplicate Event with Promo Codes test completed successfully.'
