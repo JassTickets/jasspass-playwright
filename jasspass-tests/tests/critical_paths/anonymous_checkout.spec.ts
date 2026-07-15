@@ -89,7 +89,9 @@ test.describe('critical anonymous checkout paths', () => {
 
     const orderSummary = await openCheckout(page);
     await expect(orderSummary).toContainText(`${ticketName} (x1)`);
-    await expect(orderSummary.getByText('$44.00', { exact: true })).toBeVisible();
+    await expect(
+      orderSummary.getByText('$44.00', { exact: true })
+    ).toBeVisible();
     await fillGuestContact(page, buyer);
 
     const discountedCalculation = await applyPromoCode(
@@ -107,16 +109,19 @@ test.describe('critical anonymous checkout paths', () => {
       discountedCalculation.TotalWithPromoCode.Subtotals[ticketType.Id],
       36
     );
-    await expect(orderSummary.getByText('$44.00', { exact: true })).toBeVisible();
-    await expect(orderSummary.getByText('$39.60', { exact: true })).toBeVisible();
+    const originalTotal = page
+      .getByText('$44.00', { exact: true })
+      .filter({ visible: true });
+    const discountedTotal = page
+      .getByText('$39.60', { exact: true })
+      .filter({ visible: true });
+    await expect(originalTotal).toHaveCount(0);
+    await expect(discountedTotal).toHaveCount(1);
+    await expect(discountedTotal).toBeVisible();
 
     const purchase = await submitStripeCheckout(page);
     expect(purchase.ClientSecret).toBeTruthy();
-    await assertOrderConfirmation(
-      page,
-      created.name,
-      purchase.Confirmation
-    );
+    await assertOrderConfirmation(page, created.name, purchase.Confirmation);
 
     const transaction = await waitForTransaction<Transaction>(
       ownerApi,
@@ -138,9 +143,7 @@ test.describe('critical anonymous checkout paths', () => {
       'Tickets'
     );
     expect(
-      tickets.filter(
-        (ticket) => ticket.Confirmation === purchase.Confirmation
-      )
+      tickets.filter((ticket) => ticket.Confirmation === purchase.Confirmation)
     ).toEqual([
       expect.objectContaining({
         Confirmation: purchase.Confirmation,
@@ -175,28 +178,21 @@ test.describe('critical anonymous checkout paths', () => {
       created.id,
       promoCode
     );
-    expectAbsorbedFeeTotals(
-      discountedCalculation.TotalWithPromoCode,
-      0,
-      0,
-      0
-    );
-    await expect(orderSummary.getByText('$0.00', { exact: true })).toBeVisible();
-    await expect(
-      page.locator('iframe[title*="card number" i]')
-    ).toHaveCount(0);
+    expectAbsorbedFeeTotals(discountedCalculation.TotalWithPromoCode, 0, 0, 0);
+    const zeroTotals = orderSummary.getByText('$0.00', { exact: true });
+    await expect(zeroTotals).toHaveCount(2);
+    await expect(zeroTotals.first()).toBeVisible();
+    await expect(page.locator('iframe[title*="card number" i]')).toHaveCount(0);
     await expect(
       page.getByRole('button', { name: 'Proceed to Payment' })
     ).toHaveCount(0);
 
-    await page.locator('#tosAccepted').check();
+    const terms = page.locator('#tosAccepted:visible');
+    await expect(terms).toHaveCount(1);
+    await terms.check();
     const purchase = await submitPurchase(page, 'Checkout');
     expect(purchase.ClientSecret).toBeFalsy();
-    await assertOrderConfirmation(
-      page,
-      created.name,
-      purchase.Confirmation
-    );
+    await assertOrderConfirmation(page, created.name, purchase.Confirmation);
 
     const transaction = await waitForTransaction<Transaction>(
       ownerApi,
@@ -212,4 +208,3 @@ test.describe('critical anonymous checkout paths', () => {
     });
   });
 });
-

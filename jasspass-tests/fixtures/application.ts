@@ -39,8 +39,22 @@ export type PromoCodeInput = {
 };
 
 export type CustomCheckoutItemInput = {
-  Kind: 'Text' | 'Number' | 'Checkbox' | 'Date' | 'Email' | 'Dropdown' | 'MultipleSelection';
-  Type: 'Text' | 'Number' | 'Checkbox' | 'Date' | 'Email' | 'Dropdown' | 'MultipleSelection';
+  Kind:
+    | 'Text'
+    | 'Number'
+    | 'Checkbox'
+    | 'Date'
+    | 'Email'
+    | 'Dropdown'
+    | 'MultipleSelection';
+  Type:
+    | 'Text'
+    | 'Number'
+    | 'Checkbox'
+    | 'Date'
+    | 'Email'
+    | 'Dropdown'
+    | 'MultipleSelection';
   Label: string;
   IsRequired: boolean;
   Order: number;
@@ -95,6 +109,22 @@ export type CreatedEvent = {
   organizerId: string;
   event: Record<string, unknown>;
   ticketTypes: CreatedTicketType[];
+};
+
+type OrganizerPromoCodeRecord = {
+  PromoCode: {
+    Id: string;
+    Code: string;
+    DiscountPercentage: number;
+  };
+};
+
+type PromoCodeAttachmentRecord = {
+  PromoCodeId: string;
+  EventId: string;
+  TicketTypeId: string;
+  UsageLimit: number;
+  IsActive: boolean;
 };
 
 export type EventFactory = {
@@ -210,185 +240,325 @@ function buildEventPayload(
       : {}),
     emailLanguage: 'English',
     organizerFeeLabel: 'Processing Fees',
-    strictTicketIdentification:
-      options.strictTicketIdentification ?? false,
+    strictTicketIdentification: options.strictTicketIdentification ?? false,
     ...(!isFreeEvent ? { eventPaymentMethods: ['Stripe'] } : {}),
     startDateTimeUtc: startsAt.toISOString(),
     endDateTimeUtc: endsAt.toISOString(),
   };
 }
 
-export const test = base.extend<
-  ApplicationFixtures,
-  ApplicationWorkerFixtures
->({
-  ownerStorageState: [
-    async ({ browser }, use) => {
-      const context = await browser.newContext();
-      const page = await context.newPage();
-      await signIn(page);
-      await expect(page).not.toHaveURL(/\/signin(?:\?|$)/);
-      const storageState = await context.storageState();
-      await context.close();
-      await use(storageState);
-    },
-    { scope: 'worker' },
-  ],
+async function readOrganizerPromoCodes(
+  ownerApi: APIRequestContext,
+  organizerId: string
+): Promise<OrganizerPromoCodeRecord[]> {
+  const response = await ownerApi.get(
+    `/api/protected/organizers/${organizerId}/promocodes`
+  );
+  await requireOk(response, `Read promo codes for organizer ${organizerId}`);
+  return asArray<OrganizerPromoCodeRecord>(
+    await response.json(),
+    'OrganizerPromoCodes'
+  );
+}
 
-  ownerIdentity: [
-    async ({ playwright, ownerStorageState }, use) => {
+async function ensurePromoCodeAttachments(
+  ownerApi: APIRequestContext,
+  organizerId: string,
+  eventId: string,
+  ticketTypes: CreatedTicketType[],
+  promoCodes: PromoCodeInput[]
+): Promise<void> {
+  for (const promoCode of promoCodes) {
+    let organizerPromoCode = (await readOrganizerPromoCodes(
+      ownerApi,
+      organizerId
+    )).find(
+      (candidate) =>
+        candidate.PromoCode.Code.toLowerCase() === promoCode.code.toLowerCase()
+    );
+
+    if (!organizerPromoCode) {
+      const createResponse = await ownerApi.post(
+        `/api/protected/organizers/${organizerId}/promocodes`,
+        {
+          data: {
+            Code: promoCode.code,
+            DiscountPercentage: promoCode.discountPercentage,
+            DiscountFixedAmount: 0,
+            OrganizerId: organizerId,
+          },
+        }
+      );
+      if (createResponse.status() !== 409) {
+        await requireOk(
+          createResponse,
+          `Create organizer promo code ${promoCode.code}`
+        );
+      }
+
+      await expect
+        .poll(
+          async () => {
+            organizerPromoCode = (await readOrganizerPromoCodes(
+              ownerApi,
+              organizerId
+            )).find(
+              (candidate) =>
+                candidate.PromoCode.Code.toLowerCase() ===
+                promoCode.code.toLowerCase()
+            );
+            return organizerPromoCode?.PromoCode.Id;
+          },
+          { timeout: 30_000, intervals: [500, 1_000, 2_000] }
+        )
+        .not.toBeUndefined();
+    }
+
+    for (const ticketType of ticketTypes) {
+      const attachResponse = await ownerApi.post(
+        `/api/protected/organizers/${organizerId}/promocodes/ticket-types/${ticketType.Id}/attach`,
+        {
+          data: {
+            PromoCodeId: organizerPromoCode!.PromoCode.Id,
+            EventId: eventId,
+            TicketTypeId: ticketType.Id,
+            UsageLimit: promoCode.usageLimit ?? 100,
+            IsActive: promoCode.isActive ?? true,
+          },
+        }
+      );
+      if (attachResponse.status() !== 409) {
+        await requireOk(
+          attachResponse,
+          `Attach promo code ${promoCode.code} to ticket type ${ticketType.Id}`
+        );
+      }
+    }
+  }
+
+  const attachmentsResponse = await ownerApi.get(
+    `/api/protected/organizers/${organizerId}/promocodes/attachments?event=${eventId}`
+  );
+  await requireOk(
+    attachmentsResponse,
+    `Read promo-code attachments for event ${eventId}`
+  );
+  const attachments = asArray<PromoCodeAttachmentRecord>(
+    await attachmentsResponse.json(),
+    'Attachments'
+  );
+  const expectedAttachmentCount = promoCodes.length * ticketTypes.length;
+  expect(
+    attachments.filter((attachment) => attachment.EventId === eventId)
+  ).toHaveLength(expectedAttachmentCount);
+}
+
+export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
+  {
+    ownerStorageState: [
+      async ({ browser }, use) => {
+        const context = await browser.newContext();
+        const page = await context.newPage();
+        await signIn(page);
+        await expect(page).not.toHaveURL(/\/signin(?:\?|$)/);
+        const storageState = await context.storageState();
+        await context.close();
+        await use(storageState);
+      },
+      { scope: 'worker' },
+    ],
+
+    ownerIdentity: [
+      async ({ playwright, ownerStorageState }, use) => {
+        const api = await playwright.request.newContext({
+          baseURL: JASS_TEST_URL,
+          storageState: ownerStorageState,
+        });
+
+        const profileResponse = await api.get('/api/protected/profile/me');
+        await requireOk(profileResponse, 'Fetch signed-in profile');
+        const profile = (await profileResponse.json()) as Record<
+          string,
+          unknown
+        >;
+        const userId = String(profile.Id ?? '');
+        if (!userId) {
+          throw new Error(
+            'The signed-in profile response did not contain an Id.'
+          );
+        }
+
+        const organizersResponse = await api.get(
+          `/api/protected/users/${userId}/organizers`
+        );
+        await requireOk(organizersResponse, 'Fetch owner organizers');
+        const organizers = asArray<Record<string, unknown>>(
+          await organizersResponse.json(),
+          'Organizers'
+        );
+
+        const stripeOrganizers = organizers.filter((organizer) => {
+          const paymentMethods = asArray<Record<string, unknown>>(
+            organizer.PaymentMethods,
+            'PaymentMethods'
+          );
+          return paymentMethods.some(
+            (paymentMethod) =>
+              paymentMethod.Name === 'Stripe' &&
+              paymentMethod.OnboardingStatus === 'Active'
+          );
+        });
+        const preferredOrganizers = stripeOrganizers.filter((candidate) =>
+          String(candidate.Name ?? '').startsWith(ORGANIZER_NAME_PREFIX)
+        );
+        const organizer = [
+          ...(preferredOrganizers.length
+            ? preferredOrganizers
+            : stripeOrganizers),
+        ].sort(
+          (left, right) =>
+            Date.parse(String(right.CreatedAtUtc ?? '')) -
+            Date.parse(String(left.CreatedAtUtc ?? ''))
+        )[0];
+
+        if (!organizer?.Id) {
+          throw new Error(
+            'No organizer with Stripe enabled is available for critical checkout tests.'
+          );
+        }
+
+        await use({
+          userId,
+          organizerId: String(organizer.Id),
+          organizerName: String(organizer.Name ?? ''),
+          countryIso: String(organizer.CountryIso ?? 'CA'),
+        });
+        await api.dispose();
+      },
+      { scope: 'worker' },
+    ],
+
+    ownerApi: async ({ playwright, ownerStorageState }, use) => {
       const api = await playwright.request.newContext({
         baseURL: JASS_TEST_URL,
         storageState: ownerStorageState,
       });
-
-      const profileResponse = await api.get('/api/protected/profile/me');
-      await requireOk(profileResponse, 'Fetch signed-in profile');
-      const profile = (await profileResponse.json()) as Record<string, unknown>;
-      const userId = String(profile.Id ?? '');
-      if (!userId) {
-        throw new Error('The signed-in profile response did not contain an Id.');
-      }
-
-      const organizersResponse = await api.get(
-        `/api/protected/users/${userId}/organizers`
-      );
-      await requireOk(organizersResponse, 'Fetch owner organizers');
-      const organizers = asArray<Record<string, unknown>>(
-        await organizersResponse.json(),
-        'Organizers'
-      );
-
-      const stripeOrganizers = organizers.filter((organizer) => {
-        const paymentMethods = asArray<Record<string, unknown>>(
-          organizer.PaymentMethods,
-          'PaymentMethods'
-        );
-        return paymentMethods.some(
-          (paymentMethod) => paymentMethod.Name === 'Stripe'
-        );
-      });
-      const organizer =
-        stripeOrganizers.find((candidate) =>
-          String(candidate.Name ?? '').startsWith(ORGANIZER_NAME_PREFIX)
-        ) ?? stripeOrganizers[0];
-
-      if (!organizer?.Id) {
-        throw new Error(
-          'No organizer with Stripe enabled is available for critical checkout tests.'
-        );
-      }
-
-      await use({
-        userId,
-        organizerId: String(organizer.Id),
-        organizerName: String(organizer.Name ?? ''),
-        countryIso: String(organizer.CountryIso ?? 'CA'),
-      });
+      await use(api);
       await api.dispose();
     },
-    { scope: 'worker' },
-  ],
 
-  ownerApi: async ({ playwright, ownerStorageState }, use) => {
-    const api = await playwright.request.newContext({
-      baseURL: JASS_TEST_URL,
-      storageState: ownerStorageState,
-    });
-    await use(api);
-    await api.dispose();
-  },
+    ownerPage: async ({ browser, ownerStorageState }, use) => {
+      const context = await browser.newContext({
+        storageState: ownerStorageState,
+      });
+      const page = await context.newPage();
+      await use(page);
+      await context.close();
+    },
 
-  ownerPage: async ({ browser, ownerStorageState }, use) => {
-    const context = await browser.newContext({ storageState: ownerStorageState });
-    const page = await context.newPage();
-    await use(page);
-    await context.close();
-  },
+    eventFactory: async ({ ownerApi, ownerIdentity }, use) => {
+      const eventsForCleanup: string[] = [];
+      const eventImageResponse = await ownerApi.get('/gallery/photo1.jpg');
+      await requireOk(eventImageResponse, 'Load event fixture image');
+      const eventImageBuffer = await eventImageResponse.body();
 
-  eventFactory: async ({ ownerApi, ownerIdentity }, use) => {
-    const eventsForCleanup: string[] = [];
+      await use({
+        create: async (options = {}) => {
+          const eventName = options.name ?? `PW Critical - ${uniqueSuffix()}`;
+          const payload = buildEventPayload(ownerIdentity, options, eventName);
+          const createResponse = await ownerApi.post('/api/protected/events', {
+            multipart: {
+              eventImageFile: {
+                name: 'photo1.jpg',
+                mimeType: 'image/jpeg',
+                buffer: eventImageBuffer,
+              },
+              request: JSON.stringify(payload),
+            },
+          });
+          await requireOk(createResponse, `Create event "${eventName}"`);
 
-    await use({
-      create: async (options = {}) => {
-        const eventName =
-          options.name ?? `PW Critical - ${uniqueSuffix()}`;
-        const payload = buildEventPayload(ownerIdentity, options, eventName);
-        const createResponse = await ownerApi.post('/api/protected/events', {
-          multipart: {
-            imagePath: '/gallery/photo1.jpg',
-            request: JSON.stringify(payload),
-          },
-        });
-        await requireOk(createResponse, `Create event "${eventName}"`);
+          const createData = (await createResponse.json()) as Record<
+            string,
+            unknown
+          >;
+          const responseEvent =
+            createData.Event && typeof createData.Event === 'object'
+              ? (createData.Event as Record<string, unknown>)
+              : createData;
+          const eventId = String(responseEvent.Id ?? '');
+          if (!eventId) {
+            throw new Error(
+              `Create-event response did not contain an event Id: ${JSON.stringify(
+                createData
+              )}`
+            );
+          }
+          if (options.cleanup ?? true) eventsForCleanup.push(eventId);
 
-        const createData = (await createResponse.json()) as Record<
-          string,
-          unknown
-        >;
-        const responseEvent =
-          createData.Event && typeof createData.Event === 'object'
-            ? (createData.Event as Record<string, unknown>)
-            : createData;
-        const eventId = String(responseEvent.Id ?? '');
-        if (!eventId) {
-          throw new Error(
-            `Create-event response did not contain an event Id: ${JSON.stringify(
-              createData
-            )}`
+          const [eventResponse, ticketTypesResponse] = await Promise.all([
+            ownerApi.get(`/api/public/events/${eventId}`),
+            ownerApi.get(`/api/public/events/${eventId}/ticket-types`),
+          ]);
+          await requireOk(
+            eventResponse,
+            `Read event ${eventId} after creation`
           );
-        }
-        if (options.cleanup ?? true) eventsForCleanup.push(eventId);
+          await requireOk(
+            ticketTypesResponse,
+            `Read ticket types for event ${eventId} after creation`
+          );
 
-        const [eventResponse, ticketTypesResponse] = await Promise.all([
-          ownerApi.get(`/api/public/events/${eventId}`),
-          ownerApi.get(`/api/public/events/${eventId}/ticket-types`),
-        ]);
-        await requireOk(eventResponse, `Read event ${eventId} after creation`);
-        await requireOk(
-          ticketTypesResponse,
-          `Read ticket types for event ${eventId} after creation`
-        );
-
-        const eventJson = (await eventResponse.json()) as Record<
-          string,
-          unknown
-        >;
-        const publicEvent =
-          eventJson.Event && typeof eventJson.Event === 'object'
-            ? (eventJson.Event as Record<string, unknown>)
-            : eventJson;
+          const eventJson = (await eventResponse.json()) as Record<
+            string,
+            unknown
+          >;
+          const publicEvent =
+            eventJson.Event && typeof eventJson.Event === 'object'
+              ? (eventJson.Event as Record<string, unknown>)
+              : eventJson;
         const ticketTypes = asArray<CreatedTicketType>(
           await ticketTypesResponse.json(),
           'TicketTypes'
         );
 
-        expect(publicEvent.Id).toBe(eventId);
+          expect(publicEvent.Id).toBe(eventId);
         expect(publicEvent.Name).toBe(eventName);
         expect(ticketTypes).toHaveLength(options.tickets?.length ?? 1);
 
-        return {
-          id: eventId,
-          name: eventName,
-          organizerId: ownerIdentity.organizerId,
-          event: publicEvent,
-          ticketTypes,
-        };
-      },
-    });
+        if (options.promoCodes?.length) {
+          await ensurePromoCodeAttachments(
+            ownerApi,
+            ownerIdentity.organizerId,
+            eventId,
+            ticketTypes,
+            options.promoCodes
+          );
+        }
 
-    for (const eventId of eventsForCleanup.reverse()) {
-      const deleteResponse = await ownerApi.delete(
-        `/api/protected/events/${eventId}/delete`
-      );
-      if (!deleteResponse.ok() && deleteResponse.status() !== 404) {
-        const body = await deleteResponse.text().catch(() => '<unreadable>');
-        console.warn(
-          `[cleanup] Event ${eventId} could not be deleted (${deleteResponse.status()}): ${body}`
+        return {
+            id: eventId,
+            name: eventName,
+            organizerId: ownerIdentity.organizerId,
+            event: publicEvent,
+            ticketTypes,
+          };
+        },
+      });
+
+      for (const eventId of eventsForCleanup.reverse()) {
+        const deleteResponse = await ownerApi.delete(
+          `/api/protected/events/${eventId}/delete`
         );
+        if (!deleteResponse.ok() && deleteResponse.status() !== 404) {
+          const body = await deleteResponse.text().catch(() => '<unreadable>');
+          console.warn(
+            `[cleanup] Event ${eventId} could not be deleted (${deleteResponse.status()}): ${body}`
+          );
+        }
       }
-    }
-  },
-});
+    },
+  }
+);
 
 export { expect } from '@playwright/test';

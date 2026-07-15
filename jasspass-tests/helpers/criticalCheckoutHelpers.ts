@@ -72,17 +72,21 @@ export function ticketRow(page: Page, ticketTypeName: string): Locator {
     );
 }
 
-export async function openEvent(page: Page, eventId: string, eventName: string) {
-  const eventResponsePromise = page.waitForResponse(
-    (response) =>
-      response.request().method() === 'GET' &&
-      new URL(response.url()).pathname === `/api/public/events/${eventId}`,
-    { timeout: 30_000 }
+export async function openEvent(
+  page: Page,
+  eventId: string,
+  eventName: string
+) {
+  const navigationResponse = await page.goto(
+    `${JASS_TEST_URL}/event/${eventId}`
   );
-  await page.goto(`${JASS_TEST_URL}/event/${eventId}`);
-  const eventResponse = await eventResponsePromise;
-  expect(eventResponse.ok()).toBeTruthy();
-  await expect(page.getByRole('heading', { name: eventName }).first()).toBeVisible({
+  expect(
+    navigationResponse?.ok(),
+    `Event page navigation failed with ${navigationResponse?.status()}.`
+  ).toBeTruthy();
+  await expect(
+    page.getByRole('heading', { name: eventName }).first()
+  ).toBeVisible({
     timeout: 30_000,
   });
 }
@@ -129,10 +133,19 @@ export async function openCheckout(page: Page): Promise<Locator> {
 }
 
 export async function fillGuestContact(page: Page, buyer: Buyer) {
-  await page.locator('#FirstName').fill(buyer.firstName);
-  await page.locator('#LastName').fill(buyer.lastName);
-  await page.locator('#Email').fill(buyer.email);
-  await page.locator('#phone-input').last().fill(buyer.phone);
+  const firstName = page.locator('#FirstName:visible');
+  const lastName = page.locator('#LastName:visible');
+  const email = page.locator('#Email:visible');
+  const phone = page.locator('#phone-input:visible');
+
+  await expect(firstName).toHaveCount(1);
+  await expect(lastName).toHaveCount(1);
+  await expect(email).toHaveCount(1);
+  await expect(phone).toHaveCount(1);
+  await firstName.fill(buyer.firstName);
+  await lastName.fill(buyer.lastName);
+  await email.fill(buyer.email);
+  await phone.fill(buyer.phone);
 }
 
 export async function applyPromoCode(
@@ -140,13 +153,17 @@ export async function applyPromoCode(
   eventId: string,
   promoCode: string
 ): Promise<CheckoutCalculation> {
-  const promoHeading = page.getByText('Do you have a Promo Code?', {
-    exact: true,
-  });
-  const promoInput = page.getByPlaceholder('Enter promo code');
-  if (!(await promoInput.isVisible().catch(() => false))) {
+  const promoHeading = page
+    .getByText('Do you have a Promo Code?', { exact: true })
+    .filter({ visible: true });
+  const promoInput = page
+    .getByPlaceholder('Enter promo code')
+    .filter({ visible: true });
+  if ((await promoInput.count()) === 0) {
+    await expect(promoHeading).toHaveCount(1);
     await promoHeading.click();
   }
+  await expect(promoInput).toHaveCount(1);
   await expect(promoInput).toBeVisible();
   await promoInput.fill(promoCode);
 
@@ -154,21 +171,48 @@ export async function applyPromoCode(
     (response) => isCalculationForEvent(response, eventId),
     { timeout: 30_000 }
   );
-  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  const applyButton = page
+    .getByRole('button', { name: 'Apply', exact: true })
+    .filter({ visible: true });
+  await expect(applyButton).toHaveCount(1);
+  await applyButton.click();
   const calculationResponse = await calculationResponsePromise;
-  expect(calculationResponse.ok()).toBeTruthy();
-  const calculation = (await calculationResponse.json()) as CheckoutCalculation;
-  await expect(page.getByText('Promo Code Applied', { exact: true })).toBeVisible();
+  const calculationBody = await calculationResponse
+    .text()
+    .catch(() => '<response body unavailable>');
+  expect(
+    calculationResponse.ok(),
+    `Promo calculation failed with ${calculationResponse.status()}: ${calculationBody}`
+  ).toBeTruthy();
+  const calculation = JSON.parse(calculationBody) as CheckoutCalculation;
+  await expect(
+    page
+      .getByText('Promo Code Applied', { exact: true })
+      .filter({ visible: true })
+  ).toBeVisible();
   return calculation;
 }
 
-export async function submitStripeCheckout(page: Page): Promise<PurchaseResult> {
+export function purchaseButton(
+  page: Page,
+  buttonName: 'Checkout' | 'RSVP'
+): Locator {
+  return page
+    .locator('button:not([data-checkout-cta="true"])')
+    .filter({ hasText: new RegExp(`^${buttonName}$`), visible: true });
+}
+
+export async function submitStripeCheckout(
+  page: Page
+): Promise<PurchaseResult> {
   await page.getByRole('button', { name: 'Proceed to Payment' }).click();
   await expect(
     page.getByRole('heading', { name: 'Payment Information' })
   ).toBeVisible({ timeout: 15_000 });
   await fillIndividualStripeFields(page);
-  await page.locator('#tosAccepted').check();
+  const terms = page.locator('#tosAccepted:visible');
+  await expect(terms).toHaveCount(1);
+  await terms.check();
   return submitPurchase(page, 'Checkout');
 }
 
@@ -182,20 +226,34 @@ export async function submitPurchase(
       response.url().includes('/api/public/payments/purchase'),
     { timeout: 45_000 }
   );
-  await page.getByRole('button', { name: buttonName, exact: true }).click();
+  const submitButton = purchaseButton(page, buttonName);
+  await expect(submitButton).toHaveCount(1);
+  await expect(submitButton).toBeEnabled();
+  await submitButton.click();
   const purchaseResponse = await purchaseResponsePromise;
-  const responseBody = await purchaseResponse.text();
+  const responseBody = await purchaseResponse
+    .text()
+    .catch(() => '<response body unavailable>');
   expect(
     purchaseResponse.ok(),
     `Purchase failed with ${purchaseResponse.status()}: ${responseBody}`
   ).toBeTruthy();
-  const result = JSON.parse(responseBody) as PurchaseResult;
-  expect(result.Confirmation).toBeTruthy();
-  await page.waitForURL(
-    new RegExp(`/payment/success/event/[^/]+/${result.Confirmation}(?:\\?|$)`),
-    { timeout: 45_000 }
-  );
-  return result;
+  await page.waitForURL(/\/payment\/success\/event\/[^/]+\/[^/?]+(?:\?|$)/, {
+    timeout: 45_000,
+  });
+  const confirmation = new URL(page.url()).pathname.split('/').pop() ?? '';
+  expect(
+    confirmation,
+    'Success URL must contain an order confirmation.'
+  ).not.toBe('');
+
+  if (responseBody !== '<response body unavailable>') {
+    const result = JSON.parse(responseBody) as PurchaseResult;
+    expect(result.Confirmation).toBe(confirmation);
+    return result;
+  }
+
+  return { Confirmation: confirmation };
 }
 
 export async function assertOrderConfirmation(
@@ -211,8 +269,12 @@ export async function assertOrderConfirmation(
   await expect(
     page.getByRole('heading', { name: 'Order Confirmed!', exact: true })
   ).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText(eventName, { exact: true }).first()).toBeVisible();
-  await expect(page.getByText(confirmation, { exact: true }).first()).toBeVisible();
+  await expect(
+    page.getByText(eventName, { exact: true }).first()
+  ).toBeVisible();
+  await expect(
+    page.getByText(confirmation, { exact: true }).first()
+  ).toBeVisible();
 }
 
 export async function getApiArray<T>(

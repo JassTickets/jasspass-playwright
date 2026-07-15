@@ -33,10 +33,7 @@ type Refund = {
   Complete: boolean;
 };
 
-async function openOrder(
-  ownerPage: Page,
-  confirmation: string
-) {
+async function openOrder(ownerPage: Page, confirmation: string) {
   const search = ownerPage.getByRole('textbox', { name: 'Search Orders' });
   await expect(search).toBeVisible({ timeout: 30_000 });
   await search.fill(confirmation);
@@ -85,7 +82,9 @@ async function submitOneTicketRefund(
     refundResponsePromise,
     refundRequestPromise,
   ]);
-  const responseBody = await refundResponse.text();
+  const responseBody = await refundResponse
+    .text()
+    .catch(() => '<response body unavailable>');
   expect(
     refundResponse.ok(),
     `Refund failed with ${refundResponse.status()}: ${responseBody}`
@@ -124,11 +123,7 @@ test.describe('partial-to-full refund lifecycle', () => {
     await openCheckout(page);
     await fillGuestContact(page, buyer);
     const purchase = await submitStripeCheckout(page);
-    await assertOrderConfirmation(
-      page,
-      created.name,
-      purchase.Confirmation
-    );
+    await assertOrderConfirmation(page, created.name, purchase.Confirmation);
 
     const originalTransaction = await waitForTransaction<Transaction>(
       ownerApi,
@@ -181,9 +176,7 @@ test.describe('partial-to-full refund lifecycle', () => {
               ownerApi.get(`/api/protected/events/${created.id}/tickets`),
               'Tickets'
             )
-          ).filter(
-            (ticket) => ticket.Confirmation === purchase.Confirmation
-          );
+          ).filter((ticket) => ticket.Confirmation === purchase.Confirmation);
           return ticketsAfterPartial.map((ticket) => ticket.Status).sort();
         },
         { timeout: 30_000, intervals: [500, 1_000, 2_000] }
@@ -225,9 +218,7 @@ test.describe('partial-to-full refund lifecycle', () => {
               ownerApi.get(`/api/protected/events/${created.id}/tickets`),
               'Tickets'
             )
-          ).filter(
-            (ticket) => ticket.Confirmation === purchase.Confirmation
-          );
+          ).filter((ticket) => ticket.Confirmation === purchase.Confirmation);
           return finalTickets.map((ticket) => ticket.Status).sort();
         },
         { timeout: 30_000, intervals: [500, 1_000, 2_000] }
@@ -235,9 +226,7 @@ test.describe('partial-to-full refund lifecycle', () => {
       .toEqual(['RefundedBeforeEvent', 'RefundedBeforeEvent']);
     expect(finalTickets).toHaveLength(2);
     expect(
-      finalTickets.every(
-        (ticket) => ticket.Status === 'RefundedBeforeEvent'
-      )
+      finalTickets.every((ticket) => ticket.Status === 'RefundedBeforeEvent')
     ).toBe(true);
 
     const refunds = (

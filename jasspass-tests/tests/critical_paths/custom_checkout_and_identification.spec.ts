@@ -6,6 +6,7 @@ import {
   getApiArray,
   openCheckout,
   openEvent,
+  purchaseButton,
   selectTicketQuantity,
   submitPurchase,
   waitForTransaction,
@@ -107,9 +108,11 @@ test.describe('custom checkout and strict ticket identification', () => {
     ).toBeVisible();
 
     await dietaryInput.fill(dietaryValue);
-    await page.getByRole('checkbox', { name: new RegExp(consentLabel) }).check();
+    await page
+      .getByRole('checkbox', { name: new RegExp(consentLabel) })
+      .check();
     await page.getByRole('button', { name: 'Next', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'RSVP' })).toBeEnabled();
+    await expect(purchaseButton(page, 'RSVP')).toBeEnabled();
 
     const purchaseRequestPromise = page.waitForRequest(
       (request) =>
@@ -140,11 +143,7 @@ test.describe('custom checkout and strict ticket identification', () => {
       expect.arrayContaining([dietaryValue, true])
     );
 
-    await assertOrderConfirmation(
-      page,
-      created.name,
-      purchase.Confirmation
-    );
+    await assertOrderConfirmation(page, created.name, purchase.Confirmation);
     const transaction = await waitForTransaction<Transaction>(
       ownerApi,
       created.id,
@@ -183,4 +182,3 @@ test.describe('custom checkout and strict ticket identification', () => {
     );
   });
 });
-
