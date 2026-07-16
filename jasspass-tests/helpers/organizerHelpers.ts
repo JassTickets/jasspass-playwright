@@ -306,43 +306,27 @@ export async function deletePromoCode(page: Page, promoCode: string) {
 export async function addTeamMember(page: Page) {
   await page.getByRole('button', { name: 'Team' }).click();
 
-  const memberRow = page.getByRole('row', {
-    name: new RegExp(TEAM_MEMBER_EMAIL, 'i'),
-  });
-  if (await memberRow.isVisible({ timeout: 10_000 }).catch(() => false)) {
-    return memberRow;
+  const memberEmail = page.getByText(TEAM_MEMBER_EMAIL, { exact: true });
+  if (await memberEmail.isVisible({ timeout: 10_000 }).catch(() => false)) {
+    return memberEmail;
   }
 
   const configurePoliciesButton = page.getByRole('button', {
     name: /Configure Policies/i,
   });
+  await expect(configurePoliciesButton).toBeVisible({ timeout: 15_000 });
+  await page.locator('#email1').fill(TEAM_MEMBER_EMAIL);
+  await configurePoliciesButton.click();
 
-  if ((await configurePoliciesButton.count()) > 0) {
-    await expect(page.locator('#email1')).toBeVisible({ timeout: 15_000 });
-    await page.locator('#email1').click();
-    await page.locator('#email1').fill(TEAM_MEMBER_EMAIL);
-    await configurePoliciesButton.first().click();
+  const selectAllPoliciesButton = page.getByRole('button', {
+    name: /Select All Policies/i,
+  });
+  await expect(selectAllPoliciesButton).toBeVisible({ timeout: 15_000 });
+  await selectAllPoliciesButton.click();
+  await page.getByRole('button', { name: 'Add Team Member' }).click();
 
-    const selectAllPoliciesButton = page.getByRole('button', {
-      name: /Select All Policies/i,
-    });
-    if ((await selectAllPoliciesButton.count()) > 0) {
-      await selectAllPoliciesButton.first().click();
-    }
-
-    await page.getByRole('button', { name: 'Add Team Member' }).last().click();
-  } else {
-    // Backward-compatible flow with modal + role selection.
-    await page.getByRole('button', { name: 'Add Team Member' }).click();
-    await page.locator('#email1').click();
-    await page.locator('#email1').fill(TEAM_MEMBER_EMAIL);
-    await page.getByRole('button', { name: 'Add Team Member' }).click();
-    await page.getByRole('radio', { name: 'Organizer Owner' }).check();
-    await page.getByRole('button', { name: 'Add Team Member' }).click();
-  }
-
-  await expect(memberRow).toBeVisible({ timeout: 30_000 });
-  return memberRow;
+  await expect(memberEmail).toBeVisible({ timeout: 30_000 });
+  return memberEmail;
 }
 
 export async function accessStripeFinance(page: Page) {

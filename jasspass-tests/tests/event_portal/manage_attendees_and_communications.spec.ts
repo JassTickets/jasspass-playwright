@@ -11,20 +11,20 @@ test.setTimeout(180_000);
 // @Dependencies: Depends on sign-in and create-event functionality.
 test('manageEventAttendeesAndCommunications', async ({ page }) => {
   console.log(
-    '[INFO] Executing Manage Event Attendees and Communications test...',
+    '[INFO] Executing Manage Event Attendees and Communications test...'
   );
 
   // Create a fresh event so complimentary ticket inventory is isolated for this test.
   const organizerPage = await createEventAndOpenOrganizerPortal(page);
 
   // Execute the complete workflow: book ticket, send message, verify communications
-  const { sendButton, messageCell } =
+  const { sendButton, messageHeading } =
     await manageEventAttendeesAndCommunications(organizerPage);
 
   await expect(sendButton).toBeHidden();
-  await expect(messageCell).toBeVisible({ timeout: 30_000 });
+  await expect(messageHeading).toBeVisible({ timeout: 30_000 });
 
   console.log(
-    '[INFO] Manage Event Attendees and Communications test completed successfully.',
+    '[INFO] Manage Event Attendees and Communications test completed successfully.'
   );
 });
