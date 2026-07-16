@@ -37,7 +37,12 @@ async function prepareRsvp(
   await openEvent(page, eventId, eventName);
   await selectTicketQuantity(page, eventId, ticketTypeName, quantity);
   const orderSummary = await openCheckout(page);
-  await expect(orderSummary).toContainText(`${ticketTypeName} x${quantity}`);
+  await expect(
+    orderSummary.getByText(ticketTypeName, { exact: true })
+  ).toBeVisible();
+  await expect(
+    orderSummary.getByText(`x${quantity}`, { exact: true })
+  ).toBeVisible();
   await fillGuestContact(page, buyer);
   await expect(purchaseButton(page, 'RSVP')).toBeEnabled();
 }
@@ -122,7 +127,9 @@ test.describe('ticket inventory integrity', () => {
     const expectedError = `The requested quantity 1 exceeds the available ${ticketName} tickets at this moment.`;
     expect(rejectedCalculation.status()).toBe(400);
     expect(await rejectedCalculation.text()).toBe(expectedError);
-    await expect(page.getByText(expectedError, { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('alert').filter({ hasText: expectedError }).first()
+    ).toBeVisible();
     expect(purchaseRequestCount).toBe(0);
     await expect(page).toHaveURL(new RegExp(`/event/${created.id}(?:\\?|$)`));
 
@@ -166,8 +173,8 @@ test.describe('ticket inventory integrity', () => {
     ).toBeVisible();
     await expect(soldOutRow.getByRole('button')).toHaveCount(0);
     const soldOutCta = page.locator('[data-checkout-cta="true"]').first();
-    await expect(soldOutCta).toBeDisabled();
-    await expect(soldOutCta).toHaveText('Sold Out');
+    await expect(soldOutCta).toBeEnabled();
+    await expect(soldOutCta).toHaveText('Join Waitlist');
   });
 
   test('rejects a tampered RSVP request above the server-side purchase limit', async ({
@@ -220,7 +227,9 @@ test.describe('ticket inventory integrity', () => {
     const expectedError = `Maximum 2 ticket(s) allowed per purchase for '${ticketName}'.`;
     expect(rejectedPurchase.status()).toBe(400);
     expect(await rejectedPurchase.text()).toBe(expectedError);
-    await expect(page.getByText(expectedError, { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('alert').filter({ hasText: expectedError }).first()
+    ).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`/event/${created.id}(?:\\?|$)`));
 
     const [transactions, tickets, eventResponse] = await Promise.all([

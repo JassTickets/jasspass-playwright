@@ -53,9 +53,7 @@ test.describe('event visibility boundaries', () => {
     const [organizerEvents, directEventResponse, fullEventResponse] =
       await Promise.all([
         getApiArray<PublicEvent>(
-          ownerApi.get(
-            `/api/public/organizers/${created.organizerId}/events`
-          ),
+          ownerApi.get(`/api/public/organizers/${created.organizerId}/events`),
           'Events'
         ),
         ownerApi.get(`/api/public/events/${created.id}`),
@@ -83,7 +81,10 @@ test.describe('event visibility boundaries', () => {
     await expect(page.getByText(ticketName, { exact: true })).toBeVisible();
     await selectTicketQuantity(page, created.id, ticketName, 1);
     const orderSummary = await openCheckout(page);
-    await expect(orderSummary).toContainText(`${ticketName} x1`);
+    await expect(
+      orderSummary.getByText(ticketName, { exact: true })
+    ).toBeVisible();
+    await expect(orderSummary.getByText('x1', { exact: true })).toBeVisible();
     await fillGuestContact(page, buyer);
     const purchase = await submitPurchase(page, 'RSVP');
     await assertOrderConfirmation(page, created.name, purchase.Confirmation);

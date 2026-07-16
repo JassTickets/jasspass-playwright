@@ -72,9 +72,7 @@ test.describe('promo-code usage integrity', () => {
     const promoCode = `PWONCE${Date.now().toString().slice(-6)}`;
     const created = await eventFactory.create({
       tickets: [{ type: ticketName, price: 20, totalTickets: 10 }],
-      promoCodes: [
-        { code: promoCode, discountPercentage: 100, usageLimit: 1 },
-      ],
+      promoCodes: [{ code: promoCode, discountPercentage: 100, usageLimit: 1 }],
       absorbServiceFees: true,
       absorbTransactionFees: true,
     });
@@ -150,7 +148,9 @@ test.describe('promo-code usage integrity', () => {
     const expectedError = `${promoCode} has reached its usage limit!`;
     expect(rejectedCalculation.status()).toBe(400);
     expect(await rejectedCalculation.text()).toBe(expectedError);
-    await expect(page.getByText(expectedError, { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('alert').filter({ hasText: expectedError }).first()
+    ).toBeVisible();
     expect(purchaseRequestCount).toBe(0);
     await expect(page).toHaveURL(new RegExp(`/event/${created.id}(?:\\?|$)`));
 

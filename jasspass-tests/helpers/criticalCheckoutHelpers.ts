@@ -47,7 +47,11 @@ export function createUniqueBuyer(label: string): Buyer {
   };
 }
 
-function isCalculationForEvent(response: Response, eventId: string): boolean {
+function isCalculationForEvent(
+  response: Response,
+  eventId: string,
+  promoCode?: string
+): boolean {
   if (
     response.request().method() !== 'POST' ||
     !response.url().includes('/api/public/payments/checkout')
@@ -56,8 +60,14 @@ function isCalculationForEvent(response: Response, eventId: string): boolean {
   }
 
   try {
-    const body = response.request().postDataJSON() as { EventId?: string };
-    return body.EventId === eventId;
+    const body = response.request().postDataJSON() as {
+      EventId?: string;
+      PromoCode?: string | null;
+    };
+    return (
+      body.EventId === eventId &&
+      (promoCode === undefined || body.PromoCode === promoCode)
+    );
   } catch {
     return false;
   }
@@ -168,7 +178,7 @@ export async function applyPromoCode(
   await promoInput.fill(promoCode);
 
   const calculationResponsePromise = page.waitForResponse(
-    (response) => isCalculationForEvent(response, eventId),
+    (response) => isCalculationForEvent(response, eventId, promoCode),
     { timeout: 30_000 }
   );
   const applyButton = page
@@ -198,7 +208,7 @@ export function purchaseButton(
   buttonName: 'Checkout' | 'RSVP'
 ): Locator {
   return page
-    .locator('button:not([data-checkout-cta="true"])')
+    .locator('button.w-full:not([data-checkout-cta="true"])')
     .filter({ hasText: new RegExp(`^${buttonName}$`), visible: true });
 }
 

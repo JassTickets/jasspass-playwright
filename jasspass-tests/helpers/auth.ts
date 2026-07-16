@@ -62,7 +62,33 @@ export async function signIn(
   await page.waitForURL((url) => !url.pathname.includes('/signin'), {
     timeout: 30000,
   });
-  await page.goto(`${baseURL}${targetPath}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(
+    () => {
+      const persistedAuth = window.localStorage.getItem('persist:auth');
+      if (!persistedAuth) return false;
+      try {
+        const auth = JSON.parse(persistedAuth) as { loggedIn?: string };
+        return auth.loggedIn === 'true';
+      } catch {
+        return false;
+      }
+    },
+    undefined,
+    { timeout: 30_000 }
+  );
+  await page.waitForURL((url) => url.pathname.startsWith('/portal/'), {
+    timeout: 30_000,
+  });
+  await expect(
+    page
+      .getByRole('button', { name: 'Discover Events', exact: true })
+      .filter({ visible: true })
+  ).toBeVisible({ timeout: 30_000 });
+
+  const targetUrl = `${baseURL}${targetPath}`;
+  if (page.url() !== targetUrl) {
+    await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
+  }
 }
 
 export async function signOutIfSignedIn(page: Page) {

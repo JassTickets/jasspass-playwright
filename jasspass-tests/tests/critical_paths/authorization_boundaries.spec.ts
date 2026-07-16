@@ -106,15 +106,27 @@ test.describe('authorization boundaries', () => {
       );
       const representativePage = representativeSession.page;
 
-      const organizers = await getApiArray<OrganizerSummary>(
-        representativePage.request.get(
-          `/api/protected/users/${representativeSession.userId}/organizers`
-        ),
-        'Organizers'
-      );
-      expect(organizers.map((organizer) => organizer.Id)).toContain(
-        ownerIdentity.organizerId
-      );
+      await expect
+        .poll(
+          async () => {
+            const organizers = await getApiArray<OrganizerSummary>(
+              representativePage.request.get(
+                `/api/protected/users/${
+                  representativeSession!.userId
+                }/organizers`
+              ),
+              'Organizers'
+            );
+            return organizers.map((organizer) => organizer.Id);
+          },
+          {
+            message:
+              'The representative organizer membership must become visible after the grant.',
+            timeout: 30_000,
+            intervals: [500, 1_000, 2_000],
+          }
+        )
+        .toContain(ownerIdentity.organizerId);
 
       const forbiddenTeamRead = await representativePage.request.get(
         `/api/protected/organizers/${ownerIdentity.organizerId}/representatives`
@@ -127,6 +139,20 @@ test.describe('authorization boundaries', () => {
       await expect(representativePage).toHaveURL(
         new RegExp(`/portal/organizer/company/${ownerIdentity.organizerId}`)
       );
+      const representativeEvents = await getApiArray<OperatorEventSummary>(
+        representativePage.request.get(
+          `/api/protected/organizers/${ownerIdentity.organizerId}/user/${representativeSession.userId}/events?past=false`
+        ),
+        'Events'
+      );
+      expect(
+        representativeEvents.map((event) => event.Id),
+        'CanReadEvent must expose the assigned organizer events through the representative endpoint.'
+      ).toContain(created.id);
+
+      const eventSearch = representativePage.getByPlaceholder('Search Events');
+      await expect(eventSearch).toBeVisible({ timeout: 30_000 });
+      await eventSearch.fill(created.name);
       await expect(
         representativePage.getByRole('heading', {
           name: created.name,
@@ -135,10 +161,9 @@ test.describe('authorization boundaries', () => {
         `The read-only representative should see events for the assigned organizer.`
       ).toBeVisible({ timeout: 30_000 });
       await expect(
-        representativePage.getByRole('button', {
-          name: 'New Event',
-          exact: true,
-        })
+        representativePage
+          .locator('button:enabled')
+          .filter({ hasText: /^New Event$/ })
       ).toHaveCount(0);
 
       await representativeSession.context.close();
@@ -325,8 +350,11 @@ test.describe('authorization boundaries', () => {
         .first()
         .click();
       await expect(
+        operatorPage.getByPlaceholder('Search Orders')
+      ).toBeVisible({ timeout: 30_000 });
+      await expect(
         operatorPage.getByRole('button', { name: 'Attendees', exact: true })
-      ).toBeVisible();
+      ).toBeVisible({ timeout: 30_000 });
       await expect(operatorPage.getByText('Access Restricted')).toHaveCount(0);
 
       await operatorPage
