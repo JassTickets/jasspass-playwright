@@ -1231,7 +1231,10 @@ export async function verifyOperatorAccess(
     .getByPlaceholder('0.00')
     .fill('25.00');
   await page.getByRole('button', { name: 'Add Ticket Type' }).nth(1).click();
-  await expect(page.getByText('Ticket Type added successfully')).toBeVisible();
+  await await page
+    .getByRole('alert')
+    .filter({ hasText: 'Ticket Type added successfully' })
+    .click();
 
   // Verify event editing
   await page.getByRole('button', { name: 'Edit Event' }).click();
