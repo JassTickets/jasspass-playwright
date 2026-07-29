@@ -300,10 +300,13 @@ export async function getApiArray<T>(
   const data = JSON.parse(bodyText) as unknown;
   if (Array.isArray(data)) return data as T[];
   if (data && typeof data === 'object') {
-    const nested = (data as Record<string, unknown>)[property];
+    const record = data as Record<string, unknown>;
+    const nested = record[property] ?? record.Items;
     if (Array.isArray(nested)) return nested as T[];
   }
-  throw new Error(`Expected an array or an object containing "${property}".`);
+  throw new Error(
+    `Expected an array or an object containing "${property}": ${bodyText}`
+  );
 }
 
 export async function waitForTransaction<T extends { Confirmation: string }>(
@@ -331,5 +334,5 @@ export async function waitForTransaction<T extends { Confirmation: string }>(
 }
 
 export function expectMoney(actual: number, expected: number) {
-  expect(actual).toBeCloseTo(expected, 2);
+  expect(Math.round(actual * 100)).toBe(Math.round(expected * 100));
 }

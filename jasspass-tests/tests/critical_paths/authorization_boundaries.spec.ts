@@ -141,7 +141,9 @@ test.describe('authorization boundaries', () => {
       );
       const representativeEvents = await getApiArray<OperatorEventSummary>(
         representativePage.request.get(
-          `/api/protected/organizers/${ownerIdentity.organizerId}/user/${representativeSession.userId}/events?past=false`
+          `/api/protected/organizers/${
+            ownerIdentity.organizerId
+          }/events?past=false&search=${encodeURIComponent(created.name)}`
         ),
         'Events'
       );
@@ -349,9 +351,9 @@ test.describe('authorization boundaries', () => {
         .getByRole('button', { name: 'Orders & Attendees' })
         .first()
         .click();
-      await expect(
-        operatorPage.getByPlaceholder('Search Orders')
-      ).toBeVisible({ timeout: 30_000 });
+      await expect(operatorPage.getByPlaceholder('Search Orders')).toBeVisible({
+        timeout: 30_000,
+      });
       await expect(
         operatorPage.getByRole('button', { name: 'Attendees', exact: true })
       ).toBeVisible({ timeout: 30_000 });

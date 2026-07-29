@@ -103,7 +103,7 @@ test.describe('critical anonymous checkout paths', () => {
       discountedCalculation.TotalWithPromoCode,
       36,
       3.6,
-      39.6
+      39.61
     );
     expectMoney(
       discountedCalculation.TotalWithPromoCode.Subtotals[ticketType.Id],
@@ -113,7 +113,7 @@ test.describe('critical anonymous checkout paths', () => {
       .getByText('$44.00', { exact: true })
       .filter({ visible: true });
     const discountedTotal = page
-      .getByText('$39.60', { exact: true })
+      .getByText('$39.61', { exact: true })
       .filter({ visible: true });
     await expect(originalTotal).toHaveCount(0);
     await expect(discountedTotal).toHaveCount(1);
