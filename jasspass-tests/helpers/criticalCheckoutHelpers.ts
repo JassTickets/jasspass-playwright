@@ -287,6 +287,18 @@ export async function assertOrderConfirmation(
   ).toBeVisible();
 }
 
+export async function assertPurchaseSuccessUrl(
+  page: Page,
+  eventId: string,
+  confirmation: string
+) {
+  await expect(page).toHaveURL(
+    new RegExp(
+      `/payment/success/event/${eventId}/${confirmation}(?:\\?|$)`
+    )
+  );
+}
+
 export async function getApiArray<T>(
   responsePromise: Promise<APIResponse>,
   property: string

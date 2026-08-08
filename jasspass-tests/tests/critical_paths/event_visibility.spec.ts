@@ -1,6 +1,6 @@
 import { test, expect } from '../../fixtures/application';
 import {
-  assertOrderConfirmation,
+  assertPurchaseSuccessUrl,
   createUniqueBuyer,
   fillGuestContact,
   getApiArray,
@@ -87,7 +87,7 @@ test.describe('event visibility boundaries', () => {
     await expect(orderSummary.getByText('x1', { exact: true })).toBeVisible();
     await fillGuestContact(page, buyer);
     const purchase = await submitPurchase(page, 'RSVP');
-    await assertOrderConfirmation(page, created.name, purchase.Confirmation);
+    await assertPurchaseSuccessUrl(page, created.id, purchase.Confirmation);
 
     const transaction = await waitForTransaction<Transaction>(
       ownerApi,

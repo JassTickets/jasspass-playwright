@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/application';
 import {
   applyPromoCode,
-  assertOrderConfirmation,
+  assertPurchaseSuccessUrl,
   createUniqueBuyer,
   fillGuestContact,
   getApiArray,
@@ -101,9 +101,9 @@ test.describe('promo-code usage integrity', () => {
     );
     const winningPurchase = await submitPurchase(competingPage, 'Checkout');
     expect(winningPurchase.ClientSecret).toBeFalsy();
-    await assertOrderConfirmation(
+    await assertPurchaseSuccessUrl(
       competingPage,
-      created.name,
+      created.id,
       winningPurchase.Confirmation
     );
     await competingContext.close();

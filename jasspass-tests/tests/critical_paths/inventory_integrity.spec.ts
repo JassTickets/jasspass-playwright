@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/application';
 import {
-  assertOrderConfirmation,
+  assertPurchaseSuccessUrl,
   createUniqueBuyer,
   fillGuestContact,
   getApiArray,
@@ -85,9 +85,9 @@ test.describe('ticket inventory integrity', () => {
       winningBuyer
     );
     const winningPurchase = await submitPurchase(competingPage, 'RSVP');
-    await assertOrderConfirmation(
+    await assertPurchaseSuccessUrl(
       competingPage,
-      created.name,
+      created.id,
       winningPurchase.Confirmation
     );
     await competingContext.close();

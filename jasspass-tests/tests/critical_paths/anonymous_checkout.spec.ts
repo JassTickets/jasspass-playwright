@@ -2,6 +2,7 @@ import { test, expect } from '../../fixtures/application';
 import {
   applyPromoCode,
   assertOrderConfirmation,
+  assertPurchaseSuccessUrl,
   createUniqueBuyer,
   expectMoney,
   fillGuestContact,
@@ -192,7 +193,7 @@ test.describe('critical anonymous checkout paths', () => {
     await terms.check();
     const purchase = await submitPurchase(page, 'Checkout');
     expect(purchase.ClientSecret).toBeFalsy();
-    await assertOrderConfirmation(page, created.name, purchase.Confirmation);
+    await assertPurchaseSuccessUrl(page, created.id, purchase.Confirmation);
 
     const transaction = await waitForTransaction<Transaction>(
       ownerApi,

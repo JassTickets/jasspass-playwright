@@ -1,6 +1,6 @@
 import { test, expect } from '../../fixtures/application';
 import {
-  assertOrderConfirmation,
+  assertPurchaseSuccessUrl,
   createUniqueBuyer,
   fillGuestContact,
   getApiArray,
@@ -43,7 +43,7 @@ test.describe('ticket check-in lifecycle', () => {
     await openCheckout(page);
     await fillGuestContact(page, buyer);
     const purchase = await submitPurchase(page, 'RSVP');
-    await assertOrderConfirmation(page, created.name, purchase.Confirmation);
+    await assertPurchaseSuccessUrl(page, created.id, purchase.Confirmation);
 
     let purchasedTicket: Ticket | undefined;
     await expect

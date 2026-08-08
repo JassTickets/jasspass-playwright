@@ -162,35 +162,36 @@ export async function editOrganizerDetails(page: Page) {
 export async function addPerformer(page: Page) {
   await page.getByRole('button', { name: 'Performers' }).click();
   await page.getByRole('button', { name: 'Add Performer' }).click();
-  await page.getByRole('textbox', { name: 'Enter performer name' }).click();
 
-  //generate a random performer name
-  const randomPerformerName = `${TEST_PERFORMER_NAME} ${Date.now()}`;
+  const randomPerformerName = `${TEST_PERFORMER_NAME} ${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
   await page
     .getByRole('textbox', { name: 'Enter performer name' })
     .fill(randomPerformerName);
-  await page.getByRole('textbox', { name: 'e.g., DJ, Singer, Band' }).click();
   await page
     .getByRole('textbox', { name: 'e.g., DJ, Singer, Band' })
     .fill(TEST_PERFORMER_ROLE);
-  await page.getByRole('textbox', { name: "Enter performer's bio" }).click();
   await page
     .getByRole('textbox', { name: "Enter performer's bio" })
     .fill(TEST_PERFORMER_BIO);
-  await page.getByRole('button', { name: 'Add Performer' }).nth(1).click();
 
-  // Check that it was added
-
-  // Timeout
-  await page.waitForTimeout(1000);
+  const createResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      new URL(response.url()).pathname.endsWith('/performers'),
+  );
+  await page.getByRole('button', { name: 'Add Performer' }).last().click();
+  const createResponse = await createResponsePromise;
+  expect(createResponse.ok()).toBeTruthy();
 
   // Search for the performer
-  await page.getByRole('textbox', { name: 'Search performers...' }).click();
   await page
     .getByRole('textbox', { name: 'Search performers...' })
     .fill(randomPerformerName);
-
-  await page.getByText(randomPerformerName).click();
+  await expect(
+    page.getByText(randomPerformerName, { exact: true }),
+  ).toBeVisible();
 
   // return the performer name
   return randomPerformerName;
@@ -200,46 +201,57 @@ export async function editPerformer(
   page: Page,
   performerName: string,
 ): Promise<string> {
-  await page.getByText(performerName).click();
-  await page.getByText('Test Performer').click();
+  await page.getByText(performerName, { exact: true }).click();
 
-  await page.getByRole('button', { name: 'Save' }).nth(1).click(); // Generate a new random performer name
-  const newRandomPerformerName = `${NEW_PERFORMER_NAME} ${Date.now()}`;
-  await page
-    .locator('div')
-    .filter({ hasText: /^Name$/ })
-    .getByRole('textbox')
-    .fill(newRandomPerformerName);
-  await page
-    .locator('div')
-    .filter({ hasText: /^Role$/ })
-    .getByRole('textbox')
-    .click();
-  await page
-    .locator('div')
-    .filter({ hasText: /^Role$/ })
-    .getByRole('textbox')
-    .fill(NEW_PERFORMER_ROLE);
-  await page.getByText(TEST_PERFORMER_BIO).click();
-  await page.getByText(TEST_PERFORMER_BIO).fill(NEW_PERFORMER_BIO);
-  //click save nth 1
-  await page.getByRole('button', { name: 'Save' }).nth(1).click();
+  const performerCard = page
+    .getByRole('button', { name: `Delete performer ${performerName}` })
+    .locator(
+      'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " rounded-lg ")][1]',
+    );
+  const editInputs = performerCard.locator('input:not([type="file"])');
+  await expect(editInputs).toHaveCount(2);
+
+  const newRandomPerformerName = `${NEW_PERFORMER_NAME} ${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+  await editInputs.nth(0).fill(newRandomPerformerName);
+  await editInputs.nth(1).fill(NEW_PERFORMER_ROLE);
+  await performerCard.locator('textarea').fill(NEW_PERFORMER_BIO);
+
+  const updateResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'PUT' &&
+      new URL(response.url()).pathname.includes('/performers/'),
+  );
+  await performerCard.getByRole('button', { name: 'Save', exact: true }).click();
+  const updateResponse = await updateResponsePromise;
+  expect(updateResponse.ok()).toBeTruthy();
 
   // Clear the search and search for the new performer name
   await page.getByRole('textbox', { name: 'Search performers...' }).clear();
   await page
     .getByRole('textbox', { name: 'Search performers...' })
     .fill(newRandomPerformerName);
+  await expect(
+    page.getByText(newRandomPerformerName, { exact: true }),
+  ).toBeVisible();
 
   // Return the new performer name
   return newRandomPerformerName;
 }
 
 export async function deletePerformer(page: Page, performerName: string) {
+  const deleteResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'DELETE' &&
+      new URL(response.url()).pathname.includes('/performers/'),
+  );
   await page
     .getByRole('button', { name: `Delete performer ${performerName}` })
     .click();
-  await expect(page.getByText(performerName)).toBeHidden();
+  const deleteResponse = await deleteResponsePromise;
+  expect(deleteResponse.ok()).toBeTruthy();
+  await expect(page.getByText(performerName, { exact: true })).toBeHidden();
 }
 
 export async function addPromoCode(page: Page): Promise<string> {
