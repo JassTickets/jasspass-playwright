@@ -271,9 +271,29 @@ export async function assertOrderConfirmation(
   eventName: string,
   confirmation: string
 ) {
-  const closeButton = page.getByRole('button', { name: 'Close' }).first();
-  if (await closeButton.isVisible({ timeout: 2_000 }).catch(() => false)) {
-    await closeButton.click();
+  const confirmationText = page
+    .getByText(confirmation, { exact: true })
+    .first();
+  await expect(confirmationText).toBeAttached({ timeout: 30_000 });
+
+  // Anonymous buyers are prompted to save their tickets as soon as the ticket
+  // data is ready. Flowbite makes the page behind that dialog inert, so dismiss
+  // the prompt before asserting the confirmation page's accessible content.
+  const continueWithoutJoining = page
+    .getByRole('button', { name: 'Continue without joining', exact: true })
+    .first();
+  const promptAppeared = await continueWithoutJoining
+    .waitFor({ state: 'visible', timeout: 3_000 })
+    .then(() => true)
+    .catch(() => false);
+
+  if (promptAppeared) {
+    await continueWithoutJoining.click();
+  } else {
+    const closeButton = page.getByRole('button', { name: 'Close' }).first();
+    if (await closeButton.isVisible().catch(() => false)) {
+      await closeButton.click();
+    }
   }
 
   await expect(
@@ -282,9 +302,7 @@ export async function assertOrderConfirmation(
   await expect(
     page.getByText(eventName, { exact: true }).first()
   ).toBeVisible();
-  await expect(
-    page.getByText(confirmation, { exact: true }).first()
-  ).toBeVisible();
+  await expect(confirmationText).toBeVisible();
 }
 
 export async function assertPurchaseSuccessUrl(

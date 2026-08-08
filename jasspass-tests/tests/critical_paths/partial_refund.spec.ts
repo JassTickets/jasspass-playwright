@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test';
 import { JASS_TEST_URL } from '../../constants';
 import {
   assertOrderConfirmation,
+  assertPurchaseSuccessUrl,
   createUniqueBuyer,
   fillGuestContact,
   getApiArray,
@@ -123,6 +124,7 @@ test.describe('partial-to-full refund lifecycle', () => {
     await openCheckout(page);
     await fillGuestContact(page, buyer);
     const purchase = await submitStripeCheckout(page);
+    await assertPurchaseSuccessUrl(page, created.id, purchase.Confirmation);
     await assertOrderConfirmation(page, created.name, purchase.Confirmation);
 
     const originalTransaction = await waitForTransaction<Transaction>(

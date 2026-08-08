@@ -122,6 +122,7 @@ test.describe('critical anonymous checkout paths', () => {
 
     const purchase = await submitStripeCheckout(page);
     expect(purchase.ClientSecret).toBeTruthy();
+    await assertPurchaseSuccessUrl(page, created.id, purchase.Confirmation);
     await assertOrderConfirmation(page, created.name, purchase.Confirmation);
 
     const transaction = await waitForTransaction<Transaction>(
@@ -194,6 +195,7 @@ test.describe('critical anonymous checkout paths', () => {
     const purchase = await submitPurchase(page, 'Checkout');
     expect(purchase.ClientSecret).toBeFalsy();
     await assertPurchaseSuccessUrl(page, created.id, purchase.Confirmation);
+    await assertOrderConfirmation(page, created.name, purchase.Confirmation);
 
     const transaction = await waitForTransaction<Transaction>(
       ownerApi,

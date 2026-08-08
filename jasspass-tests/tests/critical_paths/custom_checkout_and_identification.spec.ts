@@ -1,5 +1,6 @@
 import { test, expect } from '../../fixtures/application';
 import {
+  assertOrderConfirmation,
   assertPurchaseSuccessUrl,
   createUniqueBuyer,
   fillGuestContact,
@@ -144,6 +145,7 @@ test.describe('custom checkout and strict ticket identification', () => {
     );
 
     await assertPurchaseSuccessUrl(page, created.id, purchase.Confirmation);
+    await assertOrderConfirmation(page, created.name, purchase.Confirmation);
     const transaction = await waitForTransaction<Transaction>(
       ownerApi,
       created.id,

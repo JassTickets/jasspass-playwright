@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/application';
 import {
   applyPromoCode,
+  assertOrderConfirmation,
   assertPurchaseSuccessUrl,
   createUniqueBuyer,
   fillGuestContact,
@@ -104,6 +105,11 @@ test.describe('promo-code usage integrity', () => {
     await assertPurchaseSuccessUrl(
       competingPage,
       created.id,
+      winningPurchase.Confirmation
+    );
+    await assertOrderConfirmation(
+      competingPage,
+      created.name,
       winningPurchase.Confirmation
     );
     await competingContext.close();
