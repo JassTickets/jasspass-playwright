@@ -226,9 +226,10 @@ export async function createEvent(
   await page.waitForTimeout(5000);
 
   const createEventResponsePromise = page.waitForResponse((response) => {
+    const pathname = new URL(response.url()).pathname.replace(/\/$/, '');
     return (
       response.request().method() === 'POST' &&
-      response.url().includes('/api/protected/events')
+      pathname === '/api/protected/events'
     );
   });
 
@@ -245,28 +246,34 @@ export async function createEvent(
   ).toBeTruthy();
 
   const createEventResponseJson = JSON.parse(createEventResponseBody);
-  const eventId =
-    createEventResponseJson.Event?.Id ?? createEventResponseJson.Id;
+  const eventId = createEventResponseJson.Event?.Id;
   if (!eventId) {
     throw new Error(
       `Could not parse event ID from create-event response: ${createEventResponseBody}`
     );
   }
 
-  // Handle optional Skip button with proper Playwright approach
+  // The frontend either navigates directly to the event or opens the optional
+  // community-notification modal. Wait for whichever happens first.
   const skipButton = page.getByRole('button', { name: 'Skip' });
-  const isSkipVisible = await skipButton
-    .isVisible({ timeout: 10000 })
-    .catch(() => false);
+  const eventUrl = new RegExp(`/event/${eventId}(?:\\?|$)`);
+  const postCreateOutcome = await Promise.any([
+    page
+      .waitForURL(eventUrl, { timeout: 10_000 })
+      .then(() => 'navigated' as const),
+    skipButton
+      .waitFor({ state: 'visible', timeout: 10_000 })
+      .then(() => 'skip' as const),
+  ]).catch(() => 'pending' as const);
 
-  if (isSkipVisible) {
+  if (postCreateOutcome === 'skip') {
     console.log('Skip button found, clicking...');
     await skipButton.click();
-  } else {
-    console.log('Skip button not found, continuing...');
   }
 
-  await page.goto(`${JASS_TEST_URL}/event/${eventId}`);
+  // Do not navigate there on behalf of the application. The redirect is part
+  // of the creation UX and must remain covered by this end-to-end helper.
+  await expect(page).toHaveURL(eventUrl, { timeout: 30_000 });
 
   const url = page.url();
   console.log(`New event URL: ${url}`);
