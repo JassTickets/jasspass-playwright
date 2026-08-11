@@ -19,7 +19,7 @@ export const signIn = 'Sign In';
 // Organizer portal constants
 export const NEW_ORGANIZER_NAME = 'PBO - New Name';
 export const NEW_CONTACT_NAME = 'Playwright Bot New Name';
-export const NEW_CONTACT_ADDRESS = 'Playwright Bot St, 1234 New Address';
+export const NEW_CONTACT_ADDRESS = '100 Queen Street West, Toronto';
 
 // Performer constants
 export const TEST_PERFORMER_NAME = 'Test Performer';

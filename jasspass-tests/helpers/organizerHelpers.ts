@@ -6,9 +6,9 @@ import {
   ORGANIZER_NAME_PREFIX,
   getRandomCountry,
   CONTACT_NAME,
-  // CONTACT_ADDRESS,
-  // CONTACT_CITY,
-  // CONTACT_ZIP_CODE,
+  CONTACT_ADDRESS,
+  CONTACT_CITY,
+  CONTACT_ZIP_CODE,
   CONTACT_PHONE_NUMBER,
   PLAYWRIGHT_BOT_STRIPE_CONNECT_ID,
   NEW_ORGANIZER_NAME,
@@ -139,7 +139,12 @@ export async function selectFirstOrganizer(page: Page) {
   await organizerLink.click();
 }
 
-export async function editOrganizerDetails(page: Page) {
+export async function editOrganizerDetails(
+  page: Page,
+  { addressEntry = 'autocomplete' }: {
+    addressEntry?: 'autocomplete' | 'manual';
+  } = {}
+) {
   const timestamp = Date.now().toString();
   await page
     .getByRole('button', { name: 'Manage', exact: true })
@@ -154,8 +159,51 @@ export async function editOrganizerDetails(page: Page) {
   await page
     .getByRole('textbox', { name: 'Contact Name*' })
     .fill(NEW_CONTACT_NAME + timestamp);
-  await page.locator('input[name="address"]').click();
-  await page.locator('input[name="address"]').fill(NEW_CONTACT_ADDRESS);
+  const addressInput = page.locator('input[name="address"]');
+  await addressInput.click();
+
+  if (addressEntry === 'autocomplete') {
+    await addressInput.fill(NEW_CONTACT_ADDRESS);
+
+    const addressSuggestion = addressInput
+      .locator('xpath=..')
+      .locator('li')
+      .first();
+    await expect(addressSuggestion).toBeVisible({ timeout: 15_000 });
+
+    const addressDetailsResponsePromise = page.waitForResponse((response) =>
+      new URL(response.url()).pathname === '/api/places-details'
+    );
+    await addressSuggestion.click();
+
+    const addressDetailsResponse = await addressDetailsResponsePromise;
+    expect(
+      addressDetailsResponse.ok(),
+      `Address details failed with ${addressDetailsResponse.status()}`
+    ).toBeTruthy();
+    await expect(page.locator('#city')).not.toHaveValue('', {
+      timeout: 10_000,
+    });
+    await expect(page.locator('#ZipCode')).not.toHaveValue('', {
+      timeout: 10_000,
+    });
+  } else {
+    await page.getByRole('button', { name: 'Enter manually' }).click();
+    await expect(
+      page.getByRole('button', { name: '← Use autocomplete' })
+    ).toBeVisible();
+    await addressInput.fill(CONTACT_ADDRESS);
+
+    const cityInput = page.locator('#city');
+    await cityInput.fill(CONTACT_CITY);
+    const citySuggestion = page
+      .locator('li')
+      .filter({ hasText: new RegExp(`^${CONTACT_CITY}$`) });
+    await expect(citySuggestion).toBeVisible();
+    await citySuggestion.click();
+
+    await page.locator('#ZipCode').fill(CONTACT_ZIP_CODE);
+  }
   await page.getByRole('button', { name: 'Save Changes' }).click();
 
   // Wait for and return success message

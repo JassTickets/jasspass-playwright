@@ -24,3 +24,22 @@ test('editOrganizerDetails', async ({ page }) => {
 
   console.log('[INFO] Edit Organizer Details test completed successfully.');
 });
+
+test('editOrganizerDetailsWithManualAddress', async ({ page }) => {
+  console.log(
+    '[INFO] Executing Edit Organizer Details with manual address test...'
+  );
+
+  await selectFirstOrganizer(page);
+  await page.getByRole('button', { name: 'Manage', exact: true }).click();
+
+  const successMessage = await editOrganizerDetails(page, {
+    addressEntry: 'manual',
+  });
+
+  await expect(successMessage).toBeVisible();
+
+  console.log(
+    '[INFO] Edit Organizer Details with manual address test completed successfully.'
+  );
+});
