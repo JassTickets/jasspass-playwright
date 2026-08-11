@@ -309,7 +309,10 @@ export async function purchaseTicket(
 
   // Select ticket and proceed
   // Select +1
-  await page.getByRole('button').filter({ hasText: /^$/ }).nth(2).click();
+  await page
+    .getByRole('button', { name: /^Increase quantity for / })
+    .first()
+    .click();
   //Timeout
   await page.waitForTimeout(2000);
   await page.locator('[data-checkout-cta="true"]').first().click();
