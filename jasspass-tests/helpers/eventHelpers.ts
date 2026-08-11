@@ -239,9 +239,14 @@ export async function createEvent(
   const createEventResponseBody = await createEventResponse
     .text()
     .catch(() => '<unreadable>');
+  expect(
+    createEventResponse.ok(),
+    `Create event failed with ${createEventResponse.status()}: ${createEventResponseBody}`
+  ).toBeTruthy();
 
   const createEventResponseJson = JSON.parse(createEventResponseBody);
-  const eventId = createEventResponseJson.Event?.Id;
+  const eventId =
+    createEventResponseJson.Event?.Id ?? createEventResponseJson.Id;
   if (!eventId) {
     throw new Error(
       `Could not parse event ID from create-event response: ${createEventResponseBody}`
