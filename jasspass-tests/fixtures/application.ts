@@ -5,10 +5,17 @@ import {
   type BrowserContext,
   type Page,
 } from '@playwright/test';
-import { JASS_TEST_URL, ORGANIZER_NAME_PREFIX } from '../constants';
+import {
+  JASS_TEST_URL,
+  ORGANIZER_NAME_PREFIX,
+  PLAYWRIGHT_BOT_STRIPE_CONNECT_ID,
+} from '../constants';
 import { signIn } from '../helpers/auth';
 
 type AuthStorageState = Awaited<ReturnType<BrowserContext['storageState']>>;
+
+const TEST_ORGANIZER_NAME = `${ORGANIZER_NAME_PREFIX}Integration Tests CA`;
+const TEST_ORGANIZER_COUNTRY_ISO = 'CA';
 
 export type OrganizerIdentity = {
   userId: string;
@@ -165,6 +172,17 @@ function asArray<T>(data: unknown, property: string): T[] {
   return [];
 }
 
+function hasActiveStripe(organizer: Record<string, unknown>): boolean {
+  return asArray<Record<string, unknown>>(
+    organizer.PaymentMethods,
+    'PaymentMethods'
+  ).some(
+    (paymentMethod) =>
+      paymentMethod.Name === 'Stripe' &&
+      paymentMethod.OnboardingStatus === 'Active'
+  );
+}
+
 async function requireOk(
   response: Awaited<ReturnType<APIRequestContext['get']>>,
   operation: string
@@ -205,7 +223,7 @@ function buildEventPayload(
     taxRatePercentage: options.taxRatePercentage ?? 0,
     address: '123 Playwright Avenue',
     venueName: 'Playwright Test Venue',
-    currencyIso: isFreeEvent ? null : (options.currencyIso ?? 'USD'),
+    currencyIso: isFreeEvent ? null : options.currencyIso ?? 'USD',
     countryIso: options.eventCountryIso ?? organizer.countryIso ?? 'CA',
     city: 'Toronto',
     zipCode: 'M5A0M7',
@@ -280,10 +298,9 @@ async function ensurePromoCodeAttachments(
   promoCodes: PromoCodeInput[]
 ): Promise<void> {
   for (const promoCode of promoCodes) {
-    let organizerPromoCode = (await readOrganizerPromoCodes(
-      ownerApi,
-      organizerId
-    )).find(
+    let organizerPromoCode = (
+      await readOrganizerPromoCodes(ownerApi, organizerId)
+    ).find(
       (candidate) =>
         candidate.PromoCode.Code.toLowerCase() === promoCode.code.toLowerCase()
     );
@@ -310,10 +327,9 @@ async function ensurePromoCodeAttachments(
       await expect
         .poll(
           async () => {
-            organizerPromoCode = (await readOrganizerPromoCodes(
-              ownerApi,
-              organizerId
-            )).find(
+            organizerPromoCode = (
+              await readOrganizerPromoCodes(ownerApi, organizerId)
+            ).find(
               (candidate) =>
                 candidate.PromoCode.Code.toLowerCase() ===
                 promoCode.code.toLowerCase()
@@ -408,48 +424,22 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
           'Organizers'
         );
 
-        const stripeOrganizers = organizers.filter((organizer) => {
-          const paymentMethods = asArray<Record<string, unknown>>(
-            organizer.PaymentMethods,
-            'PaymentMethods'
-          );
-          return paymentMethods.some(
-            (paymentMethod) =>
-              paymentMethod.Name === 'Stripe' &&
-              paymentMethod.OnboardingStatus === 'Active'
-          );
-        });
-        const preferredStripeOrganizers = stripeOrganizers.filter((candidate) =>
-          String(candidate.Name ?? '').startsWith(ORGANIZER_NAME_PREFIX)
+        let organizer = organizers.find(
+          (candidate) =>
+            candidate.Name === TEST_ORGANIZER_NAME &&
+            candidate.CountryIso === TEST_ORGANIZER_COUNTRY_ISO
         );
-        const preferredOrganizers = organizers.filter((candidate) =>
-          String(candidate.Name ?? '').startsWith(ORGANIZER_NAME_PREFIX)
-        );
-        let organizer = [
-          ...(preferredStripeOrganizers.length
-            ? preferredStripeOrganizers
-            : stripeOrganizers.length
-              ? stripeOrganizers
-              : preferredOrganizers.length
-                ? preferredOrganizers
-                : organizers),
-        ].sort(
-          (left, right) =>
-            Date.parse(String(right.CreatedAtUtc ?? '')) -
-            Date.parse(String(left.CreatedAtUtc ?? ''))
-        )[0];
 
         if (!organizer?.Id) {
-          const organizerName = `${ORGANIZER_NAME_PREFIX}Critical ${uniqueSuffix()}`;
           const createResponse = await api.post('/api/protected/organizers', {
             multipart: {
               organizerUserId: userId,
               request: JSON.stringify({
-                Name: organizerName,
+                Name: TEST_ORGANIZER_NAME,
                 PhoneNumber: '+16467899045',
                 Email: String(profile.Email ?? 'playwright-bot@gmail.com'),
                 ContactName: String(profile.Name ?? 'Playwright Bot'),
-                CountryIso: 'CA',
+                CountryIso: TEST_ORGANIZER_COUNTRY_ISO,
                 Address: '123 Playwright Avenue',
                 City: 'Toronto',
                 ZipCode: 'M5A0M7',
@@ -458,7 +448,7 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
           });
           await requireOk(
             createResponse,
-            'Create organizer for critical integration tests'
+            'Create organizer for integration tests'
           );
           const createdOrganizer = (await createResponse.json()) as {
             OrganizerId?: string;
@@ -469,9 +459,7 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
             );
           }
 
-          const refreshResponse = await api.post(
-            '/api/protected/auth/refresh'
-          );
+          const refreshResponse = await api.post('/api/protected/auth/refresh');
           await requireOk(
             refreshResponse,
             'Refresh organizer policies after fixture provisioning'
@@ -481,20 +469,56 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
           ownerStorageState.origins = refreshedStorageState.origins;
           organizer = {
             Id: createdOrganizer.OrganizerId,
-            Name: organizerName,
-            CountryIso: 'CA',
+            Name: TEST_ORGANIZER_NAME,
+            CountryIso: TEST_ORGANIZER_COUNTRY_ISO,
             PaymentMethods: [],
           };
         }
+
+        if (
+          !hasActiveStripe(organizer) ||
+          organizer.StripeAccountCountryIso !== TEST_ORGANIZER_COUNTRY_ISO
+        ) {
+          const stripeResponse = await api.post(
+            `/api/protected/organizers/${String(organizer.Id)}/stripe-connect`,
+            {
+              data: {
+                StripeConnectAccountId: PLAYWRIGHT_BOT_STRIPE_CONNECT_ID,
+                StripeAccountCountryIso: TEST_ORGANIZER_COUNTRY_ISO,
+              },
+            }
+          );
+          await requireOk(
+            stripeResponse,
+            'Attach Stripe to the integration test organizer'
+          );
+
+          const organizerResponse = await api.get(
+            `/api/protected/organizers/${String(organizer.Id)}`
+          );
+          await requireOk(
+            organizerResponse,
+            'Read the integration test organizer'
+          );
+          organizer = (await organizerResponse.json()) as Record<
+            string,
+            unknown
+          >;
+        }
+
+        expect(organizer.Name).toBe(TEST_ORGANIZER_NAME);
+        expect(organizer.CountryIso).toBe(TEST_ORGANIZER_COUNTRY_ISO);
+        expect(organizer.StripeAccountCountryIso).toBe(
+          TEST_ORGANIZER_COUNTRY_ISO
+        );
+        expect(hasActiveStripe(organizer)).toBe(true);
 
         await use({
           userId,
           organizerId: String(organizer.Id),
           organizerName: String(organizer.Name ?? ''),
-          countryIso: String(organizer.CountryIso ?? 'CA'),
-          hasActiveStripe: stripeOrganizers.some(
-            (candidate) => candidate.Id === organizer.Id
-          ),
+          countryIso: TEST_ORGANIZER_COUNTRY_ISO,
+          hasActiveStripe: true,
         });
         await api.dispose();
       },
