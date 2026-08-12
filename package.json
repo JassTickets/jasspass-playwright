@@ -11,6 +11,7 @@
   "scripts": {
     "test:critical": "playwright test jasspass-tests/tests/critical_paths --project=chromium",
     "test:critical:cross-browser": "playwright test jasspass-tests/tests/critical_paths",
+    "test:country-currency-matrix": "playwright test jasspass-tests/tests/critical_paths/country_currency_matrix.spec.ts --project=chromium",
     "test:list": "playwright test --list"
   }
 }

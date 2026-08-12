@@ -477,5 +477,17 @@ export async function addOperatorWithAllPolicies(
   }
 
   // Save policies
+  const assignOperatorResponsePromise = page.waitForResponse((response) => {
+    const pathname = new URL(response.url()).pathname;
+    return (
+      response.request().method() === 'POST' &&
+      /\/api\/protected\/events\/[^/]+\/operators\/?$/.test(pathname)
+    );
+  });
   await page.getByRole('button', { name: 'Save Policies' }).click();
+  const assignOperatorResponse = await assignOperatorResponsePromise;
+  expect(
+    assignOperatorResponse.ok(),
+    `Assign operator failed with ${assignOperatorResponse.status()}: ${await assignOperatorResponse.text()}`,
+  ).toBeTruthy();
 }

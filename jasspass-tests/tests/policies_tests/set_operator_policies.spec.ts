@@ -3,6 +3,7 @@ import { signIn, signOutIfSignedIn } from '../../helpers/auth';
 import { addOperatorWithAllPolicies } from '../../helpers/organizerHelpers';
 import {
   createEvent,
+  openEventOrganizerPortal,
   verifyOperatorAccess,
   purchaseTicket,
 } from '../../helpers/eventHelpers';
@@ -46,12 +47,13 @@ test('operator policies comprehensive flow', async ({ browser }) => {
       );
     }
 
-    // Navigate to the event's organizer view
-    await page1.goto(`${JASS_TEST_URL}/event/${eventId}`);
-    const organizerPagePromise = page1.waitForEvent('popup');
-    await page1.getByText('Organizer View').click();
-    const organizerPage = await organizerPagePromise;
-    await organizerPage.waitForTimeout(1000);
+    // Checkout ends on a public confirmation route. Re-establish the protected
+    // organizer session before continuing with portal administration.
+    await signIn(page1);
+
+    // Open the event portal directly. The public-page Organizer View popup is
+    // unrelated to the operator-policy behavior covered by this test.
+    const organizerPage = await openEventOrganizerPortal(page1, eventId);
 
     // STEP 2: Add operator with policies
     console.log('[INFO] Step 2: Adding operator with all policies...');

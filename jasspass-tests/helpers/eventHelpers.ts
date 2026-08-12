@@ -347,9 +347,11 @@ export async function purchaseTicket(
 
   // Close the modal (if any):
   try {
-    await page.getByRole('button', { name: 'Close' }).click();
+    await page
+      .getByRole('button', { name: 'Close' })
+      .click({ timeout: 3000 });
   } catch {
-    // Don't do anything
+    // Some browsers navigate directly to the success page without a modal.
   }
   await page.getByRole('img', { name: 'Ticket QR Code' }).click();
 
@@ -514,11 +516,10 @@ export async function selectFirstEventStartingWithPBO(
   return page2;
 }
 
-export async function createEventAndOpenOrganizerPortal(
-  page: Page
+export async function openEventOrganizerPortal(
+  page: Page,
+  eventId: string
 ): Promise<Page> {
-  const eventId = await createEvent(page);
-
   const eventResponse = await page.request.get(
     `${JASS_TEST_URL}/api/public/events/${eventId}`,
     { timeout: 30000 }
@@ -543,6 +544,13 @@ export async function createEventAndOpenOrganizerPortal(
   ).toBeVisible({ timeout: 30000 });
 
   return page;
+}
+
+export async function createEventAndOpenOrganizerPortal(
+  page: Page
+): Promise<Page> {
+  const eventId = await createEvent(page);
+  return openEventOrganizerPortal(page, eventId);
 }
 
 export async function editEventBasics(organizerPage: Page) {
@@ -1193,7 +1201,9 @@ export async function verifyOperatorAccess(
   await page
     .getByRole('textbox', { name: 'Search Organizers' })
     .fill(organizerName);
-  await page.getByRole('heading', { name: organizerName }).click();
+  const organizerHeading = page.getByRole('heading', { name: organizerName });
+  await expect(organizerHeading).toBeVisible({ timeout: 30000 });
+  await organizerHeading.click();
   await page.getByRole('heading', { name: eventName }).click();
 
   // Wait for event page to load
