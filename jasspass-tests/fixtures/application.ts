@@ -172,12 +172,13 @@ function asArray<T>(data: unknown, property: string): T[] {
   return [];
 }
 
-function hasActiveStripe(organizer: Record<string, unknown>): boolean {
+function hasExpectedActiveStripe(organizer: Record<string, unknown>): boolean {
   return asArray<Record<string, unknown>>(
     organizer.PaymentMethods,
     'PaymentMethods'
   ).some(
     (paymentMethod) =>
+      paymentMethod.Id === PLAYWRIGHT_BOT_STRIPE_CONNECT_ID &&
       paymentMethod.Name === 'Stripe' &&
       paymentMethod.OnboardingStatus === 'Active'
   );
@@ -475,16 +476,12 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
           };
         }
 
-        if (
-          !hasActiveStripe(organizer) ||
-          organizer.StripeAccountCountryIso !== TEST_ORGANIZER_COUNTRY_ISO
-        ) {
+        if (!hasExpectedActiveStripe(organizer)) {
           const stripeResponse = await api.post(
             `/api/protected/organizers/${String(organizer.Id)}/stripe-connect`,
             {
               data: {
                 StripeConnectAccountId: PLAYWRIGHT_BOT_STRIPE_CONNECT_ID,
-                StripeAccountCountryIso: TEST_ORGANIZER_COUNTRY_ISO,
               },
             }
           );
@@ -508,10 +505,7 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
 
         expect(organizer.Name).toBe(TEST_ORGANIZER_NAME);
         expect(organizer.CountryIso).toBe(TEST_ORGANIZER_COUNTRY_ISO);
-        expect(organizer.StripeAccountCountryIso).toBe(
-          TEST_ORGANIZER_COUNTRY_ISO
-        );
-        expect(hasActiveStripe(organizer)).toBe(true);
+        expect(hasExpectedActiveStripe(organizer)).toBe(true);
 
         await use({
           userId,

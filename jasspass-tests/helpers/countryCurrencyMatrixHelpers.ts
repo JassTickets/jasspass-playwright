@@ -19,6 +19,8 @@ export const MATRIX_COUNTRIES = [
 
 export const MATRIX_CURRENCIES = ['USD', 'CAD', 'EUR'] as const;
 
+const RECIPIENT_SERVICE_AGREEMENT_COUNTRIES = ['MX', 'CO', 'PE', 'PA'] as const;
+
 export type MatrixCountry = (typeof MATRIX_COUNTRIES)[number];
 export type MatrixCurrency = (typeof MATRIX_CURRENCIES)[number];
 
@@ -33,6 +35,7 @@ export type MatrixOrganizer = {
   organizerId: string;
   countryIso: MatrixCountry;
   stripeCountryIso: MatrixCountry;
+  stripeAccountId: string;
   hasActiveStripe: true;
 };
 
@@ -179,7 +182,9 @@ export async function expectApiSuccess(
 ): Promise<void> {
   if (response.ok() || allowedStatuses.includes(response.status())) return;
   throw new Error(
-    `${operation} failed with ${response.status()}: ${await responseBody(response)}`
+    `${operation} failed with ${response.status()}: ${await responseBody(
+      response
+    )}`
   );
 }
 
@@ -190,6 +195,38 @@ export async function readOrganizer(
   const response = await api.get(`/api/protected/organizers/${organizerId}`);
   await expectApiSuccess(response, `Read organizer ${organizerId}`);
   return (await response.json()) as Record<string, unknown>;
+}
+
+function getStripePaymentMethod(
+  organizer: Record<string, unknown>
+): Record<string, unknown> | undefined {
+  if (!Array.isArray(organizer.PaymentMethods)) return undefined;
+  return (organizer.PaymentMethods as Array<Record<string, unknown>>).find(
+    (method) => method.Name === 'Stripe'
+  );
+}
+
+function getStripeAccountCountry(
+  stripePaymentMethod: Record<string, unknown> | undefined
+): string | undefined {
+  const providerDetails = stripePaymentMethod?.ProviderDetails;
+  if (!providerDetails || typeof providerDetails !== 'object') return undefined;
+  const countryIso = (providerDetails as Record<string, unknown>)
+    .AccountCountryIso;
+  return typeof countryIso === 'string' ? countryIso.toUpperCase() : undefined;
+}
+
+function expectAttachedStripeAccount(
+  organizer: Record<string, unknown>,
+  accountId: string
+): Record<string, unknown> {
+  const stripePaymentMethod = getStripePaymentMethod(organizer);
+  expect(stripePaymentMethod).toMatchObject({
+    Id: accountId,
+    Name: 'Stripe',
+    OnboardingStatus: 'Active',
+  });
+  return stripePaymentMethod!;
 }
 
 export async function createMatrixOrganizer(
@@ -218,7 +255,10 @@ export async function createMatrixOrganizer(
       }),
     },
   });
-  await expectApiSuccess(createResponse, `Create ${stripeCountryIso} organizer`);
+  await expectApiSuccess(
+    createResponse,
+    `Create ${stripeCountryIso} organizer`
+  );
   const createBody = (await createResponse.json()) as { OrganizerId?: string };
   if (!createBody.OrganizerId) {
     throw new Error('Organizer creation response did not contain OrganizerId.');
@@ -232,7 +272,6 @@ export async function createMatrixOrganizer(
     {
       data: {
         StripeConnectAccountId: accountId,
-        StripeAccountCountryIso: stripeCountryIso,
       },
     }
   );
@@ -242,26 +281,39 @@ export async function createMatrixOrganizer(
   );
 
   const organizer = await readOrganizer(api, createBody.OrganizerId);
-  expect(organizer.StripeAccountCountryIso).toBe(stripeCountryIso);
-  const stripeMethods = Array.isArray(organizer.PaymentMethods)
-    ? (organizer.PaymentMethods as Array<Record<string, unknown>>).filter(
-        (method) => method.Name === 'Stripe'
-      )
-    : [];
-  expect(stripeMethods).toEqual([
-    expect.objectContaining({
-      Id: accountId,
-      Name: 'Stripe',
-      OnboardingStatus: 'Active',
-    }),
-  ]);
+  expectAttachedStripeAccount(organizer, accountId);
 
   return {
     organizerId: createBody.OrganizerId,
     countryIso: stripeCountryIso,
     stripeCountryIso,
+    stripeAccountId: accountId,
     hasActiveStripe: true,
   };
+}
+
+export async function expectStripeProviderCountry(
+  api: APIRequestContext,
+  organizer: MatrixOrganizer
+): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const current = await readOrganizer(api, organizer.organizerId);
+        const stripePaymentMethod = expectAttachedStripeAccount(
+          current,
+          organizer.stripeAccountId
+        );
+        return getStripeAccountCountry(stripePaymentMethod);
+      },
+      {
+        message:
+          "The backend must persist Stripe's authoritative account country in ProviderDetails.",
+        timeout: 30_000,
+        intervals: [500, 1_000, 2_000],
+      }
+    )
+    .toBe(organizer.stripeCountryIso);
 }
 
 export async function updateOrganizerCountry(
@@ -301,13 +353,17 @@ export async function updateOrganizerCountry(
 
   const updated = await readOrganizer(api, organizer.organizerId);
   expect(updated.CountryIso).toBe(countryIso);
-  const effectiveStripeCountry = String(
-    updated.StripeAccountCountryIso ?? updated.CountryIso
-  ).toUpperCase();
-  expect(
-    effectiveStripeCountry,
-    'Changing the business country must not move its connected Stripe account.'
-  ).toBe(organizer.stripeCountryIso);
+  const stripePaymentMethod = expectAttachedStripeAccount(
+    updated,
+    organizer.stripeAccountId
+  );
+  const stripeAccountCountry = getStripeAccountCountry(stripePaymentMethod);
+  if (stripeAccountCountry) {
+    expect(
+      stripeAccountCountry,
+      'Changing the business country must not move its connected Stripe account.'
+    ).toBe(organizer.stripeCountryIso);
+  }
   organizer.countryIso = countryIso;
 }
 
@@ -492,6 +548,26 @@ export function nextCountry(country: MatrixCountry): MatrixCountry {
   return MATRIX_COUNTRIES[
     (MATRIX_COUNTRIES.indexOf(country) + 1) % MATRIX_COUNTRIES.length
   ];
+}
+
+export function compatibleEventCountry(
+  stripeCountry: MatrixCountry,
+  preferredCountry: MatrixCountry,
+  offset = 0
+): MatrixCountry {
+  const recipientCountries: readonly MatrixCountry[] =
+    RECIPIENT_SERVICE_AGREEMENT_COUNTRIES;
+  const eligibleCountries: readonly MatrixCountry[] = recipientCountries.includes(
+    stripeCountry
+  )
+    ? recipientCountries
+    : MATRIX_COUNTRIES;
+  const preferredIndex = eligibleCountries.indexOf(preferredCountry);
+  const baseIndex =
+    preferredIndex >= 0
+      ? preferredIndex
+      : MATRIX_COUNTRIES.indexOf(preferredCountry) % eligibleCountries.length;
+  return eligibleCountries[(baseIndex + offset) % eligibleCountries.length];
 }
 
 export function nextCurrency(currency: MatrixCurrency): MatrixCurrency {

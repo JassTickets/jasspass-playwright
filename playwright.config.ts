@@ -36,17 +36,26 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: '**/critical_paths/country_currency_matrix.spec.ts',
       use: { ...devices['Desktop Chrome'] },
     },
 
     {
       name: 'firefox',
+      testIgnore: '**/critical_paths/country_currency_matrix.spec.ts',
       use: { ...devices['Desktop Firefox'] },
     },
 
     {
       name: 'webkit',
+      testIgnore: '**/critical_paths/country_currency_matrix.spec.ts',
       use: { ...devices['Desktop Safari'] },
+    },
+
+    {
+      name: 'country-currency-matrix',
+      testMatch: '**/critical_paths/country_currency_matrix.spec.ts',
+      use: { ...devices['Desktop Chrome'] },
     },
 
     /* Test against mobile viewports. */

@@ -16,11 +16,13 @@ import {
 } from '../../helpers/criticalCheckoutHelpers';
 import {
   attachPromoter,
+  compatibleEventCountry,
   createMatrixOrganizer,
   deleteEventBestEffort,
   deleteOrganizerBestEffort,
   ensurePromoterUser,
   expectApiSuccess,
+  expectStripeProviderCountry,
   type MatrixOrganizer,
   type MatrixTicket,
   type MatrixTransaction,
@@ -146,7 +148,15 @@ for (const stripeCountryIso of MATRIX_COUNTRIES) {
             organizerCountryIso
           );
 
-          const initialEventCountryIso = nextCountry(organizerCountryIso);
+          const eventCountryIso = compatibleEventCountry(
+            stripeCountryIso,
+            organizerCountryIso
+          );
+          const initialEventCountryIso = compatibleEventCountry(
+            stripeCountryIso,
+            organizerCountryIso,
+            1
+          );
           const initialCurrencyIso = nextCurrency(currencyIso);
           const suffix = `${stripeCountryIso}${organizerCountryIso}${currencyIso}${Date.now().toString(
             36
@@ -166,10 +176,11 @@ for (const stripeCountryIso of MATRIX_COUNTRIES) {
           });
 
           try {
+            await expectStripeProviderCountry(ownerApi, organizer);
             const countryChange = await updateEventCountryAndCurrency(
               ownerApi,
               created.id,
-              { countryIso: organizerCountryIso }
+              { countryIso: eventCountryIso }
             );
             await expectApiSuccess(
               countryChange,
@@ -188,7 +199,7 @@ for (const stripeCountryIso of MATRIX_COUNTRIES) {
             await expectEventEconomics(
               ownerApi,
               created.id,
-              organizerCountryIso,
+              eventCountryIso,
               currencyIso
             );
 
@@ -228,7 +239,7 @@ for (const stripeCountryIso of MATRIX_COUNTRIES) {
             expect(transaction).toMatchObject({
               Status: 'Complete',
               CurrencyIso: currencyIso,
-              EventCountryIso: organizerCountryIso,
+              EventCountryIso: eventCountryIso,
               EventPromoterAttachmentId: promoterAttachmentId,
             });
 
@@ -256,7 +267,7 @@ for (const stripeCountryIso of MATRIX_COUNTRIES) {
 
             await expectRejectedChange(
               await updateEventCountryAndCurrency(ownerApi, created.id, {
-                countryIso: nextCountry(organizerCountryIso),
+                countryIso: initialEventCountryIso,
               }),
               EXPECTED_LOCK_MESSAGES.country
             );
@@ -269,7 +280,7 @@ for (const stripeCountryIso of MATRIX_COUNTRIES) {
             await expectEventEconomics(
               ownerApi,
               created.id,
-              organizerCountryIso,
+              eventCountryIso,
               currencyIso
             );
 
