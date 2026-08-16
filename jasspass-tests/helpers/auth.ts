@@ -5,6 +5,25 @@ import {
   JASS_TEST_URL,
 } from '../constants';
 
+export async function dismissDateOfBirthPromptIfPresent(
+  page: Page,
+  timeout = 3_000
+) {
+  const remindMeLater = page.getByRole('button', {
+    name: 'Remind me later',
+    exact: true,
+  });
+  const promptIsVisible = await remindMeLater
+    .waitFor({ state: 'visible', timeout })
+    .then(() => true)
+    .catch(() => false);
+
+  if (promptIsVisible) {
+    await remindMeLater.click();
+    await expect(remindMeLater).toBeHidden();
+  }
+}
+
 async function gotoSignIn(page: Page, url: string) {
   try {
     await page.goto(url, { waitUntil: 'commit', timeout: 30000 });
@@ -34,6 +53,7 @@ export async function signIn(
     await page.goto(`${baseURL}${targetPath}`, { waitUntil: 'domcontentloaded' });
 
     if (!new URL(page.url()).pathname.includes('/signin')) {
+      await dismissDateOfBirthPromptIfPresent(page);
       return;
     }
 
@@ -89,6 +109,7 @@ export async function signIn(
   if (page.url() !== targetUrl) {
     await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
   }
+  await dismissDateOfBirthPromptIfPresent(page);
 }
 
 export async function signOutIfSignedIn(page: Page) {

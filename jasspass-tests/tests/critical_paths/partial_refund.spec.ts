@@ -1,6 +1,7 @@
 import { test, expect } from '../../fixtures/application';
 import type { Page } from '@playwright/test';
 import { JASS_TEST_URL } from '../../constants';
+import { dismissDateOfBirthPromptIfPresent } from '../../helpers/auth';
 import {
   assertOrderConfirmation,
   assertPurchaseSuccessUrl,
@@ -140,6 +141,7 @@ test.describe('partial-to-full refund lifecycle', () => {
     await ownerPage.goto(
       `${JASS_TEST_URL}/portal/organizer/company/${created.organizerId}/event/${created.id}`
     );
+    await dismissDateOfBirthPromptIfPresent(ownerPage, 10_000);
     await expect(
       ownerPage.getByRole('button', { name: 'Orders & Attendees' }).first()
     ).toBeVisible({ timeout: 30_000 });

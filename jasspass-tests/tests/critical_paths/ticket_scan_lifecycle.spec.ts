@@ -11,6 +11,7 @@ import {
   submitPurchase,
 } from '../../helpers/criticalCheckoutHelpers';
 import { JASS_TEST_URL } from '../../constants';
+import { dismissDateOfBirthPromptIfPresent } from '../../helpers/auth';
 
 type Ticket = {
   Id: string;
@@ -76,6 +77,7 @@ test.describe('ticket check-in lifecycle', () => {
     await ownerPage.goto(
       `${JASS_TEST_URL}/portal/organizer/company/${created.organizerId}/event/${created.id}`
     );
+    await dismissDateOfBirthPromptIfPresent(ownerPage, 10_000);
     const ordersAndAttendees = ownerPage
       .getByRole('button', { name: 'Orders & Attendees' })
       .first();

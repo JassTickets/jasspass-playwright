@@ -72,19 +72,6 @@ export async function signInAsUser(
     const userId = String(profile.Id ?? '');
     expect(userId, 'Secondary-user profile must contain an Id.').not.toBe('');
 
-    const remindMeLater = page.getByRole('button', {
-      name: 'Remind me later',
-      exact: true,
-    });
-    const dateOfBirthPromptIsVisible = await remindMeLater
-      .waitFor({ state: 'visible', timeout: 10_000 })
-      .then(() => true)
-      .catch(() => false);
-    if (dateOfBirthPromptIsVisible) {
-      await remindMeLater.click();
-      await expect(remindMeLater).toBeHidden();
-    }
-
     return { context, page, userId };
   } catch (error) {
     await context.close();
