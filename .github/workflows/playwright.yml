@@ -32,7 +32,7 @@ jobs:
       - name: Install Playwright Browsers
         run: yarn playwright install --with-deps ${{ matrix.suite.browsers }}
       - name: Run Playwright tests
-        run: yarn playwright test ${{ matrix.suite.project_args }}
+        run: yarn playwright test ${{ matrix.suite.project_args }} --reporter=line,github
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
