@@ -7,70 +7,28 @@ import {
 } from '@playwright/test';
 import { JASS_TEST_URL } from '../constants';
 import type { CreatedEvent } from '../fixtures/application';
+import type {
+  HoldResponse,
+  SeatStatus,
+  SeatingAvailabilityResponse,
+  SeatingMapDefinition,
+  SeatingMapResponse,
+  SeatingSeatInput,
+  SeatingSectionInput,
+  SeatingSelectionRulesInput,
+} from './seatingTypes';
 
-export type SeatStatus = 'Available' | 'Reserved' | 'Booked' | 'Blocked';
-
-export type SeatingSeatInput = {
-  Number: string;
-  TicketTypeId?: string | null;
-};
-
-export type SeatingSectionInput = {
-  Name: string;
-  Code: string;
-  TicketTypeId: string | null;
-  StageSide?: 0 | 1;
-  FillPriority?: number;
-  Rows: Array<{
-    Label: string;
-    Seats: SeatingSeatInput[];
-  }>;
-};
-
-export type SeatingSelectionRulesInput = {
-  NoOrphanSeats: boolean;
-  AutoAssignSeats?: boolean;
-  Strategy?: 0 | 1 | 2;
-};
-
-export type HeldSeat = {
-  SeatLabel: string;
-  TicketTypeId: string | null;
-};
-
-export type HoldResponse = {
-  HoldToken: string;
-  ExpiresAtUtc: string;
-  Seats?: HeldSeat[];
-  SeatLabels: string[];
-};
-
-export type SeatingMapResponse = {
-  Id: string;
-  EventId: string;
-  IsPublished: boolean;
-  SellableTicketTypeIds?: string[];
-  Sections: Array<{
-    Id: string;
-    Name: string;
-    Code: string;
-    TicketTypeId: string | null;
-    Rows: Array<{
-      Label: string;
-      Seats: Array<{
-        Label: string;
-        Number: string;
-        TicketTypeId?: string | null;
-        EffectiveTicketTypeId?: string | null;
-      }>;
-    }>;
-  }>;
-};
-
-export type SeatingAvailabilityResponse = {
-  EventId: string;
-  Seats: Array<{ Label: string; Status: SeatStatus }>;
-};
+export type {
+  HeldSeat,
+  HoldResponse,
+  SeatStatus,
+  SeatingAvailabilityResponse,
+  SeatingMapDefinition,
+  SeatingMapResponse,
+  SeatingSeatInput,
+  SeatingSectionInput,
+  SeatingSelectionRulesInput,
+} from './seatingTypes';
 
 async function requireOk(
   response: Awaited<ReturnType<APIRequestContext['get']>>,
@@ -97,7 +55,8 @@ export async function createAndPublishSeatingMap(
   ownerApi: APIRequestContext,
   created: CreatedEvent,
   sections: SeatingSectionInput[],
-  selectionRules: SeatingSelectionRulesInput | null = null
+  selectionRules: SeatingSelectionRulesInput | null = null,
+  props: unknown[] = []
 ): Promise<SeatingMapResponse> {
   const mapPath = `/api/protected/organizers/${created.organizerId}/events/${created.id}/seating-map`;
   const createResponse = await ownerApi.post(mapPath, {
@@ -109,7 +68,7 @@ export async function createAndPublishSeatingMap(
         FillPriority: section.FillPriority ?? 0,
       })),
       SelectionRules: selectionRules,
-      Props: [],
+      Props: props,
     },
   });
   await requireOk(createResponse, `Create seating map for event ${created.id}`);
@@ -129,13 +88,58 @@ export async function createAndPublishSeatingMap(
   return published;
 }
 
+export async function updatePublishedSeatingMap(
+  ownerApi: APIRequestContext,
+  created: CreatedEvent,
+  definition: SeatingMapDefinition
+): Promise<SeatingMapResponse> {
+  const response = await ownerApi.put(
+    `/api/protected/organizers/${created.organizerId}/events/${created.id}/seating-map`,
+    {
+      data: {
+        Sections: definition.Sections.map((section) => ({
+          ...section,
+          StageSide: section.StageSide ?? 0,
+          FillPriority: section.FillPriority ?? 0,
+        })),
+        SelectionRules: definition.SelectionRules ?? null,
+        Props: definition.Props ?? [],
+      },
+    }
+  );
+  await requireOk(response, `Update seating map for event ${created.id}`);
+  const updated = (await response.json()) as SeatingMapResponse;
+  expect(updated).toMatchObject({ EventId: created.id, IsPublished: true });
+  return updated;
+}
+
+export async function readPublicSeatingMap(
+  api: APIRequestContext,
+  eventId: string
+): Promise<SeatingMapResponse> {
+  const response = await api.get(`/api/public/seating/${eventId}/map`);
+  await requireOk(response, `Read public seating map for event ${eventId}`);
+  return (await response.json()) as SeatingMapResponse;
+}
+
+export async function blockSeats(
+  ownerApi: APIRequestContext,
+  created: CreatedEvent,
+  seatLabels: string[]
+): Promise<string[]> {
+  const response = await ownerApi.post(
+    `/api/protected/organizers/${created.organizerId}/events/${created.id}/seating-map/block`,
+    { data: { SeatLabels: seatLabels } }
+  );
+  await requireOk(response, `Block seats for event ${created.id}`);
+  return (await response.json()) as string[];
+}
+
 export async function readSeatingAvailability(
   api: APIRequestContext,
   eventId: string
 ): Promise<SeatingAvailabilityResponse> {
-  const response = await api.get(
-    `/api/public/seating/${eventId}/availability`
-  );
+  const response = await api.get(`/api/public/seating/${eventId}/availability`);
   await requireOk(response, `Read seating availability for event ${eventId}`);
   return (await response.json()) as SeatingAvailabilityResponse;
 }
@@ -158,6 +162,30 @@ export async function expectSeatStatus(
     .toBe(status);
 }
 
+export async function expectSeatStatuses(
+  api: APIRequestContext,
+  eventId: string,
+  expectedStatuses: Record<string, SeatStatus>
+): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        const availability = await readSeatingAvailability(api, eventId);
+        const byLabel = new Map(
+          availability.Seats.map((seat) => [seat.Label, seat.Status])
+        );
+        return Object.fromEntries(
+          Object.keys(expectedStatuses).map((label) => [
+            label,
+            byLabel.get(label),
+          ])
+        );
+      },
+      { timeout: 30_000, intervals: [250, 500, 1_000] }
+    )
+    .toEqual(expectedStatuses);
+}
+
 export function seatButton(page: Page, seatLabel: string): Locator {
   return page.getByRole('button', { name: seatLabel, exact: true });
 }
@@ -170,9 +198,7 @@ function isSeatMutation(
 ): boolean {
   if (response.request().method() !== 'POST') return false;
   if (
-    !response
-      .url()
-      .includes(`/api/public/seating/${eventId}/hold/${operation}`)
+    !response.url().includes(`/api/public/seating/${eventId}/hold/${operation}`)
   ) {
     return false;
   }
@@ -229,5 +255,9 @@ export function organizerSeat(
   const title = status
     ? `${seatLabel} · ${status}`
     : new RegExp(`^${seatLabel} · `);
-  return page.locator('svg title').filter({ hasText: title }).first().locator('..');
+  return page
+    .locator('svg title')
+    .filter({ hasText: title })
+    .first()
+    .locator('..');
 }

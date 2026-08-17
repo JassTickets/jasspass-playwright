@@ -5,6 +5,9 @@ const countryCurrencyMatrixTest =
 const seatingIntegrationTests = [
   '**/critical_paths/seated_event_checkout.spec.ts',
   '**/critical_paths/seated_event_holds.spec.ts',
+  '**/critical_paths/seated_group_booking.spec.ts',
+  '**/critical_paths/seated_map_editing.spec.ts',
+  '**/critical_paths/seated_concurrency.spec.ts',
   '**/event_portal/seated_event_management.spec.ts',
 ];
 const isolatedIntegrationTests = [

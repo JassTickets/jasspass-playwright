@@ -11,6 +11,11 @@ import {
   PLAYWRIGHT_BOT_STRIPE_CONNECT_ID,
 } from '../constants';
 import { signIn } from '../helpers/auth';
+import { createAndPublishSeatingMap } from '../helpers/seatingHelpers';
+import type {
+  SeatingMapDefinition,
+  SeatingMapResponse,
+} from '../helpers/seatingTypes';
 
 type AuthStorageState = Awaited<ReturnType<BrowserContext['storageState']>>;
 
@@ -95,6 +100,7 @@ export type CreateEventOptions = {
   tickets?: EventTicketInput[];
   promoCodes?: PromoCodeInput[];
   hasSeatSelection?: boolean;
+  seatingMap?: (created: CreatedEvent) => SeatingMapDefinition;
   purchaseLimit?: number | null;
   taxRatePercentage?: number;
   isFreeEvent?: boolean;
@@ -126,6 +132,7 @@ export type CreatedEvent = {
   organizerId: string;
   event: Record<string, unknown>;
   ticketTypes: CreatedTicketType[];
+  seatingMap?: SeatingMapResponse;
 };
 
 type OrganizerPromoCodeRecord = {
@@ -166,7 +173,8 @@ function uniqueSuffix(): string {
 function asArray<T>(data: unknown, property: string): T[] {
   if (Array.isArray(data)) return data as T[];
   if (data && typeof data === 'object') {
-    const nested = (data as Record<string, unknown>)[property];
+    const record = data as Record<string, unknown>;
+    const nested = record[property] ?? record.Items;
     if (Array.isArray(nested)) return nested as T[];
   }
   return [];
@@ -219,7 +227,8 @@ function buildEventPayload(
     isPrivate: options.isPrivate ?? false,
     isApproved: true,
     isVisible: options.isVisible ?? true,
-    hasSeatSelection: options.hasSeatSelection ?? false,
+    hasSeatSelection:
+      options.seatingMap !== undefined || (options.hasSeatSelection ?? false),
     purchaseLimit: options.purchaseLimit ?? null,
     taxRatePercentage: options.taxRatePercentage ?? 0,
     address: '123 Playwright Avenue',
@@ -544,7 +553,10 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
     },
 
     eventFactory: async ({ ownerApi, ownerIdentity }, use) => {
-      const eventsForCleanup: string[] = [];
+      const eventsForCleanup: Array<{
+        eventId: string;
+        organizerId: string;
+      }> = [];
       const eventImageResponse = await ownerApi.get('/gallery/photo1.jpg');
       await requireOk(eventImageResponse, 'Load event fixture image');
       const eventImageBuffer = await eventImageResponse.body();
@@ -587,7 +599,12 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
               )}`
             );
           }
-          if (options.cleanup ?? true) eventsForCleanup.push(eventId);
+          if (options.cleanup ?? true) {
+            eventsForCleanup.push({
+              eventId,
+              organizerId: organizer.organizerId,
+            });
+          }
 
           const [eventResponse, ticketTypesResponse] = await Promise.all([
             ownerApi.get(`/api/public/events/${eventId}`),
@@ -629,24 +646,102 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
             );
           }
 
-          return {
+          const created: CreatedEvent = {
             id: eventId,
             name: eventName,
             organizerId: organizer.organizerId,
             event: publicEvent,
             ticketTypes,
           };
+
+          if (options.seatingMap) {
+            const definition = options.seatingMap(created);
+            created.seatingMap = await createAndPublishSeatingMap(
+              ownerApi,
+              created,
+              definition.Sections,
+              definition.SelectionRules ?? null,
+              definition.Props ?? []
+            );
+          }
+
+          return created;
         },
       });
 
-      for (const eventId of eventsForCleanup.reverse()) {
+      for (const { eventId, organizerId } of eventsForCleanup.reverse()) {
+        const ticketsResponse = await ownerApi.get(
+          `/api/protected/events/${eventId}/tickets`
+        );
+        if (ticketsResponse.ok()) {
+          const tickets = asArray<{
+            Id: string;
+            Status: string;
+          }>(await ticketsResponse.json(), 'Tickets');
+          for (const ticket of tickets.filter(
+            (candidate) => candidate.Status === 'Active'
+          )) {
+            const cancelResponse = await ownerApi.post(
+              '/api/protected/tickets/status',
+              {
+                data: {
+                  ticketId: ticket.Id,
+                  eventId,
+                  organizerId,
+                  releaseSeatAndCapacity: true,
+                },
+              }
+            );
+            if (!cancelResponse.ok()) {
+              const body = await cancelResponse
+                .text()
+                .catch(() => '<unreadable>');
+              console.warn(
+                `[cleanup] Ticket ${
+                  ticket.Id
+                } on event ${eventId} could not be cancelled (${cancelResponse.status()}): ${body}`
+              );
+            } else {
+              const cancelledTicket = (await cancelResponse.json()) as {
+                Status?: string;
+                CapacityReleased?: boolean;
+              };
+              if (
+                cancelledTicket.Status !== 'Inactive' ||
+                cancelledTicket.CapacityReleased !== true
+              ) {
+                console.warn(
+                  `[cleanup] Ticket ${
+                    ticket.Id
+                  } returned an unexpected cancellation state: ${JSON.stringify(
+                    cancelledTicket
+                  )}`
+                );
+              }
+            }
+          }
+        }
+
         const deleteResponse = await ownerApi.delete(
           `/api/protected/events/${eventId}/delete`
         );
         if (!deleteResponse.ok() && deleteResponse.status() !== 404) {
           const body = await deleteResponse.text().catch(() => '<unreadable>');
+          const eventResponse = await ownerApi.get(
+            `/api/public/events/${eventId}`
+          );
+          let inventory = `<event read failed with ${eventResponse.status()}>`;
+          if (eventResponse.ok()) {
+            const eventBody = (await eventResponse.json()) as {
+              Event?: { TicketsSold?: Record<string, number> };
+              TicketsSold?: Record<string, number>;
+            };
+            inventory = JSON.stringify(
+              (eventBody.Event ?? eventBody).TicketsSold ?? {}
+            );
+          }
           console.warn(
-            `[cleanup] Event ${eventId} could not be deleted (${deleteResponse.status()}): ${body}`
+            `[cleanup] Event ${eventId} could not be deleted (${deleteResponse.status()}): ${body}. Current event: ${inventory}`
           );
         }
       }

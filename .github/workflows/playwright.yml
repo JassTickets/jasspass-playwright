@@ -6,7 +6,7 @@ on:
     branches: [main, master]
 jobs:
   test:
-    name: Playwright - ${{ matrix.suite.name }}
+    name: PW - ${{ matrix.suite.name }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
     strategy:
