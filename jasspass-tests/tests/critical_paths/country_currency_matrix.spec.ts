@@ -23,13 +23,14 @@ import {
   ensurePromoterUser,
   expectApiSuccess,
   expectStripeProviderCountry,
+  type MatrixCountry,
+  type MatrixCurrency,
   type MatrixOrganizer,
   type MatrixTicket,
   type MatrixTransaction,
   MATRIX_COUNTRIES,
   MATRIX_CURRENCIES,
   nextCountry,
-  nextCurrency,
   readPublicEvent,
   refundTransaction,
   stripeAccountIdFor,
@@ -47,6 +48,17 @@ const EXPECTED_LOCK_MESSAGES = {
   country: 'Cannot change the event country after tickets have been sold.',
   currency: 'Cannot change the event currency after tickets have been sold.',
 } as const;
+
+// Stripe's CountrySpec is authoritative for cross-currency settlement, but these
+// home currencies are contractual invariants and must never take the rejection path.
+const REQUIRED_HOME_CURRENCY: Partial<Record<MatrixCountry, MatrixCurrency>> = {
+  US: 'USD',
+  CA: 'CAD',
+  PA: 'USD',
+  ES: 'EUR',
+  PT: 'EUR',
+  DE: 'EUR',
+};
 
 async function expectRejectedChange(
   response: Awaited<ReturnType<typeof updateEventCountryAndCurrency>>,
@@ -68,6 +80,52 @@ async function expectEventEconomics(
     CountryIso: countryIso,
     CurrencyIso: currencyIso,
   });
+}
+
+function settlementRejectionMessage(error: unknown): string | undefined {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes(
+    "cannot be settled by this organizer's Stripe account"
+  )
+    ? message
+    : undefined;
+}
+
+async function exerciseUnsoldCurrencyChange(
+  api: APIRequestContext,
+  eventId: string,
+  targetCurrency: MatrixCurrency
+): Promise<MatrixCurrency | undefined> {
+  // Probe only the platform's three matrix currencies. Unsupported candidates are
+  // expected product behavior; the first supported alternative exercises edit + restore.
+  for (const candidate of MATRIX_CURRENCIES) {
+    if (candidate === targetCurrency) continue;
+
+    const candidateResponse = await updateEventCountryAndCurrency(
+      api,
+      eventId,
+      { currencyIso: candidate }
+    );
+    const candidateBody = await candidateResponse.text();
+    if (!candidateResponse.ok()) {
+      expect(candidateResponse.status(), candidateBody).toBe(400);
+      expect(candidateBody).toContain(
+        `Currency '${candidate}' cannot be settled by this organizer's Stripe account`
+      );
+      continue;
+    }
+
+    const restoreResponse = await updateEventCountryAndCurrency(api, eventId, {
+      currencyIso: targetCurrency,
+    });
+    await expectApiSuccess(
+      restoreResponse,
+      `Restore unsold event ${eventId} currency to ${targetCurrency}`
+    );
+    return candidate;
+  }
+
+  return undefined;
 }
 
 for (const stripeCountryIso of MATRIX_COUNTRIES) {
@@ -157,23 +215,38 @@ for (const stripeCountryIso of MATRIX_COUNTRIES) {
             organizerCountryIso,
             1
           );
-          const initialCurrencyIso = nextCurrency(currencyIso);
           const suffix = `${stripeCountryIso}${organizerCountryIso}${currencyIso}${Date.now().toString(
             36
           )}`;
           const promoCode = `MX${suffix}`.toUpperCase();
           const ticketTypeName = `Matrix ${currencyIso} Admission`;
-          const created = await eventFactory.create({
-            name: `PW Matrix ${stripeCountryIso}/${organizerCountryIso}/${currencyIso}`,
-            organizer,
-            eventCountryIso: initialEventCountryIso,
-            currencyIso: initialCurrencyIso,
-            tickets: [{ type: ticketTypeName, price: 20 }],
-            promoCodes: [
-              { code: promoCode, discountPercentage: 5, usageLimit: 5 },
-            ],
-            cleanup: false,
-          });
+
+          let created: Awaited<ReturnType<typeof eventFactory.create>>;
+          try {
+            created = await eventFactory.create({
+              name: `PW Matrix ${stripeCountryIso}/${organizerCountryIso}/${currencyIso}`,
+              organizer,
+              eventCountryIso: initialEventCountryIso,
+              currencyIso,
+              tickets: [{ type: ticketTypeName, price: 20 }],
+              promoCodes: [
+                { code: promoCode, discountPercentage: 5, usageLimit: 5 },
+              ],
+              cleanup: false,
+            });
+          } catch (error) {
+            const rejection = settlementRejectionMessage(error);
+            if (!rejection) throw error;
+
+            await expectStripeProviderCountry(ownerApi, organizer);
+            expect(
+              REQUIRED_HOME_CURRENCY[stripeCountryIso],
+              `${stripeCountryIso} must always support its home matrix currency ${currencyIso}. ${rejection}`
+            ).not.toBe(currencyIso);
+            expect(rejection).toContain(`Currency '${currencyIso}'`);
+            expect(rejection).toContain(`onboarded in ${stripeCountryIso}`);
+            return;
+          }
 
           try {
             await expectStripeProviderCountry(ownerApi, organizer);
@@ -187,15 +260,12 @@ for (const stripeCountryIso of MATRIX_COUNTRIES) {
               `Change unsold event ${created.id} country`
             );
 
-            const currencyChange = await updateEventCountryAndCurrency(
-              ownerApi,
-              created.id,
-              { currencyIso }
-            );
-            await expectApiSuccess(
-              currencyChange,
-              `Change unsold event ${created.id} currency`
-            );
+            const alternateSupportedCurrency =
+              await exerciseUnsoldCurrencyChange(
+                ownerApi,
+                created.id,
+                currencyIso
+              );
             await expectEventEconomics(
               ownerApi,
               created.id,
@@ -271,12 +341,14 @@ for (const stripeCountryIso of MATRIX_COUNTRIES) {
               }),
               EXPECTED_LOCK_MESSAGES.country
             );
-            await expectRejectedChange(
-              await updateEventCountryAndCurrency(ownerApi, created.id, {
-                currencyIso: nextCurrency(currencyIso),
-              }),
-              EXPECTED_LOCK_MESSAGES.currency
-            );
+            if (alternateSupportedCurrency) {
+              await expectRejectedChange(
+                await updateEventCountryAndCurrency(ownerApi, created.id, {
+                  currencyIso: alternateSupportedCurrency,
+                }),
+                EXPECTED_LOCK_MESSAGES.currency
+              );
+            }
             await expectEventEconomics(
               ownerApi,
               created.id,
