@@ -1,20 +1,7 @@
-import type { APIRequestContext, Page } from '@playwright/test';
+import type { APIRequestContext } from '@playwright/test';
 import { test, expect, type CreatedEvent } from '../../fixtures/application';
-import {
-  assertOrderConfirmation,
-  assertPurchaseSuccessUrl,
-  createUniqueBuyer,
-  fillGuestContact,
-  getApiArray,
-  openCheckout,
-  openEvent,
-  submitPurchase,
-} from '../../helpers/criticalCheckoutHelpers';
-import {
-  clickSeatAndWaitForHold,
-  expectSeatStatus,
-  numberedSeats,
-} from '../../helpers/seatingHelpers';
+import { getApiArray } from '../../helpers/criticalCheckoutHelpers';
+import { expectSeatStatus, numberedSeats } from '../../helpers/seatingHelpers';
 import {
   purchaseAutoAssignedFreeTickets,
   type SeatedTicket,
@@ -54,24 +41,6 @@ async function soldCount(
     TicketsSold?: Record<string, number>;
   };
   return (body.Event ?? body).TicketsSold?.[ticketTypeId] ?? 0;
-}
-
-async function purchaseExactSeat(
-  page: Page,
-  created: CreatedEvent,
-  seatLabel: string,
-  buyerLabel: string
-): Promise<string> {
-  await openEvent(page, created.id, created.name);
-  const held = await clickSeatAndWaitForHold(page, created.id, seatLabel);
-  expect(held.response.ok()).toBeTruthy();
-  const buyer = createUniqueBuyer(buyerLabel);
-  await openCheckout(page);
-  await fillGuestContact(page, buyer);
-  const purchase = await submitPurchase(page, 'RSVP');
-  await assertPurchaseSuccessUrl(page, created.id, purchase.Confirmation);
-  await assertOrderConfirmation(page, created.name, purchase.Confirmation);
-  return purchase.Confirmation;
 }
 
 test.describe('seated ticket deactivation and reactivation', () => {
@@ -185,14 +154,14 @@ test.describe('seated ticket deactivation and reactivation', () => {
   }) => {
     const created = await eventFactory.create({
       isFreeEvent: true,
-      tickets: [{ type: 'Contended Seat', price: 0, totalTickets: 1 }],
+      tickets: [{ type: 'Contended Seat', price: 0, totalTickets: 2 }],
       seatingMap: (event) => ({
         Sections: [
           {
             Name: 'Single Section',
             Code: 'ONE',
             TicketTypeId: event.ticketTypes[0].Id,
-            Rows: [{ Label: 'A', Seats: numberedSeats(1) }],
+            Rows: [{ Label: 'A', Seats: numberedSeats(2) }],
           },
         ],
         SelectionRules: { NoOrphanSeats: false, AutoAssignSeats: true },
@@ -214,22 +183,29 @@ test.describe('seated ticket deactivation and reactivation', () => {
     const competingContext = await browser.newContext();
     try {
       const competingPage = await competingContext.newPage();
-      const competingConfirmation = await purchaseExactSeat(
+      const competingPurchase = await purchaseAutoAssignedFreeTickets(
         competingPage,
+        ownerApi,
         created,
-        seatLabel,
+        ticketType,
+        1,
         'ReplacementOwner'
       );
+      const competingConfirmation = competingPurchase.confirmation;
+      expect(competingPurchase.hold.SeatLabels).toEqual([seatLabel]);
       await expectSeatStatus(ownerApi, created.id, seatLabel, 'Booked');
 
-      const reactivation = await ownerApi.post('/api/protected/tickets/status', {
-        data: {
-          ticketId: originalTicket.Id,
-          eventId: created.id,
-          organizerId: created.organizerId,
-          releaseSeatAndCapacity: false,
-        },
-      });
+      const reactivation = await ownerApi.post(
+        '/api/protected/tickets/status',
+        {
+          data: {
+            ticketId: originalTicket.Id,
+            eventId: created.id,
+            organizerId: created.organizerId,
+            releaseSeatAndCapacity: false,
+          },
+        }
+      );
       expect(reactivation.ok()).toBeFalsy();
       expect(await reactivation.text()).toContain(
         `seat ${seatLabel} has already been taken`
@@ -239,7 +215,9 @@ test.describe('seated ticket deactivation and reactivation', () => {
         ownerApi.get(`/api/protected/events/${created.id}/tickets`),
         'Tickets'
       );
-      expect(tickets.find((candidate) => candidate.Id === originalTicket.Id)).toMatchObject({
+      expect(
+        tickets.find((candidate) => candidate.Id === originalTicket.Id)
+      ).toMatchObject({
         Status: 'Inactive',
         CapacityReleased: true,
       });

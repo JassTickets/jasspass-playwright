@@ -1,3 +1,4 @@
+import type { APIRequestContext } from '@playwright/test';
 import { test, expect } from '../../fixtures/application';
 import { getApiArray } from '../../helpers/criticalCheckoutHelpers';
 import {
@@ -14,7 +15,7 @@ import {
 import type { CreatedTicketType } from '../../fixtures/application';
 
 async function holdBestAvailable(
-  api: Parameters<typeof getApiArray>[0] extends Promise<never> ? never : any,
+  api: APIRequestContext,
   eventId: string,
   ticketTypeId: string
 ): Promise<HoldResponse> {
@@ -250,7 +251,16 @@ test.describe('seated transfer and ticket-type reassignment', () => {
             Name: 'Reassign Section',
             Code: 'MOVE',
             TicketTypeId: event.ticketTypes[0].Id,
-            Rows: [{ Label: 'A', Seats: numberedSeats(3) }],
+            Rows: [
+              {
+                Label: 'A',
+                Seats: [
+                  { Number: '1' },
+                  { Number: '2' },
+                  { Number: '3', TicketTypeId: event.ticketTypes[1].Id },
+                ],
+              },
+            ],
           },
         ],
         SelectionRules: { NoOrphanSeats: false, AutoAssignSeats: false },
@@ -296,10 +306,10 @@ test.describe('seated transfer and ticket-type reassignment', () => {
     );
     expect(
       ticketTypes.find((type) => type.Id === sourceType.Id)?.TotalTickets
-    ).toBe(2);
+    ).toBe(1);
     expect(
       ticketTypes.find((type) => type.Id === targetType.Id)?.TotalTickets
-    ).toBe(1);
+    ).toBe(2);
     await expectSeatStatuses(ownerApi, created.id, {
       'MOVE-A1': 'Available',
       'MOVE-A2': 'Reserved',

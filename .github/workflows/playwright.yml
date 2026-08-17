@@ -6,20 +6,20 @@ on:
     branches: [main, master]
 jobs:
   test:
-    name: PW - ${{ matrix.suite.name }}
+    name: ${{ matrix.suite.name }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         suite:
-          - name: regular
+          - name: E2E Tests
             project_args: --project=chromium --project=firefox --project=webkit
             browsers: ''
-          - name: country-currency-matrix
+          - name: Stripe Matrix Tests
             project_args: --project=country-currency-matrix
             browsers: chromium
-          - name: seating-integration
+          - name: Seating Integ Tests
             project_args: --project=seating-integration
             browsers: chromium
     steps:

@@ -8,6 +8,12 @@ const seatingIntegrationTests = [
   '**/critical_paths/seated_group_booking.spec.ts',
   '**/critical_paths/seated_map_editing.spec.ts',
   '**/critical_paths/seated_concurrency.spec.ts',
+  '**/critical_paths/seated_ticket_status.spec.ts',
+  '**/critical_paths/seated_paid_refund.spec.ts',
+  '**/critical_paths/seated_access_control.spec.ts',
+  '**/critical_paths/seated_duplication.spec.ts',
+  '**/critical_paths/seated_transfer_reassignment.spec.ts',
+  '**/critical_paths/seated_realtime.spec.ts',
   '**/event_portal/seated_event_management.spec.ts',
 ];
 const isolatedIntegrationTests = [

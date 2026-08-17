@@ -225,9 +225,9 @@ test.describe('published seating-map editing', () => {
     );
 
     const updatedMap = await readPublicSeatingMap(ownerApi, created.id);
-    expect(updatedMap.Sections[0].Rows[0].Seats.map((seat) => seat.Number)).toEqual(
-      editedNumbers
-    );
+    expect(
+      updatedMap.Sections[0].Rows[0].Seats.map((seat) => seat.Number)
+    ).toEqual(editedNumbers);
     for (const bookedLabel of bookedLabels) {
       expect(
         updatedMap.Sections[0].Rows[0].Seats.some(
@@ -251,12 +251,7 @@ test.describe('published seating-map editing', () => {
     const buyerPage = await buyerContext.newPage();
     try {
       await openEvent(buyerPage, created.id, created.name);
-      await selectTicketQuantity(
-        buyerPage,
-        created.id,
-        ticketType.Type,
-        2
-      );
+      await selectTicketQuantity(buyerPage, created.id, ticketType.Type, 2);
       const rejectedHoldPromise = buyerPage.waitForResponse(
         (response) =>
           response.request().method() === 'POST' &&
@@ -312,6 +307,84 @@ test.describe('published seating-map editing', () => {
       sold: 2,
       capacity: 5,
       bookedSeatLabels: bookedLabels,
+    });
+  });
+
+  test('requires active holds to expire and blocked seats to be explicitly released before removal', async ({
+    eventFactory,
+    ownerApi,
+  }) => {
+    const created = await eventFactory.create({
+      isFreeEvent: true,
+      tickets: [{ type: 'Protected Edit Seat', price: 0, totalTickets: 3 }],
+      seatingMap: (event) =>
+        editableMap(event.ticketTypes[0].Id, ['1', '2', '3']),
+    });
+    const ticketType = created.ticketTypes[0];
+    const holdResponse = await ownerApi.post(
+      `/api/public/seating/${created.id}/hold/add`,
+      {
+        data: {
+          HoldToken: null,
+          TicketTypeId: ticketType.Id,
+          SeatLabel: seatLabel('1'),
+        },
+      }
+    );
+    expect(holdResponse.ok()).toBeTruthy();
+    const hold = (await holdResponse.json()) as { HoldToken: string };
+    const blockResponse = await ownerApi.post(
+      `/api/protected/organizers/${created.organizerId}/events/${created.id}/seating-map/block`,
+      { data: { SeatLabels: [seatLabel('2')] } }
+    );
+    expect(blockResponse.ok()).toBeTruthy();
+    await expectSeatStatuses(ownerApi, created.id, {
+      [seatLabel('1')]: 'Reserved',
+      [seatLabel('2')]: 'Blocked',
+      [seatLabel('3')]: 'Available',
+    });
+
+    const removeHeld = await ownerApi.put(
+      `/api/protected/organizers/${created.organizerId}/events/${created.id}/seating-map`,
+      { data: editableMap(ticketType.Id, ['2', '3']) }
+    );
+    expect(removeHeld.status()).toBe(409);
+    const heldError = await errorMessage(removeHeld);
+    expect(heldError).toContain('currently held in active checkouts');
+    expect(heldError).toContain(seatLabel('1'));
+
+    const removeBlocked = await ownerApi.put(
+      `/api/protected/organizers/${created.organizerId}/events/${created.id}/seating-map`,
+      { data: editableMap(ticketType.Id, ['1', '3']) }
+    );
+    expect(removeBlocked.status()).toBe(409);
+    const blockedError = await errorMessage(removeBlocked);
+    expect(blockedError).toContain('currently blocked');
+    expect(blockedError).toContain(seatLabel('2'));
+
+    const releaseHold = await ownerApi.delete(
+      `/api/public/seating/${created.id}/hold/${hold.HoldToken}`
+    );
+    expect(releaseHold.ok()).toBeTruthy();
+    const unblock = await ownerApi.post(
+      `/api/protected/organizers/${created.organizerId}/events/${created.id}/seating-map/unblock`,
+      { data: { SeatLabels: [seatLabel('2')] } }
+    );
+    expect(unblock.ok()).toBeTruthy();
+
+    await updatePublishedSeatingMap(
+      ownerApi,
+      created,
+      editableMap(ticketType.Id, ['3'])
+    );
+    const finalMap = await readPublicSeatingMap(ownerApi, created.id);
+    expect(
+      finalMap.Sections[0].Rows[0].Seats.map((seat) => seat.Label)
+    ).toEqual([seatLabel('3')]);
+    await expectSeatedInventory(ownerApi, created, ticketType.Id, {
+      sold: 0,
+      capacity: 1,
+      bookedSeatLabels: [],
     });
   });
 });

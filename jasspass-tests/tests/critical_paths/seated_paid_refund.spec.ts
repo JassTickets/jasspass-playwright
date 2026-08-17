@@ -10,7 +10,6 @@ import {
   getApiArray,
   openCheckout,
   openEvent,
-  submitPurchase,
   submitStripeCheckout,
   waitForTransaction,
 } from '../../helpers/criticalCheckoutHelpers';
@@ -78,7 +77,9 @@ async function refundSeat(
     responsePromise,
     requestPromise,
   ]);
-  const responseText = await response.text();
+  const responseText = await response
+    .text()
+    .catch(() => '<response body unavailable>');
   expect(
     response.ok(),
     `Refund failed with ${response.status()}: ${responseText}`
@@ -135,11 +136,9 @@ test.describe('paid seated refund lifecycle', () => {
     const purchase = await submitStripeCheckout(page);
     await assertPurchaseSuccessUrl(page, created.id, purchase.Confirmation);
     await assertOrderConfirmation(page, created.name, purchase.Confirmation);
-    const transaction = await waitForTransaction<SeatedTransaction>(
-      ownerApi,
-      created.id,
-      purchase.Confirmation
-    );
+    const transaction = await waitForTransaction<
+      SeatedTransaction & { Id: string }
+    >(ownerApi, created.id, purchase.Confirmation);
     expect(transaction).toMatchObject({ Status: 'Complete', Quantity: 2 });
     await expectSeatStatuses(ownerApi, created.id, {
       'REF-A1': 'Booked',
@@ -195,7 +194,7 @@ test.describe('paid seated refund lifecycle', () => {
         replacementPage,
         createUniqueBuyer('RefundSeatReplacement')
       );
-      const replacement = await submitPurchase(replacementPage, 'Checkout');
+      const replacement = await submitStripeCheckout(replacementPage);
       replacementConfirmation = replacement.Confirmation;
       await assertPurchaseSuccessUrl(
         replacementPage,
@@ -245,19 +244,21 @@ test.describe('paid seated refund lifecycle', () => {
       tickets
         .filter((ticket) => ticket.Confirmation === purchase.Confirmation)
         .map((ticket) => ticket.Status)
+        .sort()
     ).toEqual(['RefundedBeforeEvent', 'RefundedBeforeEvent']);
     expect(
-      tickets.find(
-        (ticket) => ticket.Confirmation === replacementConfirmation
-      )
-    ).toMatchObject({ Status: 'Active', Title: expect.stringContaining('REF-A1') });
+      tickets.find((ticket) => ticket.Confirmation === replacementConfirmation)
+    ).toMatchObject({
+      Status: 'Active',
+      Title: expect.stringContaining('REF-A1'),
+    });
 
     const refunds = (
       await getApiArray<Refund>(
         ownerApi.get(`/api/protected/events/${created.id}/refunds`),
         'Refunds'
       )
-    ).filter((refund) => refund.TransactionId === (transaction as any).Id);
+    ).filter((refund) => refund.TransactionId === transaction.Id);
     expect(refunds.flatMap((refund) => refund.TicketIds).sort()).toEqual(
       [firstRefundedId, secondRefundedId].sort()
     );
