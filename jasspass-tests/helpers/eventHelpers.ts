@@ -347,9 +347,7 @@ export async function purchaseTicket(
 
   // Close the modal (if any):
   try {
-    await page
-      .getByRole('button', { name: 'Close' })
-      .click({ timeout: 3000 });
+    await page.getByRole('button', { name: 'Close' }).click({ timeout: 3000 });
   } catch {
     // Some browsers navigate directly to the success page without a modal.
   }
@@ -399,11 +397,11 @@ export async function refundTicket(page: Page) {
     .check();
 
   // Check the price before fees
-  await page1.getByText('$55.00').click();
+  await expect(page1.getByText('$55.00', { exact: true })).toBeVisible();
 
   // Add service fees & check price
   await page1.getByRole('checkbox', { name: 'Include Service Fee' }).check();
-  await page1.getByText('$58.23').click();
+  await expect(page1.getByText('$58.03', { exact: true })).toBeVisible();
 
   // Add transaction fees & check price
   await page1
@@ -433,7 +431,7 @@ export async function refundTicket(page: Page) {
   await expect(successBanner).toBeVisible({ timeout: 15000 });
 
   // Check that the ticket is now 0
-  await page1.getByText('$0.00').click();
+  await expect(page1.getByText('$0.00', { exact: true })).toBeVisible();
 
   // Close the modal
   await page1.getByRole('button', { name: '✕' }).click();

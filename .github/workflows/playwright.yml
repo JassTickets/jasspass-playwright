@@ -1,9 +1,9 @@
 name: Playwright Tests
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 jobs:
   test:
     name: Playwright - ${{ matrix.suite.name }}
@@ -19,20 +19,23 @@ jobs:
           - name: country-currency-matrix
             project_args: --project=country-currency-matrix
             browsers: chromium
+          - name: seating-integration
+            project_args: --project=seating-integration
+            browsers: chromium
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-    - name: Install dependencies
-      run: npm install -g yarn && yarn
-    - name: Install Playwright Browsers
-      run: yarn playwright install --with-deps ${{ matrix.suite.browsers }}
-    - name: Run Playwright tests
-      run: yarn playwright test ${{ matrix.suite.project_args }}
-    - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
-      with:
-        name: playwright-report-${{ matrix.suite.name }}
-        path: playwright-report/
-        retention-days: 30
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - name: Install dependencies
+        run: npm install -g yarn && yarn
+      - name: Install Playwright Browsers
+        run: yarn playwright install --with-deps ${{ matrix.suite.browsers }}
+      - name: Run Playwright tests
+        run: yarn playwright test ${{ matrix.suite.project_args }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-${{ matrix.suite.name }}
+          path: playwright-report/
+          retention-days: 30

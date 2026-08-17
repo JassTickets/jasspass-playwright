@@ -1,5 +1,17 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const countryCurrencyMatrixTest =
+  '**/critical_paths/country_currency_matrix.spec.ts';
+const seatingIntegrationTests = [
+  '**/critical_paths/seated_event_checkout.spec.ts',
+  '**/critical_paths/seated_event_holds.spec.ts',
+  '**/event_portal/seated_event_management.spec.ts',
+];
+const isolatedIntegrationTests = [
+  countryCurrencyMatrixTest,
+  ...seatingIntegrationTests,
+];
+
 /**
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
@@ -36,25 +48,31 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: '**/critical_paths/country_currency_matrix.spec.ts',
+      testIgnore: isolatedIntegrationTests,
       use: { ...devices['Desktop Chrome'] },
     },
 
     {
       name: 'firefox',
-      testIgnore: '**/critical_paths/country_currency_matrix.spec.ts',
+      testIgnore: isolatedIntegrationTests,
       use: { ...devices['Desktop Firefox'] },
     },
 
     {
       name: 'webkit',
-      testIgnore: '**/critical_paths/country_currency_matrix.spec.ts',
+      testIgnore: isolatedIntegrationTests,
       use: { ...devices['Desktop Safari'] },
     },
 
     {
       name: 'country-currency-matrix',
-      testMatch: '**/critical_paths/country_currency_matrix.spec.ts',
+      testMatch: countryCurrencyMatrixTest,
+      use: { ...devices['Desktop Chrome'] },
+    },
+
+    {
+      name: 'seating-integration',
+      testMatch: seatingIntegrationTests,
       use: { ...devices['Desktop Chrome'] },
     },
 
