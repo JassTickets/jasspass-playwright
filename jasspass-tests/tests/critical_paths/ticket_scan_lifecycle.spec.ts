@@ -86,12 +86,32 @@ test.describe('ticket check-in lifecycle', () => {
     await ownerPage
       .getByRole('button', { name: 'Attendees', exact: true })
       .click();
+
+    const attendeeSearchResponsePromise = ownerPage.waitForResponse(
+      (response) => {
+        const url = new URL(response.url());
+        return (
+          response.request().method() === 'GET' &&
+          url.pathname === `/api/protected/events/${created.id}/tickets` &&
+          url.searchParams.get('search') === buyer.lastName
+        );
+      },
+      { timeout: 30_000 }
+    );
     await ownerPage.getByPlaceholder(/Search Attendees/i).fill(buyer.lastName);
+    const attendeeSearchResponse = await attendeeSearchResponsePromise;
+    const attendeeSearchResponseBody = await attendeeSearchResponse
+      .text()
+      .catch(() => '<response body unavailable>');
+    expect(
+      attendeeSearchResponse.status(),
+      `Attendee search failed: ${attendeeSearchResponseBody}`
+    ).toBe(200);
 
     const attendeeRow = ownerPage
       .getByRole('row')
       .filter({ hasText: `${buyer.firstName} ${buyer.lastName}` });
-    await expect(attendeeRow).toHaveCount(1);
+    await expect(attendeeRow).toHaveCount(1, { timeout: 30_000 });
     await expect(attendeeRow).toContainText(ticketTypeName);
     await expect(
       attendeeRow.getByText('Not Scanned', { exact: true })
