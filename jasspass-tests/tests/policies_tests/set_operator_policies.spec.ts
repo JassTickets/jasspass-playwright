@@ -32,7 +32,7 @@ test('operator policies comprehensive flow', async ({ browser }) => {
   try {
     // STEP 1: Create a new event for testing
     console.log(
-      '[INFO] Step 1: Creating new event for operator policy testing...',
+      '[INFO] Step 1: Creating new event for operator policy testing...'
     );
     const eventName = `Operator Policy Test Event ${Date.now()}`;
     const eventId = await createEvent(page1, { eventName });
@@ -43,7 +43,7 @@ test('operator policies comprehensive flow', async ({ browser }) => {
     const organizerName = await purchaseTicket(page1, eventId);
     if (!organizerName) {
       throw new Error(
-        'Failed to capture organizer name from the purchase ticket flow',
+        'Failed to capture organizer name from the purchase ticket flow'
       );
     }
 
@@ -55,7 +55,7 @@ test('operator policies comprehensive flow', async ({ browser }) => {
     // unrelated to the operator-policy behavior covered by this test.
     const organizerPage = await openEventOrganizerPortal(page1, eventId);
     const organizerId = new URL(organizerPage.url()).pathname.match(
-      /\/company\/([^/]+)/,
+      /\/company\/([^/]+)/
     )?.[1];
     if (!organizerId) {
       throw new Error('Could not determine the test organizer ID.');
@@ -70,7 +70,7 @@ test('operator policies comprehensive flow', async ({ browser }) => {
 
     // STEP 3: Sign in as operator and verify access
     console.log(
-      '[INFO] Step 3: Signing in as operator and verifying access...',
+      '[INFO] Step 3: Signing in as operator and verifying access...'
     );
     await page2.goto(`${JASS_TEST_URL}/portal/organizer`);
 
@@ -87,18 +87,19 @@ test('operator policies comprehensive flow', async ({ browser }) => {
     // account can belong to many test organizations, so sidebar search and its
     // paginated result order are not part of this policy test.
     await page2.goto(
-      `${JASS_TEST_URL}/portal/organizer/company/${organizerId}/event/${eventId}`,
+      `${JASS_TEST_URL}/portal/organizer/company/${organizerId}/event/${eventId}`
     );
 
     // Verify the granted surfaces through the redesigned event portal.
     await verifyOperatorAccess(page2, organizerName, eventName);
 
     console.log(
-      '[INFO] Operator policies comprehensive flow test completed successfully!',
+      '[INFO] Operator policies comprehensive flow test completed successfully!'
     );
   } finally {
-    // Clean up contexts
-    await context1.close();
-    await context2.close();
+    // Playwright may already have disposed these contexts when the test times
+    // out. Cleanup must not replace the actionable test failure with a
+    // Target.disposeBrowserContext protocol error.
+    await Promise.allSettled([context1.close(), context2.close()]);
   }
 });

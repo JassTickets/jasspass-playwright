@@ -1156,7 +1156,14 @@ export async function manageEventAttendeesAndCommunications(
   await bookingModal
     .getByRole('button', { name: 'Confirm', exact: true })
     .click();
-  expect((await complimentaryResponsePromise).ok()).toBeTruthy();
+  const complimentaryResponse = await complimentaryResponsePromise;
+  const complimentaryResponseBody = await complimentaryResponse
+    .text()
+    .catch(() => '<unreadable>');
+  expect(
+    complimentaryResponse.ok(),
+    `Complimentary booking failed with ${complimentaryResponse.status()}: ${complimentaryResponseBody}`
+  ).toBeTruthy();
   await successUrlPromise;
 
   // Verify booking confirmation
@@ -1495,8 +1502,27 @@ export async function verifyOperatorAccess(
     .first();
   if ((await orderCell.count()) > 0) {
     await orderCell.click();
-    await page.getByRole('button', { name: 'Send Confirmation Email' }).click();
-    await expect(page.getByText('Email sent successfully!')).toBeVisible();
+    const confirmationEmailResponsePromise = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname ===
+          '/api/protected/transactions/confirmation/email',
+      { timeout: 30_000 }
+    );
+    await page
+      .getByRole('button', { name: 'Send Confirmation Email' })
+      .click();
+    const confirmationEmailResponse = await confirmationEmailResponsePromise;
+    const confirmationEmailResponseBody = await confirmationEmailResponse
+      .text()
+      .catch(() => '<unreadable>');
+    expect(
+      confirmationEmailResponse.ok(),
+      `Resend confirmation email failed with ${confirmationEmailResponse.status()}: ${confirmationEmailResponseBody}`
+    ).toBeTruthy();
+    await expect(page.getByText('Email sent successfully!')).toBeVisible({
+      timeout: 30_000,
+    });
     await page.getByRole('button', { name: '✕' }).click();
   }
 
