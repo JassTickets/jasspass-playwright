@@ -333,7 +333,7 @@ export async function createEvent(
   // rendered, so no places-details request was made and the test timed out.
   const locationSuggestion = locationSearchRoot
     .getByRole('button')
-    .filter({ has: locationSearchRoot.locator('svg.lucide-map-pin') })
+    .filter({ has: page.locator('svg.lucide-map-pin') })
     .first();
   await expect(locationSuggestion).toBeVisible({ timeout: 15_000 });
   const locationDetailsResponsePromise = page.waitForResponse(
