@@ -328,7 +328,13 @@ export async function createEvent(
   ).toBeTruthy();
 
   const locationSearchRoot = locationSearch.locator('xpath=../..');
-  const locationSuggestion = locationSearchRoot.getByRole('button').first();
+  // "Enter manually" is always present in this component. On a fast click it
+  // used to be mistaken for the first autocomplete result before predictions
+  // rendered, so no places-details request was made and the test timed out.
+  const locationSuggestion = locationSearchRoot
+    .getByRole('button')
+    .filter({ has: locationSearchRoot.locator('svg.lucide-map-pin') })
+    .first();
   await expect(locationSuggestion).toBeVisible({ timeout: 15_000 });
   const locationDetailsResponsePromise = page.waitForResponse(
     (response) =>
