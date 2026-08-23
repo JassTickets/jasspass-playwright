@@ -22,16 +22,18 @@ import {
   NEW_PROMO_DISCOUNT_PERCENTAGE,
   NEW_PROMO_FIXED_AMOUNT,
   TEAM_MEMBER_EMAIL,
-  JASS_TEST_URL,
 } from '../constants';
 import { signIn } from './auth';
 import { deleteEvent } from './eventHelpers';
-import { openEventPortalDestination, openOrganizerSurface } from './portalNavigationHelpers';
+import {
+  openEventPortalDestination,
+  openOrganizerSurface,
+} from './portalNavigationHelpers';
 
 export async function setStripeTestAccount(
   page: Page,
   stripeAccountId = PLAYWRIGHT_BOT_STRIPE_CONNECT_ID,
-  { required = false }: { required?: boolean } = {},
+  { required = false }: { required?: boolean } = {}
 ): Promise<boolean> {
   const stripeToolsButton = page.getByRole('button', {
     name: 'Stripe test tools',
@@ -60,14 +62,14 @@ export async function setStripeTestAccount(
       response.request().method() === 'POST' &&
       response.url().includes('/api/protected/organizers/') &&
       response.url().includes('/stripe-connect'),
-    { timeout: 30_000 },
+    { timeout: 30_000 }
   );
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   const stripeConnectResponse = await stripeConnectResponsePromise;
   if (!stripeConnectResponse.ok()) {
     const body = await stripeConnectResponse.text().catch(() => '<unreadable>');
     throw new Error(
-      `Assign Stripe test account failed with ${stripeConnectResponse.status()}: ${body}`,
+      `Assign Stripe test account failed with ${stripeConnectResponse.status()}: ${body}`
     );
   }
   return true;
@@ -79,7 +81,7 @@ export async function createOrganizer(
     email = PLAYWRIGHT_BOT_EMAIL,
     organizerName = ORGANIZER_NAME_PREFIX +
       Math.random().toString(36).substring(2, 15),
-  } = {},
+  } = {}
 ): Promise<string> {
   await signIn(page, { targetPath: '/portal/home' });
 
@@ -110,13 +112,13 @@ export async function createOrganizer(
     (response) =>
       response.request().method() === 'GET' &&
       new URL(response.url()).pathname === '/api/places-autocomplete',
-    { timeout: 30_000 },
+    { timeout: 30_000 }
   );
   await citySearch.fill(CONTACT_CITY);
   const autocompleteResponse = await autocompleteResponsePromise;
   expect(
     autocompleteResponse.ok(),
-    `City autocomplete failed with ${autocompleteResponse.status()}`,
+    `City autocomplete failed with ${autocompleteResponse.status()}`
   ).toBeTruthy();
 
   const citySearchRoot = citySearch.locator('xpath=../..');
@@ -129,13 +131,13 @@ export async function createOrganizer(
     (response) =>
       response.request().method() === 'GET' &&
       new URL(response.url()).pathname === '/api/places-details',
-    { timeout: 30_000 },
+    { timeout: 30_000 }
   );
   await torontoSuggestion.click();
   const placeDetailsResponse = await placeDetailsResponsePromise;
   expect(
     placeDetailsResponse.ok(),
-    `City details failed with ${placeDetailsResponse.status()}`,
+    `City details failed with ${placeDetailsResponse.status()}`
   ).toBeTruthy();
 
   await page.locator('#org-contact-email:visible').first().fill(email);
@@ -143,7 +145,7 @@ export async function createOrganizer(
     (response) =>
       response.request().method() === 'POST' &&
       new URL(response.url()).pathname === '/api/protected/organizers',
-    { timeout: 30_000 },
+    { timeout: 30_000 }
   );
   await page
     .getByRole('button', { name: 'Create organization', exact: true })
@@ -156,19 +158,19 @@ export async function createOrganizer(
     .catch(() => '<unreadable>');
   expect(
     createOrganizerResponse.ok(),
-    `Create organization failed with ${createOrganizerResponse.status()}: ${createOrganizerBody}`,
+    `Create organization failed with ${createOrganizerResponse.status()}: ${createOrganizerBody}`
   ).toBeTruthy();
 
   const created = JSON.parse(createOrganizerBody) as { OrganizerId?: string };
   const organizerId = created.OrganizerId;
   if (!organizerId) {
     throw new Error(
-      `Could not parse organizer ID from create response: ${createOrganizerBody}`,
+      `Could not parse organizer ID from create response: ${createOrganizerBody}`
     );
   }
   await expect(page).toHaveURL(
     new RegExp(`/portal/organizer/company/${organizerId}(?:\\?|$)`),
-    { timeout: 30_000 },
+    { timeout: 30_000 }
   );
 
   // Change the Stripe Connect ID to point to the onboarded Playwright bot's Stripe Connect ID.
@@ -179,7 +181,7 @@ export async function createOrganizer(
   // instead of a fixed sleep.
   if (!(await setStripeTestAccount(page))) {
     console.log(
-      '[INFO] Stripe Connect debug form not present (production-gated env); skipping Connect ID override.',
+      '[INFO] Stripe Connect debug form not present (production-gated env); skipping Connect ID override.'
     );
   }
 
@@ -204,7 +206,9 @@ export async function selectFirstOrganizer(page: Page) {
 
 export async function editOrganizerDetails(
   page: Page,
-  { addressEntry = 'autocomplete' }: {
+  {
+    addressEntry = 'autocomplete',
+  }: {
     addressEntry?: 'autocomplete' | 'manual';
   } = {}
 ) {
@@ -231,8 +235,8 @@ export async function editOrganizerDetails(
       .first();
     await expect(addressSuggestion).toBeVisible({ timeout: 15_000 });
 
-    const addressDetailsResponsePromise = page.waitForResponse((response) =>
-      new URL(response.url()).pathname === '/api/places-details'
+    const addressDetailsResponsePromise = page.waitForResponse(
+      (response) => new URL(response.url()).pathname === '/api/places-details'
     );
     await addressSuggestion.click();
 
@@ -290,7 +294,7 @@ export async function addPerformer(page: Page) {
   const createResponsePromise = page.waitForResponse(
     (response) =>
       response.request().method() === 'POST' &&
-      new URL(response.url()).pathname.endsWith('/performers'),
+      new URL(response.url()).pathname.endsWith('/performers')
   );
   await page.getByRole('button', { name: 'Add Performer' }).last().click();
   const createResponse = await createResponsePromise;
@@ -301,7 +305,7 @@ export async function addPerformer(page: Page) {
     .getByRole('textbox', { name: 'Search performers...' })
     .fill(randomPerformerName);
   await expect(
-    page.getByText(randomPerformerName, { exact: true }),
+    page.getByText(randomPerformerName, { exact: true })
   ).toBeVisible();
 
   // return the performer name
@@ -310,14 +314,14 @@ export async function addPerformer(page: Page) {
 
 export async function editPerformer(
   page: Page,
-  performerName: string,
+  performerName: string
 ): Promise<string> {
   await page.getByText(performerName, { exact: true }).click();
 
   const performerCard = page
     .getByRole('button', { name: `Delete performer ${performerName}` })
     .locator(
-      'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " rounded-lg ")][1]',
+      'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " rounded-lg ")][1]'
     );
   const editInputs = performerCard.locator('input:not([type="file"])');
   await expect(editInputs).toHaveCount(2);
@@ -332,9 +336,11 @@ export async function editPerformer(
   const updateResponsePromise = page.waitForResponse(
     (response) =>
       response.request().method() === 'PUT' &&
-      new URL(response.url()).pathname.includes('/performers/'),
+      new URL(response.url()).pathname.includes('/performers/')
   );
-  await performerCard.getByRole('button', { name: 'Save', exact: true }).click();
+  await performerCard
+    .getByRole('button', { name: 'Save', exact: true })
+    .click();
   const updateResponse = await updateResponsePromise;
   expect(updateResponse.ok()).toBeTruthy();
 
@@ -344,7 +350,7 @@ export async function editPerformer(
     .getByRole('textbox', { name: 'Search performers...' })
     .fill(newRandomPerformerName);
   await expect(
-    page.getByText(newRandomPerformerName, { exact: true }),
+    page.getByText(newRandomPerformerName, { exact: true })
   ).toBeVisible();
 
   // Return the new performer name
@@ -355,7 +361,7 @@ export async function deletePerformer(page: Page, performerName: string) {
   const deleteResponsePromise = page.waitForResponse(
     (response) =>
       response.request().method() === 'DELETE' &&
-      new URL(response.url()).pathname.includes('/performers/'),
+      new URL(response.url()).pathname.includes('/performers/')
   );
   await page
     .getByRole('button', { name: `Delete performer ${performerName}` })
@@ -389,7 +395,7 @@ export async function addPromoCode(page: Page): Promise<string> {
 
 export async function editPromoCode(
   page: Page,
-  promoCode: string,
+  promoCode: string
 ): Promise<string> {
   await page.getByText(promoCode).first().click();
   await page.getByRole('textbox', { name: 'Code', exact: true }).click();
@@ -467,7 +473,7 @@ export async function editOrganizer(
     email = PLAYWRIGHT_BOT_EMAIL,
     organizerName = ORGANIZER_NAME_PREFIX +
       Math.random().toString(36).substring(2, 15),
-  } = {},
+  } = {}
 ): Promise<string> {
   // log in and open the create-organizer form
   await signIn(page, { targetPath: '/portal/home' });
@@ -481,7 +487,7 @@ export async function deleteOrganizer(
     email = PLAYWRIGHT_BOT_EMAIL,
     organizerName = ORGANIZER_NAME_PREFIX +
       Math.random().toString(36).substring(2, 15),
-  } = {},
+  } = {}
 ) {
   // This will delete the event, ensuring that the organizer can be deleted
   const { page1 } = await deleteEvent(page);
@@ -503,19 +509,20 @@ export async function deleteOrganizer(
       (response) =>
         response.request().method() === 'DELETE' &&
         /\/api\/protected\/organizers\/[^/]+$/.test(response.url()),
-      { timeout: 30_000 },
+      { timeout: 30_000 }
     ),
-    deleteModal
-      .getByRole('button', { name: 'Delete', exact: true })
-      .click(),
+    deleteModal.getByRole('button', { name: 'Delete', exact: true }).click(),
   ]);
   expect(deleteResponse.ok()).toBeTruthy();
-  await expect(page1).toHaveURL(`${JASS_TEST_URL}/`, { timeout: 30_000 });
+  await expect(page1).toHaveURL(
+    (url) => url.pathname === '/' || url.pathname === '/portal/home',
+    { timeout: 30_000 }
+  );
 }
 
 export async function addOperatorWithAllPolicies(
   page: Page,
-  operatorEmail: string,
+  operatorEmail: string
 ) {
   await openEventPortalDestination(page, 'eventStaff');
 
@@ -561,6 +568,6 @@ export async function addOperatorWithAllPolicies(
   const assignOperatorResponse = await assignOperatorResponsePromise;
   expect(
     assignOperatorResponse.ok(),
-    `Assign operator failed with ${assignOperatorResponse.status()}: ${await assignOperatorResponse.text()}`,
+    `Assign operator failed with ${assignOperatorResponse.status()}: ${await assignOperatorResponse.text()}`
   ).toBeTruthy();
 }

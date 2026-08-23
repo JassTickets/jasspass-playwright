@@ -5,6 +5,8 @@ import {
   JASS_TEST_URL,
 } from '../constants';
 
+export const DOB_PROMPT_DISMISS_KEY = 'dobPromptDismissed';
+
 export async function dismissDateOfBirthPromptIfPresent(
   page: Page,
   timeout = 3_000
@@ -21,7 +23,15 @@ export async function dismissDateOfBirthPromptIfPresent(
   if (promptIsVisible) {
     await remindMeLater.click();
     await expect(remindMeLater).toBeHidden();
+    return;
   }
+
+  // The profile request that decides whether to show this prompt can finish
+  // after a busy CI runner's timeout. Preserve the same "remind me later"
+  // session state so a late response cannot cover the portal mid-test.
+  await page.evaluate((dismissKey) => {
+    window.sessionStorage.setItem(dismissKey, '1');
+  }, DOB_PROMPT_DISMISS_KEY);
 }
 
 async function gotoSignIn(page: Page, url: string) {
@@ -41,7 +51,7 @@ async function expectSignedInPortal(page: Page) {
     page
       .getByRole('button', { name: 'Sign Out', exact: true })
       .filter({ visible: true })
-      .first(),
+      .first()
   ).toBeVisible({ timeout: 30_000 });
 }
 
@@ -62,7 +72,9 @@ export async function signIn(
     .catch(() => false);
 
   if (!emailInputVisible) {
-    await page.goto(`${baseURL}${targetPath}`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${baseURL}${targetPath}`, {
+      waitUntil: 'domcontentloaded',
+    });
 
     if (!new URL(page.url()).pathname.includes('/signin')) {
       await expectSignedInPortal(page);

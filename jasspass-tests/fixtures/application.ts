@@ -10,7 +10,7 @@ import {
   ORGANIZER_NAME_PREFIX,
   PLAYWRIGHT_BOT_STRIPE_CONNECT_ID,
 } from '../constants';
-import { signIn } from '../helpers/auth';
+import { DOB_PROMPT_DISMISS_KEY, signIn } from '../helpers/auth';
 import { createAndPublishSeatingMap } from '../helpers/seatingHelpers';
 import type {
   SeatingMapDefinition,
@@ -547,6 +547,9 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
       const context = await browser.newContext({
         storageState: ownerStorageState,
       });
+      await context.addInitScript((dismissKey) => {
+        window.sessionStorage.setItem(dismissKey, '1');
+      }, DOB_PROMPT_DISMISS_KEY);
       const page = await context.newPage();
       await use(page);
       await context.close();
