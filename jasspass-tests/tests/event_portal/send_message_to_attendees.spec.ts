@@ -1,6 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../fixtures/application';
 import {
-  selectFirstEventStartingWithPBO,
+  openEventOrganizerPortal,
   sendMessageToAttendees,
 } from '../../helpers/eventHelpers';
 
@@ -8,11 +8,11 @@ test.setTimeout(60_000);
 
 // @Description: This test verifies that sending messages to attendees functionality works correctly.
 // @Dependencies: Depends on the sign-in functionality and existing event being available.
-test('sendMessageToAttendees', async ({ page }) => {
+test('sendMessageToAttendees', async ({ ownerPage, eventFactory }) => {
   console.log('[INFO] Executing Send Message to Attendees test...');
 
-  // Sign in and select first event starting with PBO
-  const organizerPage = await selectFirstEventStartingWithPBO(page);
+  const created = await eventFactory.create({ isFreeEvent: true });
+  const organizerPage = await openEventOrganizerPortal(ownerPage, created.id);
 
   // Send message to attendees
   const sendButton = await sendMessageToAttendees(organizerPage);

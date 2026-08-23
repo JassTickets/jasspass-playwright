@@ -1,18 +1,18 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../fixtures/application';
 import {
-  selectFirstEventStartingWithPBO,
   duplicateEvent,
+  openEventOrganizerPortal,
 } from '../../helpers/eventHelpers';
 
 test.setTimeout(120_000);
 
 // @Description: This test verifies that event duplication functionality works correctly.
 // @Dependencies: Depends on the sign-in functionality and existing event being available.
-test('duplicateEvent', async ({ page }) => {
+test('duplicateEvent', async ({ ownerPage, eventFactory }) => {
   console.log('[INFO] Executing Duplicate Event test...');
 
-  // Sign in and select first event starting with PBO
-  const organizerPage = await selectFirstEventStartingWithPBO(page);
+  const created = await eventFactory.create();
+  const organizerPage = await openEventOrganizerPortal(ownerPage, created.id);
 
   // Duplicate the event
   const duplicatedEventEditButton = await duplicateEvent(organizerPage);

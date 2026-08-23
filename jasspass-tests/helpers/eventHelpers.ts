@@ -1,4 +1,4 @@
-import { expect, Page } from '@playwright/test';
+import { expect, Locator, Page } from '@playwright/test';
 import {
   JASS_TEST_CHANGE_ORG_URL,
   PLAYWRIGHT_BOT_EMAIL,
@@ -6,6 +6,7 @@ import {
   getRandomCountry,
   CONTACT_NAME,
   CONTACT_ADDRESS,
+  NEW_CONTACT_ADDRESS,
   CONTACT_PHONE_NUMBER,
   JASS_TEST_URL,
   EVENT_NAME_PREFIX,
@@ -29,6 +30,10 @@ import {
 import { signIn } from './auth';
 import { createOrganizer } from './organizerHelpers';
 import { fillIndividualStripeFields } from './stripeHelpers';
+import {
+  openEventPortalDestination,
+  openOrganizerSurface,
+} from './portalNavigationHelpers';
 
 // Helper function to generate unique promo code with timestamp
 function generateUniquePromoCode(): string {
@@ -153,18 +158,75 @@ async function reloadStaleEventDataIfPresent(organizerPage: Page) {
   await expect(overlay).toHaveCount(0, { timeout: 15000 });
 }
 
+function visibleStudioSheet(page: Page, title: string) {
+  return page
+    .getByRole('heading', { name: title, exact: true })
+    .filter({ visible: true })
+    .locator('xpath=ancestor::div[contains(@class,"pointer-events-auto")][1]');
+}
+
+export function visibleModalShell(page: Page, title: string) {
+  return page
+    .getByText(title, { exact: true })
+    .filter({ visible: true })
+    .first()
+    .locator('xpath=ancestor::div[contains(@class,"pointer-events-auto")][1]');
+}
+
+async function attachPromoCodeToAllTicketTypes(page: Page) {
+  const attachModal = visibleModalShell(page, 'Attach Ticket Type');
+  await expect(attachModal).toBeVisible({ timeout: 30_000 });
+  await attachModal
+    .getByRole('checkbox', { name: 'Attach to All Ticket Types' })
+    .check();
+
+  const attachResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/promocodes/ticket-types/') &&
+      response.url().endsWith('/attach'),
+    { timeout: 30_000 },
+  );
+  await attachModal
+    .getByRole('button', { name: 'Attach', exact: true })
+    .click();
+  expect((await attachResponsePromise).ok()).toBeTruthy();
+  await expect(attachModal).toBeHidden({ timeout: 30_000 });
+}
+
+async function selectOrganizerTicketAndContinue(page: Page) {
+  const bookingModal = visibleModalShell(page, 'Select Tickets');
+  await expect(bookingModal).toBeVisible({ timeout: 30_000 });
+  await bookingModal
+    .getByRole('button', { name: /^Increase quantity for / })
+    .first()
+    .click();
+  await bookingModal
+    .getByRole('button', { name: 'Get Tickets', exact: true })
+    .click();
+  await expect(bookingModal.locator('#FirstName')).toBeVisible({
+    timeout: 30_000,
+  });
+  return bookingModal;
+}
+
+function waitForEventDetailsRefresh(page: Page) {
+  return page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      /\/api\/protected\/events\/[^/]+$/.test(new URL(response.url()).pathname),
+    { timeout: 30_000 }
+  );
+}
+
 async function openOrdersAndAttendees(organizerPage: Page): Promise<void> {
-  const ordersTab = organizerPage
-    .getByRole('button', { name: 'Orders & Attendees', exact: true })
-    .first();
   const ordersSearch = organizerPage.getByPlaceholder('Search Orders');
 
-  await expect(ordersTab).toBeVisible({ timeout: 30_000 });
-  await ordersTab.click();
+  await openEventPortalDestination(organizerPage, 'ordersAndAttendees');
   await expect(ordersSearch).toBeVisible({ timeout: 30_000 });
 }
 
-async function openMessageAttendees(organizerPage: Page): Promise<void> {
+async function openMessageAttendees(organizerPage: Page): Promise<Locator> {
   const toolsButton = organizerPage
     .locator('button:visible')
     .filter({ hasText: /^Tools$/ })
@@ -188,11 +250,14 @@ async function openMessageAttendees(organizerPage: Page): Promise<void> {
 
   await expect(messageAttendeesButton).toBeVisible({ timeout: 30_000 });
   await messageAttendeesButton.click();
+  const messageModal = visibleModalShell(organizerPage, 'Message Attendees');
+  await expect(messageModal).toBeVisible({ timeout: 30_000 });
   await expect(
-    organizerPage.getByRole('textbox', {
+    messageModal.getByRole('textbox', {
       name: 'Enter the subject...',
     })
   ).toBeVisible({ timeout: 30_000 });
+  return messageModal;
 }
 
 export async function createEvent(
@@ -203,37 +268,136 @@ export async function createEvent(
       Math.random().toString(36).substring(2, 15),
   } = {}
 ): Promise<string> {
-  //Timeout for 3 seconds
-  await page.waitForTimeout(3000);
-  await createOrganizer(page);
+  const organizerId = await createOrganizer(page);
+  await openOrganizerSurface(page, 'events');
 
-  await page.getByRole('button', { name: 'New Event' }).click();
+  const newEventButton = page
+    .getByRole('button', { name: 'New Event', exact: true })
+    .filter({ visible: true })
+    .first();
+  await expect(newEventButton).toBeVisible({ timeout: 30_000 });
+  await newEventButton.click();
+  await expect(page).toHaveURL(/\/portal\/create-event(?:\?|$)/, {
+    timeout: 30_000,
+  });
 
-  //wait for 5 seconds
-  await page.waitForTimeout(5000);
+  const title = page.getByPlaceholder('Event title');
+  await expect(title).toBeVisible({ timeout: 30_000 });
+  await title.fill(eventName);
 
-  // Select advanced mode
+  const eventImageResponse = await page.request.get(
+    `${JASS_TEST_URL}/gallery/photo1.jpg`,
+  );
+  expect(eventImageResponse.ok(), 'Load event fixture image').toBeTruthy();
+  const eventImageBuffer = await eventImageResponse.body();
+  const fileChooserPromise = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Add flyer', exact: true }).click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles({
+    name: 'photo1.jpg',
+    mimeType: 'image/jpeg',
+    buffer: eventImageBuffer,
+  });
+
+  const locationRow = page
+    .getByRole('button')
+    .filter({ hasText: /Set the location/ })
+    .filter({ visible: true })
+    .first();
+  await expect(locationRow).toBeVisible();
+  await locationRow.click();
+  await expect(
+    page.getByRole('heading', { name: 'Where is it?', exact: true }),
+  ).toBeVisible();
+
+  const locationSearch = page
+    .getByPlaceholder('Search venue or address')
+    .filter({ visible: true })
+    .first();
+  const autocompleteResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      new URL(response.url()).pathname === '/api/places-autocomplete',
+    { timeout: 30_000 },
+  );
+  await locationSearch.fill(NEW_CONTACT_ADDRESS);
+  const autocompleteResponse = await autocompleteResponsePromise;
+  expect(
+    autocompleteResponse.ok(),
+    `Location autocomplete failed with ${autocompleteResponse.status()}`,
+  ).toBeTruthy();
+
+  const locationSearchRoot = locationSearch.locator('xpath=../..');
+  const locationSuggestion = locationSearchRoot.getByRole('button').first();
+  await expect(locationSuggestion).toBeVisible({ timeout: 15_000 });
+  const locationDetailsResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      new URL(response.url()).pathname === '/api/places-details',
+    { timeout: 30_000 },
+  );
+  await locationSuggestion.click();
+  const locationDetailsResponse = await locationDetailsResponsePromise;
+  expect(
+    locationDetailsResponse.ok(),
+    `Location details failed with ${locationDetailsResponse.status()}`,
+  ).toBeTruthy();
   await page
-    .getByRole('button', { name: 'Advanced Full control over' })
+    .getByRole('button', { name: 'Done', exact: true })
+    .filter({ visible: true })
     .click();
 
-  await page.getByRole('button', { name: 'Fill Default Values' }).click();
+  await page
+    .getByRole('button', { name: 'Add a ticket type', exact: true })
+    .filter({ visible: true })
+    .first()
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'New ticket type', exact: true }),
+  ).toBeVisible();
+  await page
+    .locator('#tier-name:visible')
+    .first()
+    .fill('General Admission Playwright');
+  await page.locator('#tier-price:visible').first().fill('55');
+  await page.locator('#tier-quantity:visible').first().fill('100');
+  await page
+    .getByRole('button', { name: 'Add ticket type', exact: true })
+    .filter({ visible: true })
+    .first()
+    .click();
+  await expect(
+    page.getByText('General Admission Playwright', { exact: true }),
+  ).toBeVisible();
 
-  // Change the event name
-  await page.getByRole('textbox', { name: 'Event Title' }).click();
-  await page.getByRole('textbox', { name: 'Event Title' }).fill(eventName);
-  await page.getByRole('button').filter({ hasText: 'Additional' }).click(); //wait for 5 seconds
-  await page.waitForTimeout(5000);
-
+  const createDraftResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      new URL(response.url()).pathname ===
+        `/api/protected/events/${organizerId}/draft`,
+    { timeout: 45_000 },
+  );
   const createEventResponsePromise = page.waitForResponse((response) => {
     const pathname = new URL(response.url()).pathname.replace(/\/$/, '');
     return (
       response.request().method() === 'POST' &&
       pathname === '/api/protected/events'
     );
-  });
+  }, { timeout: 90_000 });
 
-  await page.getByText('Publish as Live Event').click();
+  const publishButton = page
+    .getByRole('button', { name: 'Publish', exact: true })
+    .filter({ visible: true });
+  await expect(publishButton).toBeEnabled({ timeout: 30_000 });
+  await publishButton.click();
+
+  const createDraftResponse = await createDraftResponsePromise;
+  if (!createDraftResponse.ok()) {
+    const body = await createDraftResponse.text().catch(() => '<unreadable>');
+    throw new Error(
+      `Create event draft failed with ${createDraftResponse.status()}: ${body}`,
+    );
+  }
 
   const createEventResponse = await createEventResponsePromise;
 
@@ -255,25 +419,33 @@ export async function createEvent(
 
   // The frontend either navigates directly to the event or opens the optional
   // community-notification modal. Wait for whichever happens first.
-  const skipButton = page.getByRole('button', { name: 'Skip' });
+  const notNowButton = page.getByRole('button', {
+    name: 'Not now',
+    exact: true,
+  });
   const eventUrl = new RegExp(`/event/${eventId}(?:\\?|$)`);
   const postCreateOutcome = await Promise.any([
     page
       .waitForURL(eventUrl, { timeout: 10_000 })
       .then(() => 'navigated' as const),
-    skipButton
+    notNowButton
       .waitFor({ state: 'visible', timeout: 10_000 })
-      .then(() => 'skip' as const),
+      .then(() => 'not-now' as const),
   ]).catch(() => 'pending' as const);
 
-  if (postCreateOutcome === 'skip') {
-    console.log('Skip button found, clicking...');
-    await skipButton.click();
+  if (postCreateOutcome === 'not-now') {
+    await notNowButton.click();
   }
 
   // Do not navigate there on behalf of the application. The redirect is part
   // of the creation UX and must remain covered by this end-to-end helper.
   await expect(page).toHaveURL(eventUrl, { timeout: 30_000 });
+  await expect(
+    page.getByRole('heading', { name: eventName, exact: true }),
+  ).toBeVisible({ timeout: 30_000 });
+  await expect(
+    page.getByText('General Admission Playwright', { exact: true }).first(),
+  ).toBeVisible({ timeout: 30_000 });
 
   const url = page.url();
   console.log(`New event URL: ${url}`);
@@ -378,11 +550,7 @@ export async function refundTicket(page: Page) {
   await page.getByText('Organizer View').click();
   const page1 = await page1Promise;
 
-  //Wait for one second
-  await page1.waitForTimeout(1000);
-
-  // Go to Orders & Attendees
-  await page1.getByRole('button', { name: 'Orders & Attendees' }).click();
+  await openEventPortalDestination(page1, 'ordersAndAttendees');
   await page1.getByRole('textbox', { name: 'Search Orders' }).click();
 
   await page1
@@ -396,22 +564,40 @@ export async function refundTicket(page: Page) {
     .getByRole('checkbox', { name: 'General Admission Playwright' })
     .check();
 
-  // Check the price before fees
-  await expect(page1.getByText('$55.00', { exact: true })).toBeVisible();
+  const refundForm = page1
+    .getByRole('textbox', { name: 'Refund Details' })
+    .locator('xpath=ancestor::form');
+  const displayedRefundAmount = refundForm
+    .getByText(/^(?:[$€]|[A-Z]{3}\s*)[\d,]+\.\d{2}$/)
+    .first();
+  const readRefundAmount = async () => {
+    const text = await displayedRefundAmount.textContent();
+    const numericAmount = text?.match(/[\d,]+\.\d{2}$/)?.[0];
+    return numericAmount ? Number(numericAmount.replaceAll(',', '')) : NaN;
+  };
 
-  // Add service fees & check price
-  await page1.getByRole('checkbox', { name: 'Include Service Fee' }).check();
-  await expect(page1.getByText('$58.03', { exact: true })).toBeVisible();
+  // The event can use any supported currency, but its ticket face value is
+  // deterministic and the refund preview must expose it to the organizer.
+  await expect(displayedRefundAmount).toBeVisible();
+  await expect.poll(readRefundAmount).toBeCloseTo(55, 2);
+  const ticketAmount = await readRefundAmount();
 
-  // Add transaction fees & check price
-  await page1
+  // Adding each fee component must update the visible refund preview. The
+  // exact fee varies with the organizer country and event currency.
+  await refundForm
+    .getByRole('checkbox', { name: 'Include Service Fee' })
+    .check();
+  await expect.poll(readRefundAmount).toBeGreaterThan(ticketAmount);
+  const amountWithServiceFee = await readRefundAmount();
+
+  await refundForm
     .getByRole('checkbox', { name: 'Include Transaction Fee' })
     .check();
-  await page1.locator('form').getByText('$').click();
+  await expect.poll(readRefundAmount).toBeGreaterThan(amountWithServiceFee);
 
   // Add description and submit refund
-  await page1.getByRole('textbox', { name: 'Refund Details' }).click();
-  await page1
+  await refundForm.getByRole('textbox', { name: 'Refund Details' }).click();
+  await refundForm
     .getByRole('textbox', { name: 'Refund Details' })
     .fill('Playwright Refund');
   // Integration success signal: refund POST must complete successfully.
@@ -422,16 +608,18 @@ export async function refundTicket(page: Page) {
         response.url().includes('/api/protected/refunds'),
       { timeout: 30000 }
     ),
-    page1.getByRole('button', { name: 'Submit Refund' }).click(),
+    refundForm.getByRole('button', { name: 'Submit Refund' }).click(),
   ]);
   expect(refundResponse.ok()).toBeTruthy();
 
   // UI success signal: organizer sees refund confirmation after backend success.
-  const successBanner = page1.getByText('Refund submitted successfully.');
+  const successBanner = refundForm.getByText(
+    'Refund submitted successfully.',
+  );
   await expect(successBanner).toBeVisible({ timeout: 15000 });
 
-  // Check that the ticket is now 0
-  await expect(page1.getByText('$0.00', { exact: true })).toBeVisible();
+  // Check that the selected ticket has no remaining refundable balance.
+  await expect.poll(readRefundAmount).toBe(0);
 
   // Close the modal
   await page1.getByRole('button', { name: '✕' }).click();
@@ -444,12 +632,7 @@ export async function deleteEvent(page: Page) {
   // Do e2e flow up until now: create organizer, create event, purchase ticket, refund ticket
   const { page1 } = await refundTicket(page);
 
-  // Go to the event settings
-  const eventSettingsButton = page1.getByRole('button', {
-    name: 'Event Settings',
-  });
-  await expect(eventSettingsButton).toBeVisible({ timeout: 30000 });
-  await eventSettingsButton.click();
+  await openEventPortalDestination(page1, 'eventSettings');
 
   const deleteEventButton = page1.getByRole('button', { name: 'Delete Event' });
   await expect(deleteEventButton).toBeVisible({ timeout: 30000 });
@@ -506,10 +689,12 @@ export async function selectFirstEventStartingWithPBO(
   await organizerViewLink.click();
   const page2 = await page2Promise;
 
-  // Wait for the organizer portal to load
   await expect(
-    page2.getByRole('button', { name: 'Orders & Attendees' }).first()
-  ).toBeVisible({ timeout: 30000 });
+    page2
+      .getByRole('button', { name: 'Overview', exact: true })
+      .filter({ visible: true })
+      .first(),
+  ).toBeVisible({ timeout: 30_000 });
 
   return page2;
 }
@@ -538,8 +723,11 @@ export async function openEventOrganizerPortal(
     `${JASS_TEST_URL}/portal/organizer/company/${organizerId}/event/${eventId}`
   );
   await expect(
-    page.getByRole('button', { name: 'Orders & Attendees' }).first()
-  ).toBeVisible({ timeout: 30000 });
+    page
+      .getByRole('button', { name: 'Overview', exact: true })
+      .filter({ visible: true })
+      .first(),
+  ).toBeVisible({ timeout: 30_000 });
 
   return page;
 }
@@ -552,110 +740,175 @@ export async function createEventAndOpenOrganizerPortal(
 }
 
 export async function editEventBasics(organizerPage: Page) {
-  // Go to Edit Event
-  await organizerPage.getByRole('button', { name: 'Edit Event' }).click();
+  await openEventPortalDestination(organizerPage, 'eventDetails');
   await reloadStaleEventDataIfPresent(organizerPage);
 
-  // Update event title with timestamp for uniqueness
-  await organizerPage.getByRole('textbox', { name: 'Event Title' }).click();
+  const title = organizerPage
+    .getByPlaceholder('Event title')
+    .filter({ visible: true })
+    .first();
+  await expect(title).toBeVisible({ timeout: 30_000 });
   const timestamp = Date.now();
   const eventTitleWithTimestamp = `${EVENT_NEW_TITLE} ${timestamp}`;
-  await organizerPage
-    .getByRole('textbox', { name: 'Event Title' })
-    .fill(eventTitleWithTimestamp);
+  await title.fill(eventTitleWithTimestamp);
 
-  // Update long description
-  await organizerPage.locator('#long-description').click();
-  await organizerPage.locator('#long-description').fill(EVENT_NEW_DESCRIPTION);
+  const description = organizerPage.locator('#studio-description:visible');
+  await description.fill(EVENT_NEW_DESCRIPTION);
 
-  // Save changes
-  await organizerPage.getByRole('button', { name: 'Save Changes' }).click();
+  const saveResponsePromise = organizerPage.waitForResponse(
+    (response) =>
+      response.request().method() === 'PUT' &&
+      /\/api\/protected\/events\/[^/]+$/.test(new URL(response.url()).pathname),
+    { timeout: 30_000 },
+  );
+  const saveButton = organizerPage
+    .getByRole('button', { name: 'Save changes', exact: true })
+    .filter({ visible: true });
+  await expect(saveButton).toBeEnabled();
+  await saveButton.click();
+  expect((await saveResponsePromise).ok()).toBeTruthy();
 
-  // Return success message locator
-  return organizerPage.getByText('Event updated successfully');
+  // The current canvas clears its transient success banner as the refreshed
+  // event arrives. Assert the durable, user-visible result instead.
+  await expect(title).toHaveValue(eventTitleWithTimestamp);
+  return title;
 }
 
 export async function editEventTimeAndLocation(organizerPage: Page) {
-  // Go to Edit Event
-  await organizerPage.getByRole('button', { name: 'Edit Event' }).click();
+  await openEventPortalDestination(organizerPage, 'eventDetails');
   await reloadStaleEventDataIfPresent(organizerPage);
 
-  // Go to Time & Location
-  await organizerPage.getByRole('button', { name: 'Time & Location' }).click();
-  await reloadStaleEventDataIfPresent(organizerPage);
+  const description = organizerPage.locator('#studio-description:visible');
+  const dateRow = description.locator(
+    'xpath=ancestor::div[button][1]/button[1]'
+  );
+  const locationRow = description.locator(
+    'xpath=ancestor::div[button][1]/button[2]'
+  );
 
-  // Update address
-  await organizerPage.locator('input[name="address"]').click();
-  await organizerPage.locator('input[name="address"]').fill(EVENT_NEW_ADDRESS);
+  // Move the existing start one day forward through the new date/time sheet.
+  await dateRow.click();
+  let dateSheet = visibleStudioSheet(organizerPage, 'When is it?');
+  await expect(dateSheet).toBeVisible();
+  const dateInputs = dateSheet.locator('input[type="datetime-local"]');
+  const currentStart = await dateInputs.nth(0).inputValue();
+  const nextStartDate = new Date(currentStart);
+  nextStartDate.setDate(nextStartDate.getDate() + 1);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  const nextStart = `${nextStartDate.getFullYear()}-${pad(
+    nextStartDate.getMonth() + 1
+  )}-${pad(nextStartDate.getDate())}T${pad(nextStartDate.getHours())}:${pad(
+    nextStartDate.getMinutes()
+  )}`;
+  await dateInputs.nth(0).fill(nextStart);
+  await dateSheet
+    .getByRole('button', { name: 'Done', exact: true })
+    .click();
 
-  // Update city
-  await organizerPage.getByRole('textbox', { name: 'City' }).click();
-  await organizerPage
-    .getByRole('textbox', { name: 'City' })
-    .fill(EVENT_NEW_CITY);
+  // Update the venue through the new location sheet. Event creation already
+  // covers selecting a Places suggestion; this edit path verifies that the
+  // resolved location can be adjusted and persisted.
+  await locationRow.click();
+  const locationSheet = visibleStudioSheet(organizerPage, 'Where is it?');
+  await expect(locationSheet).toBeVisible();
+  const uniqueVenueName = `${EVENT_NEW_VENUE} ${Date.now()}`;
+  await locationSheet.locator('#venue-name').fill(uniqueVenueName);
+  await locationSheet
+    .getByRole('button', { name: 'Done', exact: true })
+    .click();
 
-  // Update venue name
-  await organizerPage.getByRole('textbox', { name: 'Venue Name' }).click();
-  await organizerPage
-    .getByRole('textbox', { name: 'Venue Name' })
-    .fill(EVENT_NEW_VENUE);
+  const saveButton = organizerPage
+    .getByRole('button', { name: 'Save changes', exact: true })
+    .filter({ visible: true });
+  await expect(saveButton).toBeEnabled({ timeout: 30_000 });
+  const saveResponsePromise = organizerPage.waitForResponse(
+    (response) =>
+      response.request().method() === 'PUT' &&
+      /\/api\/protected\/events\/[^/]+$/.test(new URL(response.url()).pathname),
+    { timeout: 30_000 },
+  );
+  const refreshResponsePromise = waitForEventDetailsRefresh(organizerPage);
+  await saveButton.click();
+  expect((await saveResponsePromise).ok()).toBeTruthy();
+  expect((await refreshResponsePromise).ok()).toBeTruthy();
+  await expect(locationRow).toContainText(uniqueVenueName);
 
-  //Update postal code
-  await organizerPage.getByRole('textbox', { name: 'Zip Code' }).click();
-  await organizerPage.getByRole('textbox', { name: 'Zip Code' }).fill('M5A0M7');
-
-  // Save changes
-  await organizerPage.getByRole('button', { name: 'Save Changes' }).click();
-
-  // Return success message locator
-  return organizerPage.getByText('Event updated successfully');
+  // Reopen the date sheet to assert the saved time through the user-facing UI.
+  await dateRow.click();
+  dateSheet = visibleStudioSheet(organizerPage, 'When is it?');
+  await expect(dateSheet.locator('input[type="datetime-local"]').nth(0)).toHaveValue(
+    nextStart
+  );
+  return locationRow;
 }
 
 export async function editEventAdditionalDetails(organizerPage: Page) {
-  // Wait for the event portal edit tab to be ready before editing details.
-  await expect(
-    organizerPage.getByRole('button', { name: 'Edit Event' })
-  ).toBeVisible({ timeout: 15000 });
-  await organizerPage.getByRole('button', { name: 'Edit Event' }).click();
+  await openEventPortalDestination(organizerPage, 'eventDetails');
+  await reloadStaleEventDataIfPresent(organizerPage);
 
-  // Wait for the additional details form before applying the existing edits.
-  await expect(
-    organizerPage.getByRole('button', { name: 'Additional Details' })
-  ).toBeVisible({ timeout: 15000 });
-  await organizerPage
-    .getByRole('button', { name: 'Additional Details' })
+  const checkoutAndEmails = organizerPage
+    .getByRole('button')
+    .filter({ hasText: /^Checkout & emails/ })
+    .filter({ visible: true });
+  await checkoutAndEmails.click();
+  let checkoutSheet = visibleStudioSheet(organizerPage, 'Checkout & emails');
+  await expect(checkoutSheet).toBeVisible();
+  const uniqueAdditionalDetails = `${EVENT_NEW_ADDITIONAL_DETAILS} ${Date.now()}`;
+  await checkoutSheet
+    .locator('#edit-post-checkout')
+    .fill(uniqueAdditionalDetails);
+  await checkoutSheet
+    .getByRole('button', { name: 'Done', exact: true })
     .click();
 
-  // Update additional details text
-  await expect(organizerPage.locator('#post-checkout-message')).toBeVisible({
-    timeout: 15000,
-  });
-  await organizerPage.locator('#post-checkout-message').click();
-  await organizerPage
-    .locator('#post-checkout-message')
-    .fill(EVENT_NEW_ADDITIONAL_DETAILS);
-
-  // Update tax rate
-  await organizerPage
-    .getByRole('textbox', { name: 'Enter tax rate percentage' })
+  const money = organizerPage
+    .getByRole('button')
+    .filter({ hasText: /^Money/ })
+    .filter({ visible: true });
+  await money.click();
+  let moneySheet = visibleStudioSheet(organizerPage, 'Money');
+  await expect(moneySheet).toBeVisible();
+  await moneySheet.locator('#edit-tax-rate').fill(EVENT_NEW_TAX_RATE);
+  await moneySheet
+    .getByRole('button', { name: 'Done', exact: true })
     .click();
-  await organizerPage
-    .getByRole('textbox', { name: 'Enter tax rate percentage' })
-    .fill(EVENT_NEW_TAX_RATE);
 
-  // Save changes
-  await organizerPage.getByRole('button', { name: 'Save Changes' }).click();
+  const saveButton = organizerPage
+    .getByRole('button', { name: 'Save changes', exact: true })
+    .filter({ visible: true });
+  await expect(saveButton).toBeEnabled({ timeout: 30_000 });
+  const saveResponsePromise = organizerPage.waitForResponse(
+    (response) =>
+      response.request().method() === 'PUT' &&
+      /\/api\/protected\/events\/[^/]+$/.test(new URL(response.url()).pathname),
+    { timeout: 30_000 },
+  );
+  const refreshResponsePromise = waitForEventDetailsRefresh(organizerPage);
+  await saveButton.click();
+  expect((await saveResponsePromise).ok()).toBeTruthy();
+  expect((await refreshResponsePromise).ok()).toBeTruthy();
 
-  // Return success message locator
-  return organizerPage.getByText('Event updated successfully');
+  // Reopen both sheets to verify the saved values through the redesigned UX.
+  await checkoutAndEmails.click();
+  checkoutSheet = visibleStudioSheet(organizerPage, 'Checkout & emails');
+  await expect(checkoutSheet.locator('#edit-post-checkout')).toHaveValue(
+    uniqueAdditionalDetails
+  );
+  await checkoutSheet
+    .getByRole('button', { name: 'Done', exact: true })
+    .click();
+  await money.click();
+  moneySheet = visibleStudioSheet(organizerPage, 'Money');
+  const savedTaxRate = moneySheet.locator('#edit-tax-rate');
+  await expect(savedTaxRate).toHaveValue(EVENT_NEW_TAX_RATE);
+  return savedTaxRate;
 }
 
 export async function manageEventPromoCodes(organizerPage: Page) {
   // Generate unique promo code with timestamp
   const uniquePromoCode = generateUniquePromoCode();
 
-  // Go to Promote tab
-  await organizerPage.getByRole('button', { name: 'Promote' }).click();
+  await openEventPortalDestination(organizerPage, 'promote');
 
   // Add new promo code
   await organizerPage
@@ -666,10 +919,7 @@ export async function manageEventPromoCodes(organizerPage: Page) {
     uniquePromoCode
   );
 
-  await organizerPage
-    .getByRole('checkbox', { name: 'Attach to All Ticket Types' })
-    .check();
-  await organizerPage.getByRole('button', { name: 'Attach' }).click();
+  await attachPromoCodeToAllTicketTypes(organizerPage);
 
   await searchAndClickEventPromoCode(organizerPage, uniquePromoCode);
   await organizerPage.getByRole('button', { name: 'Show details' }).click();
@@ -705,42 +955,22 @@ export async function bookComplimentaryTicket(organizerPage: Page) {
     .getByRole('button')
     .filter({ hasText: /^Book Tickets$/, visible: true })
     .click();
-  //await for 2 seconds
-  await organizerPage.waitForTimeout(2000);
+  const bookingModal = await selectOrganizerTicketAndContinue(organizerPage);
 
-  await organizerPage.getByRole('button').nth(2).click();
-  await organizerPage.waitForTimeout(2000);
-
-  await organizerPage.getByRole('button', { name: 'Get Tickets' }).click();
-
-  await organizerPage
+  await bookingModal
     .locator('label')
     .filter({ hasText: 'Complimentary' })
     .click();
 
   // Fill attendee information
-  await organizerPage.getByRole('textbox', { name: 'First Name *' }).click();
-  await organizerPage
-    .getByRole('textbox', { name: 'First Name *' })
-    .fill(ATTENDEE_FIRST_NAME);
-  await organizerPage
-    .getByRole('textbox', { name: 'First Name *' })
-    .press('Tab');
-  await organizerPage
-    .getByRole('textbox', { name: 'Last Name *' })
-    .fill(ATTENDEE_LAST_NAME);
-  await organizerPage
-    .getByRole('textbox', { name: 'Last Name *' })
-    .press('Tab');
-  await organizerPage
-    .getByRole('textbox', { name: 'Email Address *' })
-    .fill(ATTENDEE_EMAIL);
-  await organizerPage.locator('#phone-input').click();
-  await organizerPage.locator('#phone-input').fill(ATTENDEE_PHONE);
+  await bookingModal.locator('#FirstName').fill(ATTENDEE_FIRST_NAME);
+  await bookingModal.locator('#LastName').fill(ATTENDEE_LAST_NAME);
+  await bookingModal.locator('#Email').fill(ATTENDEE_EMAIL);
+  await bookingModal.locator('#phone-input').fill(ATTENDEE_PHONE);
 
   // Accept terms
 
-  const terms = organizerPage.locator('#tosAccepted:visible');
+  const terms = bookingModal.locator('#tosAccepted');
   await expect(terms).toHaveCount(1);
   await terms.check();
 
@@ -754,7 +984,9 @@ export async function bookComplimentaryTicket(organizerPage: Page) {
     /\/payment\/success\/event\//,
     { timeout: 45000 }
   );
-  await organizerPage.getByRole('button', { name: 'Confirm' }).click();
+  await bookingModal
+    .getByRole('button', { name: 'Confirm', exact: true })
+    .click();
   const complimentaryResponse = await complimentaryResponsePromise;
   expect(complimentaryResponse.ok()).toBeTruthy();
   await successUrlPromise;
@@ -807,48 +1039,52 @@ export async function ensureEventHasAttendee(
   // organizer portal so the messaging flow can continue.
   await organizerPage.goto(portalUrl);
   await expect(
-    organizerPage.getByRole('button', { name: 'Orders & Attendees' }).first()
+    organizerPage
+      .getByRole('button', { name: 'Overview', exact: true })
+      .filter({ visible: true })
+      .first()
   ).toBeVisible({ timeout: 30000 });
 }
 
-export async function sendMessageToAttendees(organizerPage: Page) {
+export async function sendMessageToAttendees(
+  organizerPage: Page,
+  subject = MESSAGE_SUBJECT,
+  body = MESSAGE_BODY
+) {
   // A "message all attendees" send needs at least one recipient.
   await ensureEventHasAttendee(organizerPage);
 
-  // Go to Orders & Attendees
-  await organizerPage
-    .getByRole('button', { name: 'Orders & Attendees' })
-    .click();
-  await organizerPage.getByRole('button').filter({ hasText: 'Tools' }).click();
-  // Open message modal
-  await organizerPage
-    .getByRole('button')
-    .filter({ hasText: 'Message Attendees' })
-    .click();
+  await openOrdersAndAttendees(organizerPage);
+  const messageModal = await openMessageAttendees(organizerPage);
 
-  await organizerPage
+  await messageModal
     .getByRole('textbox', { name: 'Enter the subject...' })
-    .click();
-  await organizerPage
-    .getByRole('textbox', { name: 'Enter the subject...' })
-    .fill(MESSAGE_SUBJECT);
+    .fill(subject);
 
   // Click next
-  await organizerPage
-    .locator('button:visible')
-    .filter({ hasText: /^Next$/ })
+  await messageModal
+    .getByRole('button', { name: 'Next', exact: true })
     .click();
 
   // Fill message body
-  await organizerPage.locator('#message-body-inline').click();
-  await organizerPage.locator('#message-body-inline').fill(MESSAGE_BODY);
+  const messageBody = messageModal.locator('#message-body-inline');
+  await expect(messageBody).toHaveCount(1);
+  await messageBody.fill(body);
 
   // Send message
-  const sendButton = organizerPage.getByRole('button', {
+  const sendButton = messageModal.getByRole('button', {
     name: 'Send',
     exact: true,
   });
+  const sendMessageResponsePromise = organizerPage.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/api/protected/organizers/') &&
+      response.url().includes('/email/send'),
+    { timeout: 30_000 }
+  );
   await sendButton.click();
+  expect((await sendMessageResponsePromise).ok()).toBeTruthy();
 
   // Success state: modal closes after the message is sent
   await expect(sendButton).toBeHidden();
@@ -872,11 +1108,9 @@ export async function manageEventAttendeesAndCommunications(
     .getByRole('button')
     .filter({ hasText: /^Book Tickets$/, visible: true })
     .click();
-  // Select ticket
-  await organizerPage.getByRole('button').nth(2).click();
-  await organizerPage.getByRole('button', { name: 'Get Tickets' }).click();
+  const bookingModal = await selectOrganizerTicketAndContinue(organizerPage);
 
-  await organizerPage
+  await bookingModal
     .locator('label')
     .filter({ hasText: 'Complimentary' })
     .click();
@@ -885,28 +1119,14 @@ export async function manageEventAttendeesAndCommunications(
   const currentURL = organizerPage.url();
 
   // Fill attendee information
-  await organizerPage.getByRole('textbox', { name: 'First Name *' }).click();
-  await organizerPage
-    .getByRole('textbox', { name: 'First Name *' })
-    .fill(ATTENDEE_FIRST_NAME);
-  await organizerPage
-    .getByRole('textbox', { name: 'First Name *' })
-    .press('Tab');
-  await organizerPage
-    .getByRole('textbox', { name: 'Last Name *' })
-    .fill(ATTENDEE_LAST_NAME);
-  await organizerPage
-    .getByRole('textbox', { name: 'Last Name *' })
-    .press('Tab');
-  await organizerPage
-    .getByRole('textbox', { name: 'Email Address *' })
-    .fill(ATTENDEE_EMAIL);
-  await organizerPage.locator('#phone-input').click();
-  await organizerPage.locator('#phone-input').fill(ATTENDEE_PHONE);
+  await bookingModal.locator('#FirstName').fill(ATTENDEE_FIRST_NAME);
+  await bookingModal.locator('#LastName').fill(ATTENDEE_LAST_NAME);
+  await bookingModal.locator('#Email').fill(ATTENDEE_EMAIL);
+  await bookingModal.locator('#phone-input').fill(ATTENDEE_PHONE);
 
   // Accept terms
   try {
-    const whoIsGoingCheckbox = organizerPage.getByRole('checkbox', {
+    const whoIsGoingCheckbox = bookingModal.getByRole('checkbox', {
       name: 'I agree to appear in the',
     });
     if ((await whoIsGoingCheckbox.count()) > 0) {
@@ -918,15 +1138,26 @@ export async function manageEventAttendeesAndCommunications(
     console.log('Who Is Going is disabled. Continuing...');
   }
 
-  const terms = organizerPage.locator('#tosAccepted:visible');
+  const terms = bookingModal.locator('#tosAccepted');
   await expect(terms).toHaveCount(1);
   await terms.check();
 
   // Confirm booking
-  await organizerPage.getByRole('button', { name: 'Confirm' }).click();
-
-  // wait 3 seconds
-  await organizerPage.waitForTimeout(3000);
+  const complimentaryResponsePromise = organizerPage.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/tickets/complimentary'),
+    { timeout: 45_000 }
+  );
+  const successUrlPromise = organizerPage.waitForURL(
+    /\/payment\/success\/event\//,
+    { timeout: 45_000 }
+  );
+  await bookingModal
+    .getByRole('button', { name: 'Confirm', exact: true })
+    .click();
+  expect((await complimentaryResponsePromise).ok()).toBeTruthy();
+  await successUrlPromise;
 
   // Verify booking confirmation
   const confirmationHeading = organizerPage.getByRole('heading', {
@@ -939,26 +1170,23 @@ export async function manageEventAttendeesAndCommunications(
   await openOrdersAndAttendees(organizerPage);
 
   // Send message to attendees
-  await openMessageAttendees(organizerPage);
-  await organizerPage
-    .getByRole('textbox', { name: 'Enter the subject...' })
-    .click();
-  await organizerPage
+  const messageModal = await openMessageAttendees(organizerPage);
+  await messageModal
     .getByRole('textbox', { name: 'Enter the subject...' })
     .fill(uniqueSubject);
 
   // Click next
-  await organizerPage
-    .locator('button:visible')
-    .filter({ hasText: /^Next$/ })
+  await messageModal
+    .getByRole('button', { name: 'Next', exact: true })
     .click();
 
   // Fill message body
-  await organizerPage.locator('#message-body-inline').click();
-  await organizerPage.locator('#message-body-inline').fill(MESSAGE_BODY);
+  const messageBody = messageModal.locator('#message-body-inline');
+  await expect(messageBody).toHaveCount(1);
+  await messageBody.fill(MESSAGE_BODY);
 
   // Send message
-  const sendButton = organizerPage.getByRole('button', {
+  const sendButton = messageModal.getByRole('button', {
     name: 'Send',
     exact: true,
   });
@@ -976,8 +1204,8 @@ export async function manageEventAttendeesAndCommunications(
   // Success state: modal closes after the message is sent
   await expect(sendButton).toBeHidden();
 
-  // Navigate to Communications tab to verify the message appears
-  await organizerPage.getByRole('button', { name: 'Communications' }).click();
+  // Navigate to Communications to verify the message appears.
+  await openEventPortalDestination(organizerPage, 'communications');
 
   const communicationsSearch =
     organizerPage.getByPlaceholder('Search emails...');
@@ -1018,89 +1246,98 @@ async function performEventDuplication(
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const duplicatedEventTitle = `${originalEventTitle} (Duplicated at ${timestamp})`;
 
-  // Go to Event Settings
-  await organizerPage.getByRole('button', { name: 'Event Settings' }).click();
+  await openEventPortalDestination(organizerPage, 'eventSettings');
 
   // Start duplication process
   await organizerPage.getByRole('button', { name: 'Duplicate Event' }).click();
 
   // Find the event name field in the duplicate modal and update it
   // The field should contain the current event title by default
-  const eventNameField = organizerPage.getByRole('textbox').first();
+  const eventNameField = organizerPage
+    .getByRole('textbox')
+    .filter({ visible: true })
+    .first();
   await eventNameField.click();
   await eventNameField.clear(); // Clear existing text
   await eventNameField.fill(duplicatedEventTitle);
 
-  await organizerPage
-    .locator('div')
-    .filter({ hasText: /^New End Date and Time$/ })
-    .getByRole('textbox')
-    .click();
-
-  await organizerPage
-    .locator('div')
-    .filter({ hasText: /^New Start Date and Time$/ })
-    .getByRole('textbox')
-    .fill('2040-08-20T10:00');
+  const dateInputs = organizerPage.locator('input[type="datetime-local"]:visible');
+  await expect(dateInputs).toHaveCount(2);
+  await dateInputs.nth(0).fill('2040-08-20T10:00');
 
   // Complete the duplication
+  const duplicateResponsePromise = organizerPage.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/duplicate'),
+    { timeout: 30_000 }
+  );
   await organizerPage
     .getByRole('button', { name: 'Duplicate', exact: true })
     .click();
-  // Navigate to events list to find the specific duplicated event
+  const duplicateResponse = await duplicateResponsePromise;
+  expect(duplicateResponse.ok()).toBeTruthy();
 
-  await organizerPage
-    .getByRole('button', { name: 'Events', exact: true })
-    .click();
+  // Duplication returns to the redesigned organizer portal. Open the Events
+  // surface explicitly, then find the duplicated event through the UI.
+  await expect(organizerPage).toHaveURL(/\/portal\/organizer\/company\//, {
+    timeout: 30_000,
+  });
+  await openOrganizerSurface(organizerPage, 'events');
 
-  await organizerPage.getByRole('textbox', { name: 'Search Events' }).click();
-
-  //timeout
-  await organizerPage.waitForTimeout(3000);
+  const eventSearch = organizerPage.getByPlaceholder(/Search Events/i);
+  await expect(eventSearch).toBeVisible({ timeout: 30_000 });
 
   // Search for the new duplicated event title
-  await organizerPage
-    .getByRole('textbox', { name: 'Search Events' })
-    .fill(duplicatedEventTitle);
-
-  // Wait for search results
-  await organizerPage.waitForTimeout(1000);
-
-  await organizerPage.getByText(duplicatedEventTitle).click();
+  await eventSearch.fill(duplicatedEventTitle);
+  const duplicatedEventHeading = organizerPage.getByRole('heading', {
+    name: duplicatedEventTitle,
+    exact: true,
+  });
+  await expect(duplicatedEventHeading).toBeVisible({ timeout: 30_000 });
+  await duplicatedEventHeading.click();
 
   // If the event is draft, publish it
-  try {
-    await organizerPage.getByRole('button', { name: 'Publish' }).click();
-    //timeout
-    await organizerPage.waitForTimeout(2000);
-  } catch {
-    // Continue
-    console.log('Event is already published.');
+  const publishButton = organizerPage
+    .getByRole('button', { name: 'Publish', exact: true })
+    .filter({ visible: true });
+  if (await publishButton.isVisible().catch(() => false)) {
+    const publishResponsePromise = organizerPage.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        response.url().includes('/publish'),
+      { timeout: 30_000 }
+    );
+    await publishButton.click();
+    const publishResponse = await publishResponsePromise;
+    expect(publishResponse.ok()).toBeTruthy();
   }
-  // Click on the specific duplicated event
-  const duplicatedEventLink = organizerPage
-    .getByRole('link')
-    .filter({ hasText: duplicatedEventTitle })
-    .first();
 
-  await duplicatedEventLink.click();
+  await expect(
+    organizerPage
+      .getByRole('button', { name: 'Overview', exact: true })
+      .filter({ visible: true })
+      .first()
+  ).toBeVisible({ timeout: 30_000 });
 
   return duplicatedEventTitle;
 }
 
 export async function duplicateEvent(organizerPage: Page) {
   // First, get the current event title
-  await organizerPage.getByRole('button', { name: 'Edit Event' }).click();
-  await organizerPage.getByRole('textbox', { name: 'Event Title' }).click();
-  const eventTitle = await organizerPage
-    .getByRole('textbox', { name: 'Event Title' })
-    .inputValue();
+  await openEventPortalDestination(organizerPage, 'eventDetails');
+  const eventTitleInput = organizerPage.getByPlaceholder('Event title');
+  await expect(eventTitleInput).toBeVisible({ timeout: 30_000 });
+  const eventTitle = await eventTitleInput.inputValue();
 
   // Perform the duplication using shared logic
   await performEventDuplication(organizerPage, eventTitle);
 
   // Return a locator to verify we're on the duplicated event page
-  return organizerPage.getByRole('button', { name: 'Edit Event' });
+  return organizerPage
+    .getByRole('button', { name: 'Overview', exact: true })
+    .filter({ visible: true })
+    .first();
 }
 
 export async function duplicateEventWithPromoCodes(organizerPage: Page) {
@@ -1108,14 +1345,13 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
   const uniquePromoCode = generateUniquePromoCode();
 
   // First, get the current event title
-  await organizerPage.getByRole('button', { name: 'Edit Event' }).click();
-  await organizerPage.getByRole('textbox', { name: 'Event Title' }).click();
-  const eventTitle = await organizerPage
-    .getByRole('textbox', { name: 'Event Title' })
-    .inputValue();
+  await openEventPortalDestination(organizerPage, 'eventDetails');
+  const eventTitleInput = organizerPage.getByPlaceholder('Event title');
+  await expect(eventTitleInput).toBeVisible({ timeout: 30_000 });
+  const eventTitle = await eventTitleInput.inputValue();
 
   // Go to Promote tab and add promo codes to the original event
-  await organizerPage.getByRole('button', { name: 'Promote' }).click();
+  await openEventPortalDestination(organizerPage, 'promote');
 
   // Add new promo code
   await organizerPage
@@ -1126,13 +1362,7 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
     uniquePromoCode
   );
 
-  await organizerPage
-    .getByRole('checkbox', { name: 'Attach to All Ticket Types' })
-    .check();
-  await organizerPage.getByRole('button', { name: 'Attach' }).click();
-
-  // Wait a moment for promo code operations to complete
-  await organizerPage.waitForTimeout(2000);
+  await attachPromoCodeToAllTicketTypes(organizerPage);
 
   // Now duplicate the event using shared logic
   await performEventDuplication(organizerPage, eventTitle);
@@ -1140,7 +1370,7 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
   // Try to apply promo code in the event and see the discounted price
 
   // Go to Promote tab to verify promo codes were duplicated
-  await organizerPage.getByRole('button', { name: 'Promote' }).click();
+  await openEventPortalDestination(organizerPage, 'promote');
 
   // Dynamically find and click the unique promo code that was created
   const promoCodeFound = await findAndClickPromoCode(
@@ -1162,10 +1392,7 @@ export async function duplicateEventWithPromoCodes(organizerPage: Page) {
 }
 
 export async function resendConfirmationEmail(organizerPage: Page) {
-  // Go to Orders & Attendees
-  await organizerPage
-    .getByRole('button', { name: 'Orders & Attendees' })
-    .click();
+  await openOrdersAndAttendees(organizerPage);
 
   // Find and click on the order created by this test.
   const attendeeName = `${ATTENDEE_FIRST_NAME} ${ATTENDEE_LAST_NAME}`;
@@ -1195,25 +1422,73 @@ export async function verifyOperatorAccess(
   organizerName: string,
   eventName?: string
 ) {
-  // Navigate to operator's event view
-  await page
-    .getByRole('textbox', { name: 'Search Organizers' })
-    .fill(organizerName);
-  const organizerHeading = page.getByRole('heading', { name: organizerName });
-  await expect(organizerHeading).toBeVisible({ timeout: 30000 });
-  await organizerHeading.click();
-  await page.getByRole('heading', { name: eventName }).click();
+  // The old organizer-search screen was replaced by the sidebar switcher. An
+  // operator can belong to several organizations, and sign-in restores the
+  // last one used, so select the organization this test just authorized.
+  if (new URL(page.url()).pathname === '/portal/home') {
+    const organizerButton = page
+      .getByRole('button', { name: organizerName, exact: true })
+      .filter({ visible: true })
+      .first();
+    await expect(organizerButton).toBeVisible({ timeout: 30_000 });
+    await organizerButton.click();
+  }
 
-  // Wait for event page to load
-  await page.waitForTimeout(2000);
+  await expect(page).toHaveURL(/\/portal\/organizer\/company\//, {
+    timeout: 30_000,
+  });
+  const organizerSwitcher = page
+    .locator('[data-organizer-switcher-trigger]:visible')
+    .first();
+  await expect(organizerSwitcher).toBeVisible({ timeout: 30_000 });
+  const selectedOrganizerName = organizerSwitcher.getByText(organizerName, {
+    exact: true,
+  });
+  if (!(await selectedOrganizerName.isVisible().catch(() => false))) {
+    await organizerSwitcher.click();
+    const organizerSearch = page
+      .getByPlaceholder('Search organizations')
+      .filter({ visible: true });
+    if (await organizerSearch.isVisible().catch(() => false)) {
+      await organizerSearch.fill(organizerName);
+    }
+    const organizerOption = page
+      .getByRole('button')
+      .filter({
+        has: page.getByText(organizerName, { exact: true }),
+      })
+      .filter({ visible: true })
+      .first();
+    await expect(organizerOption).toBeVisible({ timeout: 30_000 });
+    await organizerOption.click();
+    await expect(organizerSwitcher.getByText(organizerName, { exact: true }))
+      .toBeVisible({ timeout: 30_000 });
+  }
 
-  // Verify dashboard access
+  if (!new URL(page.url()).pathname.includes('/event/')) {
+    const eventSearch = page.getByPlaceholder(/Search Events/i);
+    await expect(eventSearch).toBeVisible({ timeout: 30_000 });
+    if (eventName) await eventSearch.fill(eventName);
+
+    const eventHeading = page.getByRole('heading', {
+      name: eventName,
+      exact: true,
+    });
+    await expect(eventHeading).toBeVisible({ timeout: 30_000 });
+    await eventHeading.click();
+  }
+
+  // Read Event grants access to the event overview.
   await expect(
-    page.getByText(/Gross Revenue.*Net Revenue.*Event Views/)
-  ).toBeVisible();
+    page
+      .getByRole('button', { name: 'Overview', exact: true })
+      .filter({ visible: true })
+      .first()
+  ).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('Access Restricted')).toHaveCount(0);
 
   // Verify order management
-  await page.getByRole('button', { name: 'Orders & Attendees' }).click();
+  await openEventPortalDestination(page, 'ordersAndAttendees');
   const orderCell = page
     .getByRole('cell')
     .filter({ hasText: /#[A-Z0-9]+/ })
@@ -1239,39 +1514,76 @@ export async function verifyOperatorAccess(
   ).toBeVisible({ timeout: 10000 });
 
   // Verify ticket type management
-  await page.getByRole('button', { name: 'Ticket Types' }).click();
+  await openEventPortalDestination(page, 'ticketTypes');
   await expect(
-    page.getByRole('cell', { name: 'General Admission', exact: true })
-  ).toBeVisible();
+    page.getByText('General Admission Playwright', { exact: true }).first()
+  ).toBeVisible({ timeout: 30_000 });
 
   // Test creating a new ticket type
   await page.getByRole('button', { name: 'Add Ticket Type' }).click();
   const timestamp = Date.now();
   const ticketTypeName = `Operator Test ${timestamp.toString().slice(-4)}`;
-  await page.getByRole('textbox', { name: 'Enter type' }).fill(ticketTypeName);
-  await page.getByPlaceholder('Enter quantity').fill('5');
+  await expect(
+    page.getByRole('heading', { name: 'New ticket type', exact: true })
+  ).toBeVisible({ timeout: 30_000 });
+  await page.locator('#ticket-name:visible').fill(ticketTypeName);
+  await page.locator('#ticket-quantity:visible').fill('5');
+  await page.locator('#ticket-price:visible').fill('25.00');
+  const createTicketTypeResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/ticket-types'),
+    { timeout: 30_000 }
+  );
   await page
-    .locator('div')
-    .filter({ hasText: /^Price \(\$\)$/ })
-    .getByPlaceholder('0.00')
-    .fill('25.00');
-  await page.getByRole('button', { name: 'Add Ticket Type' }).nth(1).click();
-  await await page
-    .getByRole('alert')
-    .filter({ hasText: 'Ticket Type added successfully' })
+    .getByRole('button', { name: 'Add ticket type', exact: true })
     .click();
+  const createTicketTypeResponse = await createTicketTypeResponsePromise;
+  expect(createTicketTypeResponse.ok()).toBeTruthy();
+  await expect(
+    page.getByText(ticketTypeName, { exact: true }).first()
+  ).toBeVisible({ timeout: 30_000 });
 
   // Verify event editing
-  await page.getByRole('button', { name: 'Edit Event' }).click();
-  const originalTitle = await page
-    .getByRole('textbox', { name: 'Event Title*' })
-    .inputValue();
+  await openEventPortalDestination(page, 'eventDetails');
+  const eventTitleInput = page.getByPlaceholder('Event title');
+  await expect(eventTitleInput).toBeVisible({ timeout: 30_000 });
+  const originalTitle = await eventTitleInput.inputValue();
   const newTitle = `${originalTitle} (Operator Edit)`;
-  await page.getByRole('textbox', { name: 'Event Title*' }).fill(newTitle);
-  await page.getByRole('button', { name: 'Save Changes' }).click();
-  await expect(page.getByText('Event updated successfully')).toBeVisible();
+  await eventTitleInput.fill(newTitle);
+  const updateEventResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'PUT' &&
+      /\/api\/protected\/events\/[^/]+\/?$/.test(
+        new URL(response.url()).pathname
+      ),
+    { timeout: 30_000 }
+  );
+  const refreshedEventResponsePromise = waitForEventDetailsRefresh(page);
+  await page
+    .getByRole('button', { name: 'Save changes', exact: true })
+    .click();
+  const updateEventResponse = await updateEventResponsePromise;
+  expect(updateEventResponse.ok()).toBeTruthy();
+  expect((await refreshedEventResponsePromise).ok()).toBeTruthy();
+  await expect(eventTitleInput).toHaveValue(newTitle);
 
   // Verify refunds and settings access
-  await page.getByRole('button', { name: 'Refunds' }).click();
-  await page.getByRole('button', { name: 'Event Settings' }).click();
+  await openEventPortalDestination(page, 'refunds');
+  await expect(
+    page
+      .getByRole('button', { name: 'Refresh', exact: true })
+      .filter({ visible: true })
+      .first()
+  ).toBeVisible({ timeout: 30_000 });
+  await openEventPortalDestination(page, 'eventSettings');
+  await expect(
+    page.getByText('Event Settings', { exact: true }).filter({ visible: true })
+      .first()
+  ).toBeVisible({ timeout: 30_000 });
+  // Duplicating creates a new organizer-level event. The redesigned settings
+  // UI intentionally withholds that action from event-scoped operators.
+  await expect(
+    page.getByRole('button', { name: 'Duplicate Event', exact: true })
+  ).toHaveCount(0);
 }

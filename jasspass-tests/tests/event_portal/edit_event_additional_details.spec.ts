@@ -1,24 +1,24 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../fixtures/application';
 import {
-  selectFirstEventStartingWithPBO,
   editEventAdditionalDetails,
+  openEventOrganizerPortal,
 } from '../../helpers/eventHelpers';
 
 test.setTimeout(60_000);
 
 // @Description: This test verifies that the edit event additional details functionality works correctly.
 // @Dependencies: Depends on the sign-in functionality and existing event being available.
-test('editEventAdditionalDetails', async ({ page }) => {
+test('editEventAdditionalDetails', async ({ ownerPage, eventFactory }) => {
   console.log('[INFO] Executing Edit Event Additional Details test...');
 
-  // Sign in and select first event starting with PBO
-  const organizerPage = await selectFirstEventStartingWithPBO(page);
+  const created = await eventFactory.create();
+  const organizerPage = await openEventOrganizerPortal(ownerPage, created.id);
 
   // Edit event additional details
-  const successMessage = await editEventAdditionalDetails(organizerPage);
+  const savedTaxRate = await editEventAdditionalDetails(organizerPage);
 
-  // Verify success message is visible
-  await expect(successMessage).toBeVisible();
+  // Verify the saved advanced value is rendered when its sheet is reopened.
+  await expect(savedTaxRate).toBeVisible();
 
   console.log(
     '[INFO] Edit Event Additional Details test completed successfully.'

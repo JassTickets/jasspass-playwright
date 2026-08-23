@@ -12,6 +12,7 @@ import {
 } from '../../helpers/criticalCheckoutHelpers';
 import { JASS_TEST_URL } from '../../constants';
 import { dismissDateOfBirthPromptIfPresent } from '../../helpers/auth';
+import { openEventPortalDestination } from '../../helpers/portalNavigationHelpers';
 
 type Ticket = {
   Id: string;
@@ -78,11 +79,7 @@ test.describe('ticket check-in lifecycle', () => {
       `${JASS_TEST_URL}/portal/organizer/company/${created.organizerId}/event/${created.id}`
     );
     await dismissDateOfBirthPromptIfPresent(ownerPage, 10_000);
-    const ordersAndAttendees = ownerPage
-      .getByRole('button', { name: 'Orders & Attendees' })
-      .first();
-    await expect(ordersAndAttendees).toBeVisible({ timeout: 30_000 });
-    await ordersAndAttendees.click();
+    await openEventPortalDestination(ownerPage, 'ordersAndAttendees');
     await ownerPage
       .getByRole('button', { name: 'Attendees', exact: true })
       .click();

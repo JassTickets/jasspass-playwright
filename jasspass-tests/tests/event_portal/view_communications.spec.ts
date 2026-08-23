@@ -1,74 +1,47 @@
-import { test, expect } from '@playwright/test';
-import { selectFirstEventStartingWithPBO } from '../../helpers/eventHelpers';
+import { test, expect } from '../../fixtures/application';
+import {
+  openEventOrganizerPortal,
+  sendMessageToAttendees,
+} from '../../helpers/eventHelpers';
+import { openEventPortalDestination } from '../../helpers/portalNavigationHelpers';
 
-test.setTimeout(60_000);
+test.setTimeout(180_000);
 
 // @Description: This test verifies that viewing event communications functionality works correctly.
 // @Dependencies: Depends on the sign-in functionality and existing event being available.
 
-test('viewEventCommunications', async ({ page }) => {
+test('viewEventCommunications', async ({ ownerPage, eventFactory }) => {
   console.log('[INFO] Executing View Event Communications test...');
 
-  // Sign in and select first event starting with PBO
-  const organizerPage = await selectFirstEventStartingWithPBO(page);
+  const created = await eventFactory.create({ isFreeEvent: true });
+  const organizerPage = await openEventOrganizerPortal(ownerPage, created.id);
 
-  // Navigate to Communications tab
-  await organizerPage.getByRole('button', { name: 'Communications' }).click();
   // Generate a random test subject and body
   const randomSubject = `Test Email Subject ${Date.now()}`;
 
-  // Send a test email
-  await organizerPage
-    .getByRole('button')
-    .filter({ hasText: 'Message Attendees' })
-    .click();
-  await organizerPage
-    .getByRole('textbox', { name: 'Enter the subject...' })
-    .click();
-  await organizerPage
-    .getByRole('textbox', { name: 'Enter the subject...' })
-    .fill(randomSubject);
+  await sendMessageToAttendees(organizerPage, randomSubject, randomSubject);
+  await openEventPortalDestination(organizerPage, 'communications');
 
-  // Click next
-  await organizerPage
-    .locator('button:visible')
-    .filter({ hasText: /^Next$/ })
-    .click();
-  await organizerPage.locator('#message-body-inline').click();
-  await organizerPage.locator('#message-body-inline').fill(randomSubject);
-  //timeout
-  await organizerPage.waitForTimeout(2000);
-  await organizerPage
-    .getByRole('button', { name: 'Send', exact: true })
-    .click();
-  // If the modal closes it means that it worked
-
-  // Verify that the message appears in the communications list
-
-  // Refresh
-  await organizerPage
-    .locator('div')
-    .filter({ hasText: /^OutboundInbound$/ })
-    .getByRole('button')
-    .nth(2)
-    .click();
-
-  // Timeout
-  await organizerPage.waitForTimeout(1000);
-
-  await organizerPage
-    .getByRole('textbox', { name: 'Search emails...' })
-    .click();
+  const searchResponsePromise = organizerPage.waitForResponse((response) => {
+    if (
+      response.request().method() !== 'GET' ||
+      !response.url().includes('/custom-emails')
+    ) {
+      return false;
+    }
+    return new URL(response.url()).searchParams.get('search') === randomSubject;
+  });
   await organizerPage
     .getByRole('textbox', { name: 'Search emails...' })
     .fill(randomSubject);
+  expect((await searchResponsePromise).ok()).toBeTruthy();
 
-  // Wait for 2 seconds
-  await organizerPage.waitForTimeout(2000);
-  await organizerPage
-    .getByRole('heading', { name: randomSubject })
-    .nth(0)
-    .click();
+  const sentMessage = organizerPage.getByRole('heading', {
+    name: randomSubject,
+    exact: true,
+  });
+  await expect(sentMessage).toBeVisible({ timeout: 30_000 });
+  await sentMessage.click();
 
   console.log('[INFO] View Event Communications test completed successfully.');
 });

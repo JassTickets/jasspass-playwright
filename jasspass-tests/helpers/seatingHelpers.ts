@@ -17,6 +17,7 @@ import type {
   SeatingSectionInput,
   SeatingSelectionRulesInput,
 } from './seatingTypes';
+import { openEventPortalDestination } from './portalNavigationHelpers';
 
 export type {
   HeldSeat,
@@ -239,12 +240,7 @@ export async function openOrganizerSeatingMap(
     `${JASS_TEST_URL}/portal/organizer/company/${organizerId}/event/${eventId}`
   );
   expect(navigation?.ok()).toBeTruthy();
-  const seatingTab = page.getByRole('button', {
-    name: 'Seating Map',
-    exact: true,
-  });
-  await expect(seatingTab).toBeVisible({ timeout: 30_000 });
-  await seatingTab.click();
+  await openEventPortalDestination(page, 'seatingMap');
 }
 
 export function organizerSeat(

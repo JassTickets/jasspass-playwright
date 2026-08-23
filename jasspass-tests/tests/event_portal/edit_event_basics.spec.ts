@@ -1,24 +1,24 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../fixtures/application';
 import {
-  selectFirstEventStartingWithPBO,
   editEventBasics,
+  openEventOrganizerPortal,
 } from '../../helpers/eventHelpers';
 
 test.setTimeout(60_000);
 
 // @Description: This test verifies that the edit event basics functionality works correctly.
 // @Dependencies: Depends on the sign-in functionality and existing event being available.
-test('editEventBasics', async ({ page }) => {
+test('editEventBasics', async ({ ownerPage, eventFactory }) => {
   console.log('[INFO] Executing Edit Event Basics test...');
 
-  // Sign in and select first event starting with PBO
-  const organizerPage = await selectFirstEventStartingWithPBO(page);
+  const created = await eventFactory.create();
+  const organizerPage = await openEventOrganizerPortal(ownerPage, created.id);
 
   // Edit event basics
-  const successMessage = await editEventBasics(organizerPage);
+  const savedTitle = await editEventBasics(organizerPage);
 
-  // Verify success message is visible
-  await expect(successMessage).toBeVisible();
+  // Verify the saved title remains visible in the editor.
+  await expect(savedTitle).toBeVisible();
 
   console.log('[INFO] Edit Event Basics test completed successfully.');
 });

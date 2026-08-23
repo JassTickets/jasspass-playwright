@@ -1,6 +1,7 @@
 import { test, expect } from '../../fixtures/application';
 import { JASS_TEST_URL } from '../../constants';
 import { dismissDateOfBirthPromptIfPresent } from '../../helpers/auth';
+import { openEventPortalDestination } from '../../helpers/portalNavigationHelpers';
 import { getApiArray } from '../../helpers/criticalCheckoutHelpers';
 import {
   blockSeats,
@@ -67,7 +68,7 @@ test.describe('seated event duplication', () => {
       `${JASS_TEST_URL}/portal/organizer/company/${source.organizerId}/event/${source.id}`
     );
     await dismissDateOfBirthPromptIfPresent(ownerPage, 10_000);
-    await ownerPage.getByRole('button', { name: 'Event Settings' }).click();
+    await openEventPortalDestination(ownerPage, 'eventSettings');
     await ownerPage.getByRole('button', { name: 'Duplicate Event' }).click();
     await expect(
       ownerPage

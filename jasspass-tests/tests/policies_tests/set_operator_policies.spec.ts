@@ -54,6 +54,12 @@ test('operator policies comprehensive flow', async ({ browser }) => {
     // Open the event portal directly. The public-page Organizer View popup is
     // unrelated to the operator-policy behavior covered by this test.
     const organizerPage = await openEventOrganizerPortal(page1, eventId);
+    const organizerId = new URL(organizerPage.url()).pathname.match(
+      /\/company\/([^/]+)/,
+    )?.[1];
+    if (!organizerId) {
+      throw new Error('Could not determine the test organizer ID.');
+    }
 
     // STEP 2: Add operator with policies
     console.log('[INFO] Step 2: Adding operator with all policies...');
@@ -77,10 +83,14 @@ test('operator policies comprehensive flow', async ({ browser }) => {
       password: PLAYWRIGHT_BOT2_PASSWORD,
     });
 
-    // Wait for sign in to complete
-    await page2.waitForTimeout(3000);
+    // Open the resource this operator was just assigned. The shared operator
+    // account can belong to many test organizations, so sidebar search and its
+    // paginated result order are not part of this policy test.
+    await page2.goto(
+      `${JASS_TEST_URL}/portal/organizer/company/${organizerId}/event/${eventId}`,
+    );
 
-    // Verify operator access
+    // Verify the granted surfaces through the redesigned event portal.
     await verifyOperatorAccess(page2, organizerName, eventName);
 
     console.log(

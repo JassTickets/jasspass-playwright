@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/application';
 import { JASS_TEST_URL } from '../../constants';
 import { dismissDateOfBirthPromptIfPresent } from '../../helpers/auth';
+import { openEventPortalDestination } from '../../helpers/portalNavigationHelpers';
 import {
   assertOrderConfirmation,
   assertPurchaseSuccessUrl,
@@ -149,10 +150,7 @@ test.describe('paid seated refund lifecycle', () => {
       `${JASS_TEST_URL}/portal/organizer/company/${created.organizerId}/event/${created.id}`
     );
     await dismissDateOfBirthPromptIfPresent(ownerPage, 10_000);
-    await ownerPage
-      .getByRole('button', { name: 'Orders & Attendees' })
-      .first()
-      .click();
+    await openEventPortalDestination(ownerPage, 'ordersAndAttendees');
     await openOrder(ownerPage, purchase.Confirmation);
     const firstRefundedId = await refundSeat(
       ownerPage,

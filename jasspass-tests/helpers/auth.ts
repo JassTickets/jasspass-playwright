@@ -33,6 +33,18 @@ async function gotoSignIn(page: Page, url: string) {
   }
 }
 
+async function expectSignedInPortal(page: Page) {
+  await page.waitForURL((url) => url.pathname.startsWith('/portal/'), {
+    timeout: 30_000,
+  });
+  await expect(
+    page
+      .getByRole('button', { name: 'Sign Out', exact: true })
+      .filter({ visible: true })
+      .first(),
+  ).toBeVisible({ timeout: 30_000 });
+}
+
 export async function signIn(
   page: Page,
   {
@@ -53,6 +65,7 @@ export async function signIn(
     await page.goto(`${baseURL}${targetPath}`, { waitUntil: 'domcontentloaded' });
 
     if (!new URL(page.url()).pathname.includes('/signin')) {
+      await expectSignedInPortal(page);
       await dismissDateOfBirthPromptIfPresent(page);
       return;
     }
@@ -96,37 +109,25 @@ export async function signIn(
     undefined,
     { timeout: 30_000 }
   );
-  await page.waitForURL((url) => url.pathname.startsWith('/portal/'), {
-    timeout: 30_000,
-  });
-  await expect(
-    page
-      .getByRole('button', { name: 'Discover Events', exact: true })
-      .filter({ visible: true })
-  ).toBeVisible({ timeout: 30_000 });
+  await expectSignedInPortal(page);
 
   const targetUrl = `${baseURL}${targetPath}`;
   if (page.url() !== targetUrl) {
     await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
   }
+  await expectSignedInPortal(page);
   await dismissDateOfBirthPromptIfPresent(page);
 }
 
 export async function signOutIfSignedIn(page: Page) {
-  try {
-    // Try to find and click the profile dropdown
-    const profileDropdown = page.getByRole('button').filter({ hasText: /^$/ });
-    if ((await profileDropdown.count()) > 0) {
-      await profileDropdown.click();
-      const signOutOption = page
-        .locator('div')
-        .filter({ hasText: /^Sign Out$/ })
-        .first();
-      if ((await signOutOption.count()) > 0) {
-        await signOutOption.click();
-      }
-    }
-  } catch (error) {
-    console.log('Already signed out or sign out failed:', error);
-  }
+  const signOut = page
+    .getByRole('button', { name: 'Sign Out', exact: true })
+    .filter({ visible: true })
+    .first();
+  if (!(await signOut.isVisible({ timeout: 3_000 }).catch(() => false))) return;
+
+  await signOut.click();
+  await page.waitForURL((url) => url.pathname.includes('/signin'), {
+    timeout: 30_000,
+  });
 }

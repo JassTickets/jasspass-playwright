@@ -16,8 +16,6 @@ test('managePerformers', async ({ page }) => {
   // Sign in and select first organizer
   await selectFirstOrganizer(page);
 
-  await page.getByRole('button', { name: 'Manage', exact: true }).click();
-
   // Add a new performer
   const performerName = await addPerformer(page);
 

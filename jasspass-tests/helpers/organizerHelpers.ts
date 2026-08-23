@@ -1,15 +1,11 @@
 // tests/helpers/organizers.ts
 import { expect, Page } from '@playwright/test';
 import {
-  JASS_TEST_CHANGE_ORG_URL,
   PLAYWRIGHT_BOT_EMAIL,
   ORGANIZER_NAME_PREFIX,
-  getRandomCountry,
-  CONTACT_NAME,
   CONTACT_ADDRESS,
   CONTACT_CITY,
   CONTACT_ZIP_CODE,
-  CONTACT_PHONE_NUMBER,
   PLAYWRIGHT_BOT_STRIPE_CONNECT_ID,
   NEW_ORGANIZER_NAME,
   NEW_CONTACT_NAME,
@@ -26,10 +22,56 @@ import {
   NEW_PROMO_DISCOUNT_PERCENTAGE,
   NEW_PROMO_FIXED_AMOUNT,
   TEAM_MEMBER_EMAIL,
+  JASS_TEST_URL,
 } from '../constants';
 import { signIn } from './auth';
 import { deleteEvent } from './eventHelpers';
-import { selectCountryRobust } from './countrySelectorHelpers';
+import { openEventPortalDestination, openOrganizerSurface } from './portalNavigationHelpers';
+
+export async function setStripeTestAccount(
+  page: Page,
+  stripeAccountId = PLAYWRIGHT_BOT_STRIPE_CONNECT_ID,
+  { required = false }: { required?: boolean } = {},
+): Promise<boolean> {
+  const stripeToolsButton = page.getByRole('button', {
+    name: 'Stripe test tools',
+    exact: true,
+  });
+  const stripeToolsVisible = await stripeToolsButton
+    .waitFor({ state: 'visible', timeout: required ? 20_000 : 5_000 })
+    .then(() => true)
+    .catch(() => false);
+
+  if (!stripeToolsVisible) {
+    if (required) {
+      throw new Error('Stripe test tools are unavailable in this environment.');
+    }
+    return false;
+  }
+
+  if ((await stripeToolsButton.getAttribute('aria-expanded')) !== 'true') {
+    await stripeToolsButton.click();
+  }
+  const stripeConnectInput = page.getByPlaceholder('acct_xxx...');
+  await expect(stripeConnectInput).toBeVisible();
+  await stripeConnectInput.fill(stripeAccountId);
+  const stripeConnectResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/api/protected/organizers/') &&
+      response.url().includes('/stripe-connect'),
+    { timeout: 30_000 },
+  );
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  const stripeConnectResponse = await stripeConnectResponsePromise;
+  if (!stripeConnectResponse.ok()) {
+    const body = await stripeConnectResponse.text().catch(() => '<unreadable>');
+    throw new Error(
+      `Assign Stripe test account failed with ${stripeConnectResponse.status()}: ${body}`,
+    );
+  }
+  return true;
+}
 
 export async function createOrganizer(
   page: Page,
@@ -39,52 +81,95 @@ export async function createOrganizer(
       Math.random().toString(36).substring(2, 15),
   } = {},
 ): Promise<string> {
-  // log in and open the create-organizer form
-  await signIn(page);
+  await signIn(page, { targetPath: '/portal/home' });
 
-  await page.goto(JASS_TEST_CHANGE_ORG_URL);
-  await expect(
-    page.getByRole('button', { name: 'Create Organizer Profile' }).first(),
-  ).toBeVisible({ timeout: 30000 });
+  const newOrganization = page
+    .getByRole('button')
+    .filter({ hasText: /^(New organization|Create your first organization)$/ })
+    .filter({ visible: true })
+    .first();
+  await expect(newOrganization).toBeVisible({ timeout: 30_000 });
+  await newOrganization.click();
+
+  const sheetHeading = page.getByRole('heading', {
+    name: 'New organization',
+    exact: true,
+  });
+  await expect(sheetHeading).toBeVisible({ timeout: 30_000 });
   await page
-    .getByRole('button', { name: 'Create Organizer Profile' })
+    .getByPlaceholder('Organization name')
+    .filter({ visible: true })
+    .first()
+    .fill(organizerName);
+
+  const citySearch = page
+    .getByPlaceholder('Search for your city')
+    .filter({ visible: true })
+    .first();
+  const autocompleteResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      new URL(response.url()).pathname === '/api/places-autocomplete',
+    { timeout: 30_000 },
+  );
+  await citySearch.fill(CONTACT_CITY);
+  const autocompleteResponse = await autocompleteResponsePromise;
+  expect(
+    autocompleteResponse.ok(),
+    `City autocomplete failed with ${autocompleteResponse.status()}`,
+  ).toBeTruthy();
+
+  const citySearchRoot = citySearch.locator('xpath=../..');
+  const torontoSuggestion = citySearchRoot
+    .getByRole('button')
+    .filter({ hasText: /Toronto/i })
+    .first();
+  await expect(torontoSuggestion).toBeVisible({ timeout: 15_000 });
+  const placeDetailsResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      new URL(response.url()).pathname === '/api/places-details',
+    { timeout: 30_000 },
+  );
+  await torontoSuggestion.click();
+  const placeDetailsResponse = await placeDetailsResponsePromise;
+  expect(
+    placeDetailsResponse.ok(),
+    `City details failed with ${placeDetailsResponse.status()}`,
+  ).toBeTruthy();
+
+  await page.locator('#org-contact-email:visible').first().fill(email);
+  const createOrganizerResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      new URL(response.url()).pathname === '/api/protected/organizers',
+    { timeout: 30_000 },
+  );
+  await page
+    .getByRole('button', { name: 'Create organization', exact: true })
+    .filter({ visible: true })
     .first()
     .click();
+  const createOrganizerResponse = await createOrganizerResponsePromise;
+  const createOrganizerBody = await createOrganizerResponse
+    .text()
+    .catch(() => '<unreadable>');
+  expect(
+    createOrganizerResponse.ok(),
+    `Create organization failed with ${createOrganizerResponse.status()}: ${createOrganizerBody}`,
+  ).toBeTruthy();
 
-  // fill out fields
-
-  await page.getByRole('textbox', { name: 'Organizer Profile Name*' }).click();
-  await page
-    .getByRole('textbox', { name: 'Organizer Profile Name*' })
-    .fill(organizerName);
-  // Robust country selection with fallback
-  const randomCountry = getRandomCountry();
-  await selectCountryRobust(page, randomCountry);
-
-  await page.getByRole('textbox', { name: 'Contact Name*' }).fill(CONTACT_NAME);
-  await page
-    .getByRole('textbox', { name: 'Organizer Profile Email*' })
-    .fill(email);
-  await page.locator('#phone-input').fill(CONTACT_PHONE_NUMBER);
-
-  // Address fields were moved out of organizer signup and into the organizer
-  // edit flow. Keep the previous steps here for reference if signup adds them back.
-  // await page.getByRole('textbox', { name: 'Company Address' }).click();
-  // await page.getByRole('textbox', { name: 'Company Address' }).click();
-  // await page
-  //   .getByRole('textbox', { name: 'Company Address' })
-  //   .fill(CONTACT_ADDRESS);
-  // await page.getByLabel(/Organizer City|City/i).fill(CONTACT_CITY);
-  // await page.locator('li').filter({ hasText: CONTACT_CITY }).click();
-  // await page
-  //   .getByLabel(/Organizer Zip\/Postal Code|Zip\/Postal Code|Zip Code/i)
-  //   .fill(CONTACT_ZIP_CODE);
-
-  await page
-    .getByRole('checkbox', { name: 'I agree to the Organizer' })
-    .check();
-  // submit and wait for navigation to the new organizer’s page
-  await page.getByRole('button', { name: 'Create Organizer' }).click();
+  const created = JSON.parse(createOrganizerBody) as { OrganizerId?: string };
+  const organizerId = created.OrganizerId;
+  if (!organizerId) {
+    throw new Error(
+      `Could not parse organizer ID from create response: ${createOrganizerBody}`,
+    );
+  }
+  await expect(page).toHaveURL(
+    new RegExp(`/portal/organizer/company/${organizerId}(?:\\?|$)`),
+    { timeout: 30_000 },
+  );
 
   // Change the Stripe Connect ID to point to the onboarded Playwright bot's Stripe Connect ID.
   // The manual Stripe-Connect-ID form is a debug-only affordance rendered only when
@@ -92,51 +177,29 @@ export async function createOrganizer(
   // so treat this step as best-effort: fill it when present, skip it otherwise (comp/free
   // flows don't require a connected account). We wait for the post-create render explicitly
   // instead of a fixed sleep.
-  const stripeConnectInput = page.getByRole('textbox', { name: 'acct_xxx...' });
-  const stripeFormVisible = await stripeConnectInput
-    .waitFor({ state: 'visible', timeout: 20000 })
-    .then(() => true)
-    .catch(() => false);
-
-  if (stripeFormVisible) {
-    await stripeConnectInput.click();
-    await stripeConnectInput.fill(PLAYWRIGHT_BOT_STRIPE_CONNECT_ID);
-    const stripeConnectResponsePromise = page.waitForResponse(
-      (response) =>
-        response.request().method() === 'POST' &&
-        response.url().includes('/api/protected/organizers/') &&
-        response.url().includes('/stripe-connect'),
-      { timeout: 30000 },
-    );
-    await page.getByRole('button', { name: 'Save' }).click();
-    const stripeConnectResponse = await stripeConnectResponsePromise;
-    expect(stripeConnectResponse.ok()).toBeTruthy();
-  } else {
+  if (!(await setStripeTestAccount(page))) {
     console.log(
       '[INFO] Stripe Connect debug form not present (production-gated env); skipping Connect ID override.',
     );
   }
 
-  // parse out the ID from the URL
-  const url = page.url();
-
-  console.log(`New organizer URL: ${url}`);
-  const match = url.match(/company\/([^/]+)/);
-  if (!match) {
-    throw new Error(`Could not parse organizer ID from URL: ${url}`);
-  }
-  return match[1];
+  console.log(`New organizer URL: ${page.url()}`);
+  return organizerId;
 }
 
 export async function selectFirstOrganizer(page: Page) {
-  await signIn(page);
+  await signIn(page, { targetPath: '/portal/home' });
 
-  // Click the first organizer that contains PBO prefix
   const organizerLink = page
-    .getByText(new RegExp(ORGANIZER_NAME_PREFIX))
+    .getByRole('button')
+    .filter({ hasText: new RegExp(ORGANIZER_NAME_PREFIX) })
+    .filter({ visible: true })
     .first();
   await expect(organizerLink).toBeVisible({ timeout: 30000 });
   await organizerLink.click();
+  await expect(page).toHaveURL(/\/portal\/organizer\/company\/[^/?#]+/, {
+    timeout: 30_000,
+  });
 }
 
 export async function editOrganizerDetails(
@@ -146,10 +209,7 @@ export async function editOrganizerDetails(
   } = {}
 ) {
   const timestamp = Date.now().toString();
-  await page
-    .getByRole('button', { name: 'Manage', exact: true })
-    .nth(0)
-    .click();
+  await openOrganizerSurface(page, 'profile');
 
   await page.getByRole('textbox', { name: 'Organizer Profile Name*' }).click();
   await page
@@ -211,7 +271,7 @@ export async function editOrganizerDetails(
 }
 
 export async function addPerformer(page: Page) {
-  await page.getByRole('button', { name: 'Performers' }).click();
+  await openOrganizerSurface(page, 'team', 'performers');
   await page.getByRole('button', { name: 'Add Performer' }).click();
 
   const randomPerformerName = `${TEST_PERFORMER_NAME} ${Date.now()}-${Math.random()
@@ -306,7 +366,7 @@ export async function deletePerformer(page: Page, performerName: string) {
 }
 
 export async function addPromoCode(page: Page): Promise<string> {
-  await page.getByRole('button', { name: 'Promo Codes' }).click();
+  await openOrganizerSurface(page, 'discounts', 'promocodes');
   await page.getByRole('button', { name: 'Add Promo Code' }).click();
   await page.getByRole('textbox', { name: 'Enter promo code' }).click();
 
@@ -367,7 +427,7 @@ export async function deletePromoCode(page: Page, promoCode: string) {
 }
 
 export async function addTeamMember(page: Page) {
-  await page.getByRole('button', { name: 'Team' }).click();
+  await openOrganizerSurface(page, 'team', 'members');
 
   const memberEmail = page.getByText(TEAM_MEMBER_EMAIL, { exact: true });
   if (await memberEmail.isVisible({ timeout: 10_000 }).catch(() => false)) {
@@ -393,7 +453,7 @@ export async function addTeamMember(page: Page) {
 }
 
 export async function accessStripeFinance(page: Page) {
-  await page.getByRole('button', { name: 'Finance' }).click();
+  await openOrganizerSurface(page, 'finance');
   const page3Promise = page.waitForEvent('popup');
   await page.getByRole('link', { name: 'Access Stripe Dashboard' }).click();
   const page3 = await page3Promise;
@@ -410,13 +470,7 @@ export async function editOrganizer(
   } = {},
 ): Promise<string> {
   // log in and open the create-organizer form
-  await signIn(page);
-
-  // wait for 0.5 seconds
-  await page.waitForTimeout(500);
-
-  await page.goto(JASS_TEST_CHANGE_ORG_URL);
-  // Click the first organizer in the list
+  await signIn(page, { targetPath: '/portal/home' });
 
   // Edit the organizer details
   return organizerName;
@@ -431,20 +485,39 @@ export async function deleteOrganizer(
 ) {
   // This will delete the event, ensuring that the organizer can be deleted
   const { page1 } = await deleteEvent(page);
-  // Wait for 3 seconds
-  await page1.waitForTimeout(3000);
+  await openOrganizerSurface(page1, 'profile');
+  await page1
+    .getByRole('main')
+    .getByRole('button', { name: 'Delete', exact: true })
+    .click();
 
-  await page1.getByRole('button', { name: 'Manage', exact: true }).click();
-  await page1.getByRole('button', { name: 'Delete' }).click();
-  await page1.getByRole('button', { name: 'Delete' }).click();
+  const deleteModal = page1
+    .getByText('Delete Organization', { exact: true })
+    .filter({ visible: true })
+    .first()
+    .locator('xpath=ancestor::div[contains(@class, "pointer-events-auto")][1]');
+  await expect(deleteModal).toBeVisible();
+
+  const [deleteResponse] = await Promise.all([
+    page1.waitForResponse(
+      (response) =>
+        response.request().method() === 'DELETE' &&
+        /\/api\/protected\/organizers\/[^/]+$/.test(response.url()),
+      { timeout: 30_000 },
+    ),
+    deleteModal
+      .getByRole('button', { name: 'Delete', exact: true })
+      .click(),
+  ]);
+  expect(deleteResponse.ok()).toBeTruthy();
+  await expect(page1).toHaveURL(`${JASS_TEST_URL}/`, { timeout: 30_000 });
 }
 
 export async function addOperatorWithAllPolicies(
   page: Page,
   operatorEmail: string,
 ) {
-  // Navigate to Event Staff tab
-  await page.getByRole('button', { name: 'Event Staff' }).click();
+  await openEventPortalDestination(page, 'eventStaff');
 
   // Add operator email
   await page

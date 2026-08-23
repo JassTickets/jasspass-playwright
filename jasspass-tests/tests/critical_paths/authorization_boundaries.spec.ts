@@ -15,6 +15,7 @@ import {
   type RepresentativeRecord,
 } from '../../helpers/authorizationHelpers';
 import { getApiArray } from '../../helpers/criticalCheckoutHelpers';
+import { openEventPortalDestination } from '../../helpers/portalNavigationHelpers';
 import {
   PLAYWRIGHT_BOT2_EMAIL,
   PLAYWRIGHT_BOT2_PASSWORD,
@@ -347,10 +348,7 @@ test.describe('authorization boundaries', () => {
       await expect(
         operatorPage.getByText(allowedEvent.name, { exact: true }).first()
       ).toBeVisible({ timeout: 30_000 });
-      await operatorPage
-        .getByRole('button', { name: 'Orders & Attendees' })
-        .first()
-        .click();
+      await openEventPortalDestination(operatorPage, 'ordersAndAttendees');
       await expect(operatorPage.getByPlaceholder('Search Orders')).toBeVisible({
         timeout: 30_000,
       });
@@ -359,16 +357,12 @@ test.describe('authorization boundaries', () => {
       ).toBeVisible({ timeout: 30_000 });
       await expect(operatorPage.getByText('Access Restricted')).toHaveCount(0);
 
-      await operatorPage
-        .getByRole('button', { name: 'Ticket Types', exact: true })
-        .click();
+      await openEventPortalDestination(operatorPage, 'ticketTypes');
       await expect(
         operatorPage.getByRole('heading', { name: 'Access Restricted' })
       ).toBeVisible();
 
-      await operatorPage
-        .getByRole('button', { name: 'Edit Event', exact: true })
-        .click();
+      await openEventPortalDestination(operatorPage, 'eventDetails');
       await expect(
         operatorPage.getByRole('heading', { name: 'Access Restricted' })
       ).toBeVisible();

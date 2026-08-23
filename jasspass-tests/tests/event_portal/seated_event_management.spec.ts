@@ -8,6 +8,7 @@ import {
   type HoldResponse,
   type SeatingMapResponse,
 } from '../../helpers/seatingHelpers';
+import { visibleModalShell } from '../../helpers/eventHelpers';
 
 test.describe('organizer seated-event management', () => {
   test.setTimeout(180_000);
@@ -208,8 +209,10 @@ test.describe('organizer seated-event management', () => {
     const blockedHold = (await holdBlockedResponse.json()) as HoldResponse;
     expect(blockedHold.SeatLabels).toEqual(['B-A1']);
     await expectSeatStatus(ownerApi, created.id, 'B-A1', 'Reserved');
+    const bookingModal = visibleModalShell(ownerPage, 'Select Tickets');
+    await expect(bookingModal).toBeVisible();
     await expect(
-      ownerPage.getByRole('heading', { name: 'Select Tickets', exact: true })
+      bookingModal.getByRole('textbox', { name: 'Enter first name' })
     ).toBeVisible();
 
     const restoreResponsePromise = ownerPage.waitForResponse(
@@ -217,7 +220,7 @@ test.describe('organizer seated-event management', () => {
         response.request().method() === 'POST' &&
         response.url().includes('/seating-map/restore-blocked')
     );
-    await ownerPage.getByRole('button', { name: 'Close' }).last().click();
+    await bookingModal.getByRole('button', { name: 'Close' }).click();
     const restoreResponse = await restoreResponsePromise;
     expect(restoreResponse.status()).toBe(200);
     expect(await restoreResponse.json()).toEqual(['B-A1']);
