@@ -30,6 +30,7 @@ import {
 import { signIn } from './auth';
 import { createOrganizer } from './organizerHelpers';
 import { fillIndividualStripeFields } from './stripeHelpers';
+import { openTicketPicker } from './criticalCheckoutHelpers';
 import {
   openEventPortalDestination,
   openOrganizerSurface,
@@ -453,8 +454,22 @@ export async function createEvent(
     page.getByRole('heading', { name: eventName, exact: true })
   ).toBeVisible({ timeout: 30_000 });
   await expect(
-    page.getByText('General Admission Playwright', { exact: true }).first()
+    page
+      .locator('main')
+      .getByRole('button', { name: 'Get Tickets', exact: true })
+      .filter({ visible: true })
+      .first()
   ).toBeVisible({ timeout: 30_000 });
+  const ticketPicker = await openTicketPicker(page);
+  await expect(
+    ticketPicker
+      .getByText('General Admission Playwright', { exact: true })
+      .first()
+  ).toBeVisible({ timeout: 30_000 });
+  await ticketPicker
+    .getByRole('button', { name: 'Close', exact: true })
+    .click();
+  await expect(ticketPicker).toBeHidden({ timeout: 15_000 });
 
   const url = page.url();
   console.log(`New event URL: ${url}`);
@@ -489,14 +504,19 @@ export async function purchaseTicket(
   }
 
   // Select ticket and proceed
+  const ticketPicker = await openTicketPicker(page);
   // Select +1
-  await page
+  await ticketPicker
     .getByRole('button', { name: /^Increase quantity for / })
     .first()
     .click();
   //Timeout
   await page.waitForTimeout(2000);
-  await page.locator('[data-checkout-cta="true"]').first().click();
+  await ticketPicker
+    .locator('[data-checkout-cta="true"]')
+    .filter({ visible: true })
+    .first()
+    .click();
 
   // Fill buyer information
   await page

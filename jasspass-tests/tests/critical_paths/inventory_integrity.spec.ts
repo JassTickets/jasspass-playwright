@@ -8,9 +8,11 @@ import {
   getApiArray,
   openCheckout,
   openEvent,
+  openTicketPicker,
   purchaseButton,
   selectTicketQuantity,
   submitPurchase,
+  ticketRow,
   waitForTransaction,
 } from '../../helpers/criticalCheckoutHelpers';
 
@@ -168,17 +170,16 @@ test.describe('ticket inventory integrity', () => {
     await expect(
       page.getByRole('heading', { name: created.name }).first()
     ).toBeVisible({ timeout: 30_000 });
-    const soldOutRow = page
-      .getByText(ticketName, { exact: true })
-      .first()
-      .locator(
-        'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " rounded-lg ")][1]'
-      );
+    const soldOutPicker = await openTicketPicker(page);
+    const soldOutRow = ticketRow(page, ticketName);
     await expect(
       soldOutRow.getByText('Sold Out', { exact: true })
     ).toBeVisible();
     await expect(soldOutRow.getByRole('button')).toHaveCount(0);
-    const soldOutCta = page.locator('[data-checkout-cta="true"]').first();
+    const soldOutCta = soldOutPicker
+      .locator('[data-checkout-cta="true"]')
+      .filter({ visible: true })
+      .first();
     await expect(soldOutCta).toBeEnabled();
     await expect(soldOutCta).toHaveText('Join Waitlist');
   });

@@ -76,10 +76,48 @@ function isCalculationForEvent(
 export function ticketRow(page: Page, ticketTypeName: string): Locator {
   return page
     .getByText(ticketTypeName, { exact: true })
+    .filter({ visible: true })
     .first()
     .locator(
       'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " rounded-lg ")][1]'
     );
+}
+
+export function visibleTicketPicker(page: Page): Locator {
+  return page
+    .locator('[data-checkout-cta="true"]')
+    .filter({ visible: true })
+    .first()
+    .locator(
+      'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " pointer-events-auto ")][1]'
+    );
+}
+
+export async function openTicketPicker(page: Page): Promise<Locator> {
+  const visibleCheckoutCta = page
+    .locator('[data-checkout-cta="true"]')
+    .filter({ visible: true })
+    .first();
+
+  if (!(await visibleCheckoutCta.isVisible().catch(() => false))) {
+    const pickerEntry = page
+      .locator('main')
+      .getByRole('button', {
+        name: /^(?:Get Tickets|RSVP|Review \d+ tickets?)$/,
+      })
+      .filter({ visible: true })
+      .first();
+    await expect(pickerEntry).toBeVisible({ timeout: 30_000 });
+    await expect(pickerEntry).toBeEnabled();
+    await pickerEntry.click();
+  }
+
+  const picker = visibleTicketPicker(page);
+  await expect(picker).toBeVisible({ timeout: 15_000 });
+  await expect(
+    picker.getByRole('button', { name: 'Close', exact: true })
+  ).toBeVisible();
+  return picker;
 }
 
 export async function openEvent(
@@ -109,6 +147,7 @@ export async function selectTicketQuantity(
 ): Promise<CheckoutCalculation> {
   if (quantity < 1) throw new Error('Ticket quantity must be at least 1.');
 
+  await openTicketPicker(page);
   const row = ticketRow(page, ticketTypeName);
   await expect(row).toBeVisible({ timeout: 30_000 });
   const increaseButton = row.getByRole('button').last();
@@ -131,7 +170,15 @@ export async function selectTicketQuantity(
 }
 
 export async function openCheckout(page: Page): Promise<Locator> {
-  const checkoutButton = page.locator('[data-checkout-cta="true"]').first();
+  // Ticket cards now live in a picker modal. Quantity-based flows leave that
+  // picker open; manual seating flows reach this helper with only the page's
+  // "Review N tickets" entry visible. Support both paths and exercise the
+  // picker-to-checkout transition in either case.
+  const picker = await openTicketPicker(page);
+  const checkoutButton = picker
+    .locator('[data-checkout-cta="true"]')
+    .filter({ visible: true })
+    .first();
   await expect(checkoutButton).toBeEnabled();
   await checkoutButton.click();
   const summaryHeading = page.getByRole('heading', {
@@ -311,9 +358,7 @@ export async function assertPurchaseSuccessUrl(
   confirmation: string
 ) {
   await expect(page).toHaveURL(
-    new RegExp(
-      `/payment/success/event/${eventId}/${confirmation}(?:\\?|$)`
-    )
+    new RegExp(`/payment/success/event/${eventId}/${confirmation}(?:\\?|$)`)
   );
 }
 

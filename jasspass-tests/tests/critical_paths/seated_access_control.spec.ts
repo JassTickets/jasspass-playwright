@@ -6,6 +6,7 @@ import {
   createUniqueBuyer,
   fillGuestContact,
   openCheckout,
+  openTicketPicker,
   submitPurchase,
   ticketRow,
 } from '../../helpers/criticalCheckoutHelpers';
@@ -65,9 +66,14 @@ test.describe('seated ticket access controls', () => {
     });
     await expect(seatButton(page, 'PUB-A1')).toBeVisible();
     await expect(seatButton(page, 'PRV-A1')).toHaveCount(0);
-    await expect(page.getByText(privateType.Type, { exact: true })).toHaveCount(
-      0
-    );
+    const publicPicker = await openTicketPicker(page);
+    await expect(
+      publicPicker.getByText(privateType.Type, { exact: true })
+    ).toHaveCount(0);
+    await publicPicker
+      .getByRole('button', { name: 'Close', exact: true })
+      .click();
+    await expect(publicPicker).toBeHidden({ timeout: 15_000 });
 
     await page.goto(
       `${JASS_TEST_URL}/event/${created.id}?tickets=${privateType.Id}`
@@ -128,6 +134,7 @@ test.describe('seated ticket access controls', () => {
     ).toBeVisible({
       timeout: 30_000,
     });
+    const ticketPicker = await openTicketPicker(page);
     const row = ticketRow(page, 'Code Reserved');
     await expect(row).toBeVisible();
     const input = page
@@ -172,6 +179,10 @@ test.describe('seated ticket access controls', () => {
     await unlock.click();
     expect((await validResponsePromise).ok()).toBeTruthy();
     await expect(input).toHaveCount(0);
+    await ticketPicker
+      .getByRole('button', { name: 'Close', exact: true })
+      .click();
+    await expect(ticketPicker).toBeHidden({ timeout: 15_000 });
     await expect(seatButton(page, 'CODE-A1')).toBeEnabled();
 
     const hold = await clickSeatAndWaitForHold(page, created.id, 'CODE-A1');

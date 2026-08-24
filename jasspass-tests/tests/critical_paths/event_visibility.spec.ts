@@ -7,6 +7,7 @@ import {
   getApiArray,
   openCheckout,
   openEvent,
+  openTicketPicker,
   selectTicketQuantity,
   submitPurchase,
   waitForTransaction,
@@ -79,7 +80,10 @@ test.describe('event visibility boundaries', () => {
     });
 
     await openEvent(page, created.id, created.name);
-    await expect(page.getByText(ticketName, { exact: true })).toBeVisible();
+    const ticketPicker = await openTicketPicker(page);
+    await expect(
+      ticketPicker.getByText(ticketName, { exact: true })
+    ).toBeVisible();
     await selectTicketQuantity(page, created.id, ticketName, 1);
     const orderSummary = await openCheckout(page);
     await expect(

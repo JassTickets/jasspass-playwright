@@ -63,7 +63,10 @@ async function preparePairCheckout(
   await openEvent(page, created.id, created.name);
   await selectTicketQuantity(page, created.id, ticketType.Type, 2);
   await expect(
-    page.locator('[data-checkout-cta="true"]').first()
+    page
+      .locator('[data-checkout-cta="true"]')
+      .filter({ visible: true })
+      .first()
   ).toBeEnabled();
 }
 
@@ -124,7 +127,11 @@ test.describe('seated-event concurrency', () => {
       );
       await Promise.all(
         pages.map((buyerPage) =>
-          buyerPage.locator('[data-checkout-cta="true"]').first().click()
+          buyerPage
+            .locator('[data-checkout-cta="true"]')
+            .filter({ visible: true })
+            .first()
+            .click()
         )
       );
       const holdResponses = await Promise.all(responses);

@@ -262,7 +262,11 @@ test.describe('published seating-map editing', () => {
             ),
         { timeout: 30_000 }
       );
-      await buyerPage.locator('[data-checkout-cta="true"]').first().click();
+      await buyerPage
+        .locator('[data-checkout-cta="true"]')
+        .filter({ visible: true })
+        .first()
+        .click();
       const rejectedHold = await rejectedHoldPromise;
       expect(rejectedHold.status()).toBe(409);
       expect(await errorMessage(rejectedHold)).toContain(

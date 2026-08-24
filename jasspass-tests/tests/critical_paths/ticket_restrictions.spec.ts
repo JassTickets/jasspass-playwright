@@ -2,6 +2,7 @@ import { test, expect } from '../../fixtures/application';
 import { JASS_TEST_URL } from '../../constants';
 import {
   openEvent,
+  openTicketPicker,
   ticketRow,
 } from '../../helpers/criticalCheckoutHelpers';
 
@@ -38,11 +39,15 @@ test.describe('hidden and access-controlled ticket restrictions', () => {
     });
 
     await openEvent(page, created.id, created.name);
-    await expect(page.getByText(ticketName, { exact: true })).toHaveCount(0);
+    const publicPicker = await openTicketPicker(page);
+    await expect(
+      publicPicker.getByText(ticketName, { exact: true })
+    ).toHaveCount(0);
 
     await page.goto(
       `${JASS_TEST_URL}/event/${created.id}?tickets=${ticketType.Id}`
     );
+    await openTicketPicker(page);
     const row = ticketRow(page, ticketName);
     await expect(row).toBeVisible({ timeout: 30_000 });
     const accessCodeInput = row.getByPlaceholder('Access Code');
