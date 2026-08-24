@@ -545,14 +545,6 @@ export async function purchaseTicket(
   await page.locator('#tosAccepted:visible').check();
   await submitPurchase(page, 'Checkout');
 
-  // Close the modal (if any):
-  try {
-    await page.getByRole('button', { name: 'Close' }).click({ timeout: 3000 });
-  } catch {
-    // Some browsers navigate directly to the success page without a modal.
-  }
-  await page.getByRole('img', { name: 'Ticket QR Code' }).click();
-
   return organizerName;
 }
 

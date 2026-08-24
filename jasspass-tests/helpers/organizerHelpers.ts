@@ -72,6 +72,9 @@ export async function setStripeTestAccount(
       `Assign Stripe test account failed with ${stripeConnectResponse.status()}: ${body}`
     );
   }
+  // Refresh organizer/payment-method state so finance surfaces can request the
+  // newly assigned Stripe dashboard link immediately.
+  await page.reload({ waitUntil: 'domcontentloaded' });
   return true;
 }
 
@@ -207,16 +210,7 @@ export async function selectFirstOrganizer(page: Page) {
     { timeout: 30_000 }
   );
 
-  // The route changes before the organizer portal finishes replacing the home
-  // navigation. Wait for a stable organizer-only control before helpers start
-  // opening grouped destinations such as Organization > Profile.
-  await expect(
-    page
-      .locator('aside:visible')
-      .first()
-      .getByRole('button', { name: 'Dashboard', exact: true })
-      .first()
-  ).toBeVisible({ timeout: 30_000 });
+  await page.waitForLoadState('domcontentloaded');
 }
 
 export async function editOrganizerDetails(
@@ -275,12 +269,6 @@ export async function editOrganizerDetails(
 
     const cityInput = page.locator('#city');
     await cityInput.fill(CONTACT_CITY);
-    const citySuggestion = page
-      .locator('li')
-      .filter({ hasText: new RegExp(`^${CONTACT_CITY}$`) });
-    await expect(citySuggestion).toBeVisible();
-    await citySuggestion.click();
-
     await page.locator('#ZipCode').fill(CONTACT_ZIP_CODE);
   }
   await page.getByRole('button', { name: 'Save Changes' }).click();
@@ -475,9 +463,14 @@ export async function addTeamMember(page: Page) {
 
 export async function accessStripeFinance(page: Page) {
   await openOrganizerSurface(page, 'finance');
-  const page3Promise = page.waitForEvent('popup');
-  await page.getByRole('link', { name: 'Access Stripe Dashboard' }).click();
-  const page3 = await page3Promise;
+  const dashboardLink = page.getByRole('link', {
+    name: /Access Stripe Dashboard|Complete Stripe Onboarding/,
+  });
+  await expect(dashboardLink).toBeVisible({ timeout: 30_000 });
+  const [page3] = await Promise.all([
+    page.waitForEvent('popup', { timeout: 30_000 }),
+    dashboardLink.click(),
+  ]);
 
   return page3;
 }

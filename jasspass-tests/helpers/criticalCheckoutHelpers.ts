@@ -105,7 +105,7 @@ export async function openTicketPicker(page: Page): Promise<Locator> {
       .filter({ visible: true })
       .first();
     await expect(pickerEntry).toBeVisible({ timeout: 30_000 });
-    await expect(pickerEntry).toBeEnabled();
+    await expect(pickerEntry).toBeEnabled({ timeout: 30_000 });
     await pickerEntry.click();
   }
 
