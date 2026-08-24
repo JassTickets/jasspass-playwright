@@ -2,6 +2,7 @@ import { test, expect } from '../../fixtures/application';
 import {
   openEvent,
   selectTicketQuantity,
+  visibleTicketPicker,
 } from '../../helpers/criticalCheckoutHelpers';
 import {
   expectSeatStatuses,
@@ -262,7 +263,7 @@ test.describe('published seating-map editing', () => {
             ),
         { timeout: 30_000 }
       );
-      await buyerPage
+      await visibleTicketPicker(buyerPage)
         .locator('[data-checkout-cta="true"]')
         .filter({ visible: true })
         .first()
