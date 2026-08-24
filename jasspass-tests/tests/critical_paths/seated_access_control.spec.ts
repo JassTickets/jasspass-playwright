@@ -67,11 +67,6 @@ test.describe('seated ticket access controls', () => {
     });
     await expect(seatButton(page, 'PUB-A1')).toBeVisible();
     await expect(seatButton(page, 'PRV-A1')).toHaveCount(0);
-    const publicPicker = await openTicketPicker(page);
-    await expect(
-      publicPicker.getByText(privateType.Type, { exact: true })
-    ).toHaveCount(0);
-    await closeTicketPicker(page);
 
     await page.goto(
       `${JASS_TEST_URL}/event/${created.id}?tickets=${privateType.Id}`

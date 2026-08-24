@@ -32,6 +32,7 @@ import { createOrganizer } from './organizerHelpers';
 import { fillIndividualStripeFields } from './stripeHelpers';
 import {
   closeTicketPicker,
+  fillGuestContact,
   openCheckout,
   openTicketPicker,
 } from './criticalCheckoutHelpers';
@@ -515,15 +516,14 @@ export async function purchaseTicket(
   await page.waitForTimeout(2000);
   await openCheckout(page);
 
-  // Fill buyer information
-  await page
-    .getByRole('textbox', { name: 'Enter first name' })
-    .fill(CONTACT_NAME);
-  await page.getByRole('textbox', { name: 'Enter last name' }).fill('Client');
-  await page
-    .getByRole('textbox', { name: 'Enter email address' })
-    .fill(PLAYWRIGHT_BOT_EMAIL);
-  await page.locator('#phone-input').nth(1).fill(CONTACT_PHONE_NUMBER);
+  // Fill the currently visible checkout contact form. The unified checkout no
+  // longer exposes the old placeholder strings as accessible textbox names.
+  await fillGuestContact(page, {
+    firstName: CONTACT_NAME,
+    lastName: 'Client',
+    email: PLAYWRIGHT_BOT_EMAIL,
+    phone: CONTACT_PHONE_NUMBER,
+  });
 
   await page.getByRole('button', { name: 'Proceed to Payment' }).click();
 
