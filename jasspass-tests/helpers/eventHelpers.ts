@@ -30,7 +30,11 @@ import {
 import { signIn } from './auth';
 import { createOrganizer } from './organizerHelpers';
 import { fillIndividualStripeFields } from './stripeHelpers';
-import { openTicketPicker } from './criticalCheckoutHelpers';
+import {
+  closeTicketPicker,
+  openCheckout,
+  openTicketPicker,
+} from './criticalCheckoutHelpers';
 import {
   openEventPortalDestination,
   openOrganizerSurface,
@@ -466,10 +470,7 @@ export async function createEvent(
       .getByText('General Admission Playwright', { exact: true })
       .first()
   ).toBeVisible({ timeout: 30_000 });
-  await ticketPicker
-    .getByRole('button', { name: 'Close', exact: true })
-    .click();
-  await expect(ticketPicker).toBeHidden({ timeout: 15_000 });
+  await closeTicketPicker(page);
 
   const url = page.url();
   console.log(`New event URL: ${url}`);
@@ -512,11 +513,7 @@ export async function purchaseTicket(
     .click();
   //Timeout
   await page.waitForTimeout(2000);
-  await ticketPicker
-    .locator('[data-checkout-cta="true"]')
-    .filter({ visible: true })
-    .first()
-    .click();
+  await openCheckout(page);
 
   // Fill buyer information
   await page
