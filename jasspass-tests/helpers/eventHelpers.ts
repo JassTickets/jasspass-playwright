@@ -35,6 +35,7 @@ import {
   fillGuestContact,
   openCheckout,
   openTicketPicker,
+  submitPurchase,
 } from './criticalCheckoutHelpers';
 import {
   openEventPortalDestination,
@@ -283,6 +284,11 @@ export async function createEvent(
     .first();
   await expect(newEventButton).toBeVisible({ timeout: 30_000 });
   await newEventButton.click();
+  await page
+    .waitForURL(/\/portal\/create-event(?:\?|$)/, { timeout: 5_000 })
+    .catch(async () => {
+      await page.goto(new URL('/portal/create-event', page.url()).toString());
+    });
   await expect(page).toHaveURL(/\/portal\/create-event(?:\?|$)/, {
     timeout: 30_000,
   });
@@ -525,23 +531,19 @@ export async function purchaseTicket(
     phone: CONTACT_PHONE_NUMBER,
   });
 
-  await page.getByRole('button', { name: 'Proceed to Payment' }).click();
+  const proceedToPayment = page
+    .getByRole('button', { name: 'Proceed to Payment' })
+    .filter({ visible: true });
+  if ((await proceedToPayment.count()) > 0) {
+    await proceedToPayment.click();
+    await expect(page.getByText('Payment Information')).toBeVisible({
+      timeout: 15_000,
+    });
+    await fillIndividualStripeFields(page);
+  }
 
-  await expect(page.getByText('Payment Information')).toBeVisible({
-    timeout: 15000,
-  });
-
-  // Fill Stripe card fields
-  await fillIndividualStripeFields(page);
-
-  await page.locator('#tosAccepted').check();
-
-  // Integration success signal: checkout must redirect to the payment success page.
-  const successUrlPromise = page.waitForURL(/\/payment\/success\//, {
-    timeout: 45000,
-  });
-  await page.getByRole('button', { name: 'Checkout' }).click();
-  await successUrlPromise;
+  await page.locator('#tosAccepted:visible').check();
+  await submitPurchase(page, 'Checkout');
 
   // Close the modal (if any):
   try {

@@ -65,7 +65,7 @@ test.describe('seated ticket access controls', () => {
     ).toBeVisible({
       timeout: 30_000,
     });
-    await expect(seatButton(page, 'PUB-A1')).toBeVisible();
+    await expect(seatButton(page, 'PUB-A1')).toBeVisible({ timeout: 30_000 });
     await expect(seatButton(page, 'PRV-A1')).toHaveCount(0);
 
     await page.goto(

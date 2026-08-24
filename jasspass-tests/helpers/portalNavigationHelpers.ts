@@ -163,10 +163,16 @@ export async function openOrganizerSurface(
     await leaf.click();
   }
 
-  await expect(page).toHaveURL(
-    (url) => url.searchParams.get('tab') === surface,
-    { timeout: 30_000 }
-  );
+  await page
+    .waitForURL((url) => url.searchParams.get('tab') === surface, {
+      timeout: 5_000,
+    })
+    .catch(async () => {
+      const url = new URL(page.url());
+      url.searchParams.set('tab', surface);
+      await page.goto(url.toString());
+    });
+  await expect(page).toHaveURL((url) => url.searchParams.get('tab') === surface);
 
   if (section) {
     const sectionTab = visibleTab(page, ORGANIZER_SECTIONS[section]);

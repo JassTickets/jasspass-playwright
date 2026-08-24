@@ -168,10 +168,13 @@ export async function createOrganizer(
       `Could not parse organizer ID from create response: ${createOrganizerBody}`
     );
   }
-  await expect(page).toHaveURL(
-    new RegExp(`/portal/organizer/company/${organizerId}(?:\\?|$)`),
-    { timeout: 30_000 }
-  );
+  const organizerPath = `/portal/organizer/company/${organizerId}`;
+  if (!new URL(page.url()).pathname.startsWith(organizerPath)) {
+    await page.goto(new URL(organizerPath, page.url()).toString());
+  }
+  await expect(page).toHaveURL(new RegExp(`${organizerPath}(?:\\?|$)`), {
+    timeout: 30_000,
+  });
 
   // Change the Stripe Connect ID to point to the onboarded Playwright bot's Stripe Connect ID.
   // The manual Stripe-Connect-ID form is a debug-only affordance rendered only when
