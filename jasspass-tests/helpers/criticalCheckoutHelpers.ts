@@ -253,11 +253,9 @@ export async function applyPromoCode(
     `Promo calculation failed with ${calculationResponse.status()}: ${calculationBody}`
   ).toBeTruthy();
   const calculation = JSON.parse(calculationBody) as CheckoutCalculation;
-  await expect(
-    page
-      .getByText('Promo Code Applied', { exact: true })
-      .filter({ visible: true })
-  ).toBeVisible();
+  // A valid promo replaces the editable input with the applied state. The
+  // success copy itself is backend-provided and can vary by discount type.
+  await expect(promoInput).toHaveCount(0);
   return calculation;
 }
 

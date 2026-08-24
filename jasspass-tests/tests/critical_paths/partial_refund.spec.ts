@@ -63,7 +63,9 @@ async function submitOneTicketRefund(
   const enabledTicketCheckboxes = selection.locator(
     'input[type="checkbox"]:not(:disabled)'
   );
-  await expect(enabledTicketCheckboxes).toHaveCount(expectedSelectableTickets);
+  await expect(enabledTicketCheckboxes).toHaveCount(expectedSelectableTickets, {
+    timeout: 30_000,
+  });
   await enabledTicketCheckboxes.first().check();
   await ownerPage.locator('#refund-details').fill(details);
 

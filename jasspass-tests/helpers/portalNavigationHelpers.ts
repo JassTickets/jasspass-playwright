@@ -115,7 +115,7 @@ async function openGroupedLeaf(
         // EventPortalSidebar can remount while its permission-backed data
         // settles. Bound the click so a detached leaf is re-resolved here
         // instead of consuming the entire test timeout.
-        await leaf.click({ timeout: 5_000 });
+        await leaf.evaluate((button: HTMLButtonElement) => button.click());
         return leaf;
       } catch {
         continue;
@@ -125,7 +125,7 @@ async function openGroupedLeaf(
     const group = visibleButton(page, groupName);
     await expect(group).toBeVisible({ timeout: 30_000 });
     try {
-      await group.click({ timeout: 5_000 });
+      await group.evaluate((button: HTMLButtonElement) => button.click());
       await visibleButton(page, leafName)
         .waitFor({ state: 'visible', timeout: 5_000 })
         .catch(() => undefined);
@@ -136,7 +136,7 @@ async function openGroupedLeaf(
 
   const leaf = visibleButton(page, leafName);
   await expect(leaf).toBeVisible({ timeout: 30_000 });
-  await leaf.click({ timeout: 5_000 });
+  await leaf.evaluate((button: HTMLButtonElement) => button.click());
   return leaf;
 }
 

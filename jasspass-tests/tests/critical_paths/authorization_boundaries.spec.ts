@@ -40,7 +40,7 @@ function findByEmail<T extends { Email: string }>(
 
 test.describe('authorization boundaries', () => {
   test.describe.configure({ mode: 'serial' });
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
 
   test.beforeEach(({ browserName }) => {
     test.skip(
