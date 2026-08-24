@@ -274,7 +274,9 @@ test.describe('published seating-map editing', () => {
         'does not have 2 seat(s) available'
       );
       await expect(
-        buyerPage.getByText(/does not have 2 seat\(s\) available/).first()
+        visibleTicketPicker(buyerPage)
+          .getByText(/does not have 2 seat\(s\) available/)
+          .filter({ visible: true })
       ).toBeVisible();
     } finally {
       await buyerContext.close();

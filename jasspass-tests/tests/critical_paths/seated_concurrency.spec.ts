@@ -162,7 +162,9 @@ test.describe('seated-event concurrency', () => {
       expect(new Set(winningHold.SeatLabels).size).toBe(2);
       expect(losingMessage).toContain('does not have 2 seat(s) available');
       await expect(
-        loserPage.getByText(/does not have 2 seat\(s\) available/).first()
+        visibleTicketPicker(loserPage)
+          .getByText(/does not have 2 seat\(s\) available/)
+          .filter({ visible: true })
       ).toBeVisible();
       await expect(
         winnerPage.getByRole('heading', {

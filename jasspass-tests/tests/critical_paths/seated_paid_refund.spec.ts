@@ -57,7 +57,12 @@ async function refundSeat(
     .locator('label')
     .filter({ hasText: seatLabel });
   await expect(ticketChoice).toHaveCount(1);
-  await ticketChoice.locator('input[type="checkbox"]').check();
+  const ticketCheckbox = ticketChoice.locator('input[type="checkbox"]');
+  await expect(ticketCheckbox).toBeEnabled();
+  await expect(async () => {
+    if (!(await ticketCheckbox.isChecked())) await ticketCheckbox.check();
+    await expect(ticketCheckbox).toBeChecked();
+  }).toPass({ timeout: 15_000 });
   await ownerPage.locator('#refund-details').fill(details);
 
   const responsePromise = ownerPage.waitForResponse(
@@ -71,9 +76,12 @@ async function refundSeat(
       request.method() === 'POST' &&
       request.url().includes('/api/protected/refunds')
   );
-  await ownerPage
-    .getByRole('button', { name: 'Submit Refund', exact: true })
-    .click();
+  const submitRefund = ownerPage.getByRole('button', {
+    name: 'Submit Refund',
+    exact: true,
+  });
+  await expect(submitRefund).toBeEnabled({ timeout: 15_000 });
+  await submitRefund.click();
   const [response, request] = await Promise.all([
     responsePromise,
     requestPromise,
