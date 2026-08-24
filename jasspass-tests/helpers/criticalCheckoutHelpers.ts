@@ -85,7 +85,7 @@ export function ticketRow(page: Page, ticketTypeName: string): Locator {
 
 export function visibleTicketPicker(page: Page): Locator {
   return page
-    .locator('[data-checkout-cta="true"]')
+    .getByRole('button', { name: 'Close', exact: true })
     .filter({ visible: true })
     .first()
     .locator(
@@ -94,12 +94,9 @@ export function visibleTicketPicker(page: Page): Locator {
 }
 
 export async function openTicketPicker(page: Page): Promise<Locator> {
-  const visibleCheckoutCta = page
-    .locator('[data-checkout-cta="true"]')
-    .filter({ visible: true })
-    .first();
+  const picker = visibleTicketPicker(page);
 
-  if (!(await visibleCheckoutCta.isVisible().catch(() => false))) {
+  if (!(await picker.isVisible().catch(() => false))) {
     const pickerEntry = page
       .locator('main')
       .getByRole('button', {
@@ -112,7 +109,6 @@ export async function openTicketPicker(page: Page): Promise<Locator> {
     await pickerEntry.click();
   }
 
-  const picker = visibleTicketPicker(page);
   await expect(picker).toBeVisible({ timeout: 15_000 });
   await expect(
     picker.getByRole('button', { name: 'Close', exact: true })
