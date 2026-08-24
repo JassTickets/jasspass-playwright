@@ -199,9 +199,21 @@ export async function selectFirstOrganizer(page: Page) {
     .first();
   await expect(organizerLink).toBeVisible({ timeout: 30000 });
   await organizerLink.click();
-  await expect(page).toHaveURL(/\/portal\/organizer\/company\/[^/?#]+/, {
-    timeout: 30_000,
-  });
+  await expect(page).toHaveURL(
+    /\/portal\/organizer\/company\/[^/?#]+\/?(?:\?.*)?$/,
+    { timeout: 30_000 }
+  );
+
+  // The route changes before the organizer portal finishes replacing the home
+  // navigation. Wait for a stable organizer-only control before helpers start
+  // opening grouped destinations such as Organization > Profile.
+  await expect(
+    page
+      .locator('aside:visible')
+      .first()
+      .getByRole('button', { name: 'Dashboard', exact: true })
+      .first()
+  ).toBeVisible({ timeout: 30_000 });
 }
 
 export async function editOrganizerDetails(
