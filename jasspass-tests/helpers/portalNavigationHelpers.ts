@@ -93,7 +93,6 @@ function visibleButton(page: Page, name: string): Locator {
     .getByRole('button', {
       name: new RegExp(`^${escapedName}(?:\\s+New)?$`),
     })
-    .filter({ visible: true })
     .first();
 }
 
@@ -107,25 +106,43 @@ function visibleTab(page: Page, name: string): Locator {
 async function openGroupedLeaf(
   page: Page,
   groupName: string,
-  leafName: string,
+  leafName: string
 ): Promise<Locator> {
-  const leaf = visibleButton(page, leafName);
-  if (!(await leaf.isVisible().catch(() => false))) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const leaf = visibleButton(page, leafName);
+    if (await leaf.isVisible().catch(() => false)) {
+      try {
+        // EventPortalSidebar can remount while its permission-backed data
+        // settles. Bound the click so a detached leaf is re-resolved here
+        // instead of consuming the entire test timeout.
+        await leaf.click({ timeout: 5_000 });
+        return leaf;
+      } catch {
+        continue;
+      }
+    }
+
     const group = visibleButton(page, groupName);
     await expect(group).toBeVisible({ timeout: 30_000 });
-    if ((await group.getAttribute('aria-expanded')) !== 'true') {
-      await group.click();
+    try {
+      await group.click({ timeout: 5_000 });
+      await visibleButton(page, leafName)
+        .waitFor({ state: 'visible', timeout: 5_000 })
+        .catch(() => undefined);
+    } catch {
+      // Re-resolve both controls on the next attempt after a sidebar remount.
     }
   }
 
+  const leaf = visibleButton(page, leafName);
   await expect(leaf).toBeVisible({ timeout: 30_000 });
-  await leaf.click();
+  await leaf.click({ timeout: 5_000 });
   return leaf;
 }
 
 export async function openEventPortalDestination(
   page: Page,
-  destination: EventPortalDestination,
+  destination: EventPortalDestination
 ): Promise<Locator> {
   const { group, leaf } = EVENT_DESTINATIONS[destination];
   return openGroupedLeaf(page, group, leaf);
@@ -134,7 +151,7 @@ export async function openEventPortalDestination(
 export async function openOrganizerSurface(
   page: Page,
   surface: OrganizerSurface,
-  section?: OrganizerSection,
+  section?: OrganizerSection
 ): Promise<Locator> {
   const destination = ORGANIZER_SURFACES[surface];
   const leaf = destination.group
@@ -148,7 +165,7 @@ export async function openOrganizerSurface(
 
   await expect(page).toHaveURL(
     (url) => url.searchParams.get('tab') === surface,
-    { timeout: 30_000 },
+    { timeout: 30_000 }
   );
 
   if (section) {
@@ -157,7 +174,7 @@ export async function openOrganizerSurface(
     await sectionTab.click();
     await expect(page).toHaveURL(
       (url) => url.searchParams.get('section') === section,
-      { timeout: 30_000 },
+      { timeout: 30_000 }
     );
   }
 

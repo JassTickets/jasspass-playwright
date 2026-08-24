@@ -89,6 +89,12 @@ test('operator policies comprehensive flow', async ({ browser }) => {
     await page2.goto(
       `${JASS_TEST_URL}/portal/organizer/company/${organizerId}/event/${eventId}`
     );
+    await expect(page2).toHaveURL(
+      new RegExp(
+        `/portal/organizer/company/${organizerId}/event/${eventId}(?:\\?|$)`
+      ),
+      { timeout: 30_000 }
+    );
 
     // Verify the granted surfaces through the redesigned event portal.
     await verifyOperatorAccess(page2, organizerName, eventName);

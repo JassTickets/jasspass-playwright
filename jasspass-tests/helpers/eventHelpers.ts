@@ -185,7 +185,7 @@ async function attachPromoCodeToAllTicketTypes(page: Page) {
       response.request().method() === 'POST' &&
       response.url().includes('/promocodes/ticket-types/') &&
       response.url().endsWith('/attach'),
-    { timeout: 30_000 },
+    { timeout: 30_000 }
   );
   await attachModal
     .getByRole('button', { name: 'Attach', exact: true })
@@ -286,7 +286,7 @@ export async function createEvent(
   await title.fill(eventName);
 
   const eventImageResponse = await page.request.get(
-    `${JASS_TEST_URL}/gallery/photo1.jpg`,
+    `${JASS_TEST_URL}/gallery/photo1.jpg`
   );
   expect(eventImageResponse.ok(), 'Load event fixture image').toBeTruthy();
   const eventImageBuffer = await eventImageResponse.body();
@@ -307,7 +307,7 @@ export async function createEvent(
   await expect(locationRow).toBeVisible();
   await locationRow.click();
   await expect(
-    page.getByRole('heading', { name: 'Where is it?', exact: true }),
+    page.getByRole('heading', { name: 'Where is it?', exact: true })
   ).toBeVisible();
 
   const locationSearch = page
@@ -318,13 +318,13 @@ export async function createEvent(
     (response) =>
       response.request().method() === 'GET' &&
       new URL(response.url()).pathname === '/api/places-autocomplete',
-    { timeout: 30_000 },
+    { timeout: 30_000 }
   );
   await locationSearch.fill(NEW_CONTACT_ADDRESS);
   const autocompleteResponse = await autocompleteResponsePromise;
   expect(
     autocompleteResponse.ok(),
-    `Location autocomplete failed with ${autocompleteResponse.status()}`,
+    `Location autocomplete failed with ${autocompleteResponse.status()}`
   ).toBeTruthy();
 
   const locationSearchRoot = locationSearch.locator('xpath=../..');
@@ -340,13 +340,13 @@ export async function createEvent(
     (response) =>
       response.request().method() === 'GET' &&
       new URL(response.url()).pathname === '/api/places-details',
-    { timeout: 30_000 },
+    { timeout: 30_000 }
   );
   await locationSuggestion.click();
   const locationDetailsResponse = await locationDetailsResponsePromise;
   expect(
     locationDetailsResponse.ok(),
-    `Location details failed with ${locationDetailsResponse.status()}`,
+    `Location details failed with ${locationDetailsResponse.status()}`
   ).toBeTruthy();
   await page
     .getByRole('button', { name: 'Done', exact: true })
@@ -359,7 +359,7 @@ export async function createEvent(
     .first()
     .click();
   await expect(
-    page.getByRole('heading', { name: 'New ticket type', exact: true }),
+    page.getByRole('heading', { name: 'New ticket type', exact: true })
   ).toBeVisible();
   await page
     .locator('#tier-name:visible')
@@ -373,7 +373,7 @@ export async function createEvent(
     .first()
     .click();
   await expect(
-    page.getByText('General Admission Playwright', { exact: true }),
+    page.getByText('General Admission Playwright', { exact: true })
   ).toBeVisible();
 
   const createDraftResponsePromise = page.waitForResponse(
@@ -381,15 +381,18 @@ export async function createEvent(
       response.request().method() === 'POST' &&
       new URL(response.url()).pathname ===
         `/api/protected/events/${organizerId}/draft`,
-    { timeout: 45_000 },
+    { timeout: 45_000 }
   );
-  const createEventResponsePromise = page.waitForResponse((response) => {
-    const pathname = new URL(response.url()).pathname.replace(/\/$/, '');
-    return (
-      response.request().method() === 'POST' &&
-      pathname === '/api/protected/events'
-    );
-  }, { timeout: 90_000 });
+  const createEventResponsePromise = page.waitForResponse(
+    (response) => {
+      const pathname = new URL(response.url()).pathname.replace(/\/$/, '');
+      return (
+        response.request().method() === 'POST' &&
+        pathname === '/api/protected/events'
+      );
+    },
+    { timeout: 90_000 }
+  );
 
   const publishButton = page
     .getByRole('button', { name: 'Publish', exact: true })
@@ -401,7 +404,7 @@ export async function createEvent(
   if (!createDraftResponse.ok()) {
     const body = await createDraftResponse.text().catch(() => '<unreadable>');
     throw new Error(
-      `Create event draft failed with ${createDraftResponse.status()}: ${body}`,
+      `Create event draft failed with ${createDraftResponse.status()}: ${body}`
     );
   }
 
@@ -447,10 +450,10 @@ export async function createEvent(
   // of the creation UX and must remain covered by this end-to-end helper.
   await expect(page).toHaveURL(eventUrl, { timeout: 30_000 });
   await expect(
-    page.getByRole('heading', { name: eventName, exact: true }),
+    page.getByRole('heading', { name: eventName, exact: true })
   ).toBeVisible({ timeout: 30_000 });
   await expect(
-    page.getByText('General Admission Playwright', { exact: true }).first(),
+    page.getByText('General Admission Playwright', { exact: true }).first()
   ).toBeVisible({ timeout: 30_000 });
 
   const url = page.url();
@@ -619,9 +622,7 @@ export async function refundTicket(page: Page) {
   expect(refundResponse.ok()).toBeTruthy();
 
   // UI success signal: organizer sees refund confirmation after backend success.
-  const successBanner = refundForm.getByText(
-    'Refund submitted successfully.',
-  );
+  const successBanner = refundForm.getByText('Refund submitted successfully.');
   await expect(successBanner).toBeVisible({ timeout: 15000 });
 
   // Check that the selected ticket has no remaining refundable balance.
@@ -699,7 +700,7 @@ export async function selectFirstEventStartingWithPBO(
     page2
       .getByRole('button', { name: 'Overview', exact: true })
       .filter({ visible: true })
-      .first(),
+      .first()
   ).toBeVisible({ timeout: 30_000 });
 
   return page2;
@@ -732,7 +733,7 @@ export async function openEventOrganizerPortal(
     page
       .getByRole('button', { name: 'Overview', exact: true })
       .filter({ visible: true })
-      .first(),
+      .first()
   ).toBeVisible({ timeout: 30_000 });
 
   return page;
@@ -765,7 +766,7 @@ export async function editEventBasics(organizerPage: Page) {
     (response) =>
       response.request().method() === 'PUT' &&
       /\/api\/protected\/events\/[^/]+$/.test(new URL(response.url()).pathname),
-    { timeout: 30_000 },
+    { timeout: 30_000 }
   );
   const saveButton = organizerPage
     .getByRole('button', { name: 'Save changes', exact: true })
@@ -807,9 +808,7 @@ export async function editEventTimeAndLocation(organizerPage: Page) {
     nextStartDate.getMinutes()
   )}`;
   await dateInputs.nth(0).fill(nextStart);
-  await dateSheet
-    .getByRole('button', { name: 'Done', exact: true })
-    .click();
+  await dateSheet.getByRole('button', { name: 'Done', exact: true }).click();
 
   // Update the venue through the new location sheet. Event creation already
   // covers selecting a Places suggestion; this edit path verifies that the
@@ -831,7 +830,7 @@ export async function editEventTimeAndLocation(organizerPage: Page) {
     (response) =>
       response.request().method() === 'PUT' &&
       /\/api\/protected\/events\/[^/]+$/.test(new URL(response.url()).pathname),
-    { timeout: 30_000 },
+    { timeout: 30_000 }
   );
   const refreshResponsePromise = waitForEventDetailsRefresh(organizerPage);
   await saveButton.click();
@@ -842,9 +841,9 @@ export async function editEventTimeAndLocation(organizerPage: Page) {
   // Reopen the date sheet to assert the saved time through the user-facing UI.
   await dateRow.click();
   dateSheet = visibleStudioSheet(organizerPage, 'When is it?');
-  await expect(dateSheet.locator('input[type="datetime-local"]').nth(0)).toHaveValue(
-    nextStart
-  );
+  await expect(
+    dateSheet.locator('input[type="datetime-local"]').nth(0)
+  ).toHaveValue(nextStart);
   return locationRow;
 }
 
@@ -875,9 +874,7 @@ export async function editEventAdditionalDetails(organizerPage: Page) {
   let moneySheet = visibleStudioSheet(organizerPage, 'Money');
   await expect(moneySheet).toBeVisible();
   await moneySheet.locator('#edit-tax-rate').fill(EVENT_NEW_TAX_RATE);
-  await moneySheet
-    .getByRole('button', { name: 'Done', exact: true })
-    .click();
+  await moneySheet.getByRole('button', { name: 'Done', exact: true }).click();
 
   const saveButton = organizerPage
     .getByRole('button', { name: 'Save changes', exact: true })
@@ -887,7 +884,7 @@ export async function editEventAdditionalDetails(organizerPage: Page) {
     (response) =>
       response.request().method() === 'PUT' &&
       /\/api\/protected\/events\/[^/]+$/.test(new URL(response.url()).pathname),
-    { timeout: 30_000 },
+    { timeout: 30_000 }
   );
   const refreshResponsePromise = waitForEventDetailsRefresh(organizerPage);
   await saveButton.click();
@@ -1068,9 +1065,7 @@ export async function sendMessageToAttendees(
     .fill(subject);
 
   // Click next
-  await messageModal
-    .getByRole('button', { name: 'Next', exact: true })
-    .click();
+  await messageModal.getByRole('button', { name: 'Next', exact: true }).click();
 
   // Fill message body
   const messageBody = messageModal.locator('#message-body-inline');
@@ -1189,9 +1184,7 @@ export async function manageEventAttendeesAndCommunications(
     .fill(uniqueSubject);
 
   // Click next
-  await messageModal
-    .getByRole('button', { name: 'Next', exact: true })
-    .click();
+  await messageModal.getByRole('button', { name: 'Next', exact: true }).click();
 
   // Fill message body
   const messageBody = messageModal.locator('#message-body-inline');
@@ -1274,7 +1267,9 @@ async function performEventDuplication(
   await eventNameField.clear(); // Clear existing text
   await eventNameField.fill(duplicatedEventTitle);
 
-  const dateInputs = organizerPage.locator('input[type="datetime-local"]:visible');
+  const dateInputs = organizerPage.locator(
+    'input[type="datetime-local"]:visible'
+  );
   await expect(dateInputs).toHaveCount(2);
   await dateInputs.nth(0).fill('2040-08-20T10:00');
 
@@ -1450,32 +1445,38 @@ export async function verifyOperatorAccess(
   await expect(page).toHaveURL(/\/portal\/organizer\/company\//, {
     timeout: 30_000,
   });
-  const organizerSwitcher = page
-    .locator('[data-organizer-switcher-trigger]:visible')
-    .first();
-  await expect(organizerSwitcher).toBeVisible({ timeout: 30_000 });
-  const selectedOrganizerName = organizerSwitcher.getByText(organizerName, {
-    exact: true,
-  });
-  if (!(await selectedOrganizerName.isVisible().catch(() => false))) {
-    await organizerSwitcher.click();
-    const organizerSearch = page
-      .getByPlaceholder('Search organizations')
-      .filter({ visible: true });
-    if (await organizerSearch.isVisible().catch(() => false)) {
-      await organizerSearch.fill(organizerName);
-    }
-    const organizerOption = page
-      .getByRole('button')
-      .filter({
-        has: page.getByText(organizerName, { exact: true }),
-      })
-      .filter({ visible: true })
+  // Direct event URLs already identify the assigned organization precisely.
+  // Do not search the shared operator account's paginated organizer switcher;
+  // that unrelated list may not contain a newly assigned organization yet.
+  if (!new URL(page.url()).pathname.includes('/event/')) {
+    const organizerSwitcher = page
+      .locator('[data-organizer-switcher-trigger]:visible')
       .first();
-    await expect(organizerOption).toBeVisible({ timeout: 30_000 });
-    await organizerOption.click();
-    await expect(organizerSwitcher.getByText(organizerName, { exact: true }))
-      .toBeVisible({ timeout: 30_000 });
+    await expect(organizerSwitcher).toBeVisible({ timeout: 30_000 });
+    const selectedOrganizerName = organizerSwitcher.getByText(organizerName, {
+      exact: true,
+    });
+    if (!(await selectedOrganizerName.isVisible().catch(() => false))) {
+      await organizerSwitcher.click();
+      const organizerSearch = page
+        .getByPlaceholder('Search organizations')
+        .filter({ visible: true });
+      if (await organizerSearch.isVisible().catch(() => false)) {
+        await organizerSearch.fill(organizerName);
+      }
+      const organizerOption = page
+        .getByRole('button')
+        .filter({
+          has: page.getByText(organizerName, { exact: true }),
+        })
+        .filter({ visible: true })
+        .first();
+      await expect(organizerOption).toBeVisible({ timeout: 30_000 });
+      await organizerOption.click();
+      await expect(
+        organizerSwitcher.getByText(organizerName, { exact: true })
+      ).toBeVisible({ timeout: 30_000 });
+    }
   }
 
   if (!new URL(page.url()).pathname.includes('/event/')) {
@@ -1515,9 +1516,7 @@ export async function verifyOperatorAccess(
           '/api/protected/transactions/confirmation/email',
       { timeout: 30_000 }
     );
-    await page
-      .getByRole('button', { name: 'Send Confirmation Email' })
-      .click();
+    await page.getByRole('button', { name: 'Send Confirmation Email' }).click();
     const confirmationEmailResponse = await confirmationEmailResponsePromise;
     const confirmationEmailResponseBody = await confirmationEmailResponse
       .text()
@@ -1592,9 +1591,7 @@ export async function verifyOperatorAccess(
     { timeout: 30_000 }
   );
   const refreshedEventResponsePromise = waitForEventDetailsRefresh(page);
-  await page
-    .getByRole('button', { name: 'Save changes', exact: true })
-    .click();
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   const updateEventResponse = await updateEventResponsePromise;
   expect(updateEventResponse.ok()).toBeTruthy();
   expect((await refreshedEventResponsePromise).ok()).toBeTruthy();
@@ -1610,7 +1607,9 @@ export async function verifyOperatorAccess(
   ).toBeVisible({ timeout: 30_000 });
   await openEventPortalDestination(page, 'eventSettings');
   await expect(
-    page.getByText('Event Settings', { exact: true }).filter({ visible: true })
+    page
+      .getByText('Event Settings', { exact: true })
+      .filter({ visible: true })
       .first()
   ).toBeVisible({ timeout: 30_000 });
   // Duplicating creates a new organizer-level event. The redesigned settings
