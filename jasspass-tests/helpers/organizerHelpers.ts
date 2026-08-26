@@ -144,17 +144,25 @@ export async function createOrganizer(
   ).toBeTruthy();
 
   await page.locator('#org-contact-email:visible').first().fill(email);
+  await page
+    .locator('#studio-estimated-revenue:visible, #estimatedMonthlyRevenue:visible')
+    .selectOption('under_5k');
+  await page
+    .locator('#studio-event-frequency:visible, #eventFrequency:visible')
+    .selectOption('monthly');
+
+  const createOrganizationButton = page
+    .getByRole('button', { name: 'Create organization', exact: true })
+    .filter({ visible: true })
+    .first();
+  await expect(createOrganizationButton).toBeEnabled({ timeout: 15_000 });
   const createOrganizerResponsePromise = page.waitForResponse(
     (response) =>
       response.request().method() === 'POST' &&
       new URL(response.url()).pathname === '/api/protected/organizers',
     { timeout: 30_000 }
   );
-  await page
-    .getByRole('button', { name: 'Create organization', exact: true })
-    .filter({ visible: true })
-    .first()
-    .click();
+  await createOrganizationButton.click();
   const createOrganizerResponse = await createOrganizerResponsePromise;
   const createOrganizerBody = await createOrganizerResponse
     .text()
@@ -172,9 +180,14 @@ export async function createOrganizer(
     );
   }
   const organizerPath = `/portal/organizer/company/${organizerId}`;
-  if (!new URL(page.url()).pathname.startsWith(organizerPath)) {
-    await page.goto(new URL(organizerPath, page.url()).toString());
-  }
+  await expect(sheetHeading).toBeHidden({ timeout: 15_000 });
+  const createdOrganizerButton = page
+    .getByRole('button')
+    .filter({ hasText: organizerName })
+    .filter({ visible: true })
+    .first();
+  await expect(createdOrganizerButton).toBeVisible({ timeout: 30_000 });
+  await createdOrganizerButton.click();
   await expect(page).toHaveURL(new RegExp(`${organizerPath}(?:\\?|$)`), {
     timeout: 30_000,
   });
