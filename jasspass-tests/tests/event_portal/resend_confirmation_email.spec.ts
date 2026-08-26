@@ -1,6 +1,6 @@
-import { test } from '@playwright/test';
+import { JASS_TEST_URL } from '../../constants';
+import { test } from '../../fixtures/application';
 import {
-  createEventAndOpenOrganizerPortal,
   bookComplimentaryTicket,
   resendConfirmationEmail,
 } from '../../helpers/eventHelpers';
@@ -9,17 +9,21 @@ test.setTimeout(180_000);
 
 // @Description: This test verifies that resending confirmation emails functionality works correctly.
 // @Dependencies: Depends on sign-in and create-event functionality.
-test('resendConfirmationEmail', async ({ page }) => {
+test('resendConfirmationEmail', async ({
+  ownerPage,
+  ownerIdentity,
+  eventFactory,
+}) => {
   console.log('[INFO] Executing Resend Confirmation Email test...');
 
-  // Create a fresh event and order so the resend flow has a known target.
-  const organizerPage = await createEventAndOpenOrganizerPortal(page);
-  const organizerPortalUrl = organizerPage.url();
-  await bookComplimentaryTicket(organizerPage);
-  await organizerPage.goto(organizerPortalUrl);
+  const created = await eventFactory.create();
+  const organizerPortalUrl = `${JASS_TEST_URL}/portal/organizer/company/${ownerIdentity.organizerId}/event/${created.id}`;
+  await ownerPage.goto(organizerPortalUrl, { waitUntil: 'domcontentloaded' });
+  await bookComplimentaryTicket(ownerPage);
+  await ownerPage.goto(organizerPortalUrl, { waitUntil: 'domcontentloaded' });
 
   // Attempt to resend confirmation email
-  await resendConfirmationEmail(organizerPage);
+  await resendConfirmationEmail(ownerPage);
 
   console.log('[INFO] Resend Confirmation Email test completed successfully.');
 });

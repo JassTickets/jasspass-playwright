@@ -1,6 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 import {
-  selectFirstOrganizer,
+  createOrganizer,
   addPerformer,
   editPerformer,
   deletePerformer,
@@ -13,8 +13,7 @@ test.setTimeout(60_000);
 test('managePerformers', async ({ page }) => {
   console.log('[INFO] Executing Manage Performers test...');
 
-  // Sign in and select first organizer
-  await selectFirstOrganizer(page);
+  await createOrganizer(page);
 
   // Add a new performer
   const performerName = await addPerformer(page);

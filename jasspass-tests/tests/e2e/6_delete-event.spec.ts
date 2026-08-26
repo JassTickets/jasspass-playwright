@@ -1,12 +1,17 @@
-import { test, expect } from '@playwright/test';
-import { deleteEvent } from '../../helpers/eventHelpers';
+import { test, expect } from '../../fixtures/application';
 
 test.setTimeout(180_000);
 
-// @Description: This test verifies that the delete-event functionality works correctly.
-// @Dependencies: Depends on the sign-in, create-organizer, create-event, purchase-ticket, and refund-ticket functionalities being correct.
-test('deleteEvent', async ({ page }) => {
+test('deleteEvent', async ({ ownerApi, eventFactory }) => {
   console.log('[INFO] Executing Delete Event test...');
-  const organizerId = await deleteEvent(page);
+  const created = await eventFactory.create();
+  const deleteResponse = await ownerApi.delete(
+    `/api/protected/events/${created.id}/delete`
+  );
+  expect(deleteResponse.ok()).toBe(true);
+  const deletedEventResponse = await ownerApi.get(
+    `/api/public/events/${created.id}`
+  );
+  expect(deletedEventResponse.status()).toBe(404);
   console.log('[INFO] Delete Event test completed successfully.');
 });

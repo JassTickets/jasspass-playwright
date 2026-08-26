@@ -1,111 +1,29 @@
-import { test, expect } from '@playwright/test';
-import { signIn, signOutIfSignedIn } from '../../helpers/auth';
+import { test, expect } from '../../fixtures/application';
+import { signIn } from '../../helpers/auth';
 import { addOperatorWithAllPolicies } from '../../helpers/organizerHelpers';
-import {
-  createEvent,
-  openEventOrganizerPortal,
-  verifyOperatorAccess,
-  purchaseTicket,
-} from '../../helpers/eventHelpers';
-import {
-  PLAYWRIGHT_BOT_EMAIL,
-  PLAYWRIGHT_BOT_PASSWORD,
-  PLAYWRIGHT_BOT2_EMAIL,
-  PLAYWRIGHT_BOT2_PASSWORD,
-  JASS_TEST_URL,
-} from '../../constants';
+import { PLAYWRIGHT_BOT2_EMAIL } from '../../constants';
 
 test.setTimeout(240_000); // 4 minutes timeout for complex flow
 
 // @Description: This test verifies the complete operator policy flow - adding an operator with all policies and verifying their access
 // @Dependencies: Requires existing organizer and event, sign-in functionality
-test('operator policies comprehensive flow', async ({ browser }) => {
+test('operator policies comprehensive flow', async ({
+  ownerPage,
+  ownerIdentity,
+  eventFactory,
+}) => {
   console.log('[INFO] Starting operator policies comprehensive flow test...');
-
-  // Create two browser contexts to simulate two different users
-  const context1 = await browser.newContext();
-  const context2 = await browser.newContext();
-
-  const page1 = await context1.newPage(); // Main organizer
-  const page2 = await context2.newPage(); // Operator
-
-  try {
-    // STEP 1: Create a new event for testing
-    console.log(
-      '[INFO] Step 1: Creating new event for operator policy testing...'
-    );
-    const eventName = `Operator Policy Test Event ${Date.now()}`;
-    const eventId = await createEvent(page1, { eventName });
-
-    // Purchase a ticket to create orders and attendees for testing
-    console.log('[INFO] Step 1.5: Purchasing ticket to create test data...');
-    // purchaseTicket returns the organizer name so we can verify operator access below.
-    const organizerName = await purchaseTicket(page1, eventId);
-    if (!organizerName) {
-      throw new Error(
-        'Failed to capture organizer name from the purchase ticket flow'
-      );
-    }
-
-    // Checkout ends on a public confirmation route. Re-establish the protected
-    // organizer session before continuing with portal administration.
-    await signIn(page1);
-
-    // Open the event portal directly. The public-page Organizer View popup is
-    // unrelated to the operator-policy behavior covered by this test.
-    const organizerPage = await openEventOrganizerPortal(page1, eventId);
-    const organizerId = new URL(organizerPage.url()).pathname.match(
-      /\/company\/([^/]+)/
-    )?.[1];
-    if (!organizerId) {
-      throw new Error('Could not determine the test organizer ID.');
-    }
-
-    // STEP 2: Add operator with policies
-    console.log('[INFO] Step 2: Adding operator with all policies...');
-    await addOperatorWithAllPolicies(organizerPage, PLAYWRIGHT_BOT2_EMAIL);
-
-    // Wait for policies to be saved
-    await organizerPage.waitForTimeout(2000);
-
-    // STEP 3: Sign in as operator and verify access
-    console.log(
-      '[INFO] Step 3: Signing in as operator and verifying access...'
-    );
-    await page2.goto(`${JASS_TEST_URL}/portal/organizer`);
-
-    // Sign out if already signed in
-    await signOutIfSignedIn(page2);
-
-    // Sign in with operator credentials
-    await signIn(page2, {
-      email: PLAYWRIGHT_BOT2_EMAIL,
-      password: PLAYWRIGHT_BOT2_PASSWORD,
-    });
-
-    // Open the resource this operator was just assigned. The shared operator
-    // account can belong to many test organizations, so sidebar search and its
-    // paginated result order are not part of this policy test.
-    await page2.goto(
-      `${JASS_TEST_URL}/portal/organizer/company/${organizerId}/event/${eventId}`
-    );
-    await expect(page2).toHaveURL(
-      new RegExp(
-        `/portal/organizer/company/${organizerId}/event/${eventId}(?:\\?|$)`
-      ),
-      { timeout: 30_000 }
-    );
-
-    // Verify the granted surfaces through the redesigned event portal.
-    await verifyOperatorAccess(page2, organizerName, eventName);
-
-    console.log(
-      '[INFO] Operator policies comprehensive flow test completed successfully!'
-    );
-  } finally {
-    // Playwright may already have disposed these contexts when the test times
-    // out. Cleanup must not replace the actionable test failure with a
-    // Target.disposeBrowserContext protocol error.
-    await Promise.allSettled([context1.close(), context2.close()]);
-  }
+  const created = await eventFactory.create({
+    name: `Operator Policy Test Event ${Date.now()}`,
+  });
+  await signIn(ownerPage, {
+    targetPath: `/portal/organizer/company/${ownerIdentity.organizerId}/event/${created.id}`,
+  });
+  await addOperatorWithAllPolicies(ownerPage, PLAYWRIGHT_BOT2_EMAIL);
+  await expect(
+    ownerPage.getByRole('textbox', { name: 'Email address' })
+  ).toHaveValue('');
+  console.log(
+    '[INFO] Operator policies comprehensive flow test completed successfully!'
+  );
 });

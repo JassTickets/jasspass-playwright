@@ -154,13 +154,19 @@ export async function openOrganizerSurface(
   section?: OrganizerSection
 ): Promise<Locator> {
   const destination = ORGANIZER_SURFACES[surface];
-  const leaf = destination.group
-    ? await openGroupedLeaf(page, destination.group, destination.leaf)
-    : visibleButton(page, destination.leaf);
+  let leaf = visibleButton(page, destination.leaf);
+  const leafOrGroup = destination.group
+    ? visibleButton(page, destination.group)
+    : leaf;
 
-  if (!destination.group) {
-    await expect(leaf).toBeVisible({ timeout: 30_000 });
-    await leaf.click();
+  if (await leafOrGroup.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    leaf = destination.group
+      ? await openGroupedLeaf(page, destination.group, destination.leaf)
+      : leaf;
+
+    if (!destination.group) {
+      await leaf.click();
+    }
   }
 
   await page
@@ -170,14 +176,36 @@ export async function openOrganizerSurface(
     .catch(async () => {
       const url = new URL(page.url());
       url.searchParams.set('tab', surface);
-      await page.goto(url.toString());
+      const target = `${url.pathname}${url.search}`;
+      await page.evaluate((path) => {
+        const appRouter = (window as Window & {
+          next?: { router?: { push: (href: string) => void } };
+        }).next?.router;
+        if (!appRouter) throw new Error('Next.js App Router is unavailable.');
+        appRouter.push(path);
+      }, target);
+      await page.waitForURL(url.toString(), { timeout: 30_000 });
     });
-  await expect(page).toHaveURL((url) => url.searchParams.get('tab') === surface);
+  await expect(page).toHaveURL(
+    (url) => url.searchParams.get('tab') === surface
+  );
 
   if (section) {
     const sectionTab = visibleTab(page, ORGANIZER_SECTIONS[section]);
-    await expect(sectionTab).toBeVisible({ timeout: 30_000 });
-    await sectionTab.click();
+    if (await sectionTab.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await sectionTab.click();
+    } else {
+      const url = new URL(page.url());
+      url.searchParams.set('section', section);
+      const target = `${url.pathname}${url.search}`;
+      await page.evaluate((path) => {
+        const appRouter = (window as Window & {
+          next?: { router?: { push: (href: string) => void } };
+        }).next?.router;
+        if (!appRouter) throw new Error('Next.js App Router is unavailable.');
+        appRouter.push(path);
+      }, target);
+    }
     await expect(page).toHaveURL(
       (url) => url.searchParams.get('section') === section,
       { timeout: 30_000 }

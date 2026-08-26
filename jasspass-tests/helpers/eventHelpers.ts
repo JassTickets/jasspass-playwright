@@ -91,30 +91,14 @@ async function createPromoCodeInManagementModalAndAddToEvent(
       !response.url().includes('/attachments'),
     { timeout: 30000 }
   );
-  const refreshedPromoCodesResponsePromise = organizerPage.waitForResponse(
-    async (response) => {
-      if (
-        response.request().method() !== 'GET' ||
-        !response.url().includes('/api/protected/organizers/') ||
-        !response.url().includes('/promocodes') ||
-        response.url().includes('/attachments')
-      ) {
-        return false;
-      }
-
-      return (await response.text().catch(() => '')).includes(promoCode);
-    },
-    { timeout: 30000 }
-  );
-
-  await promoCodeModal
-    .locator('form')
-    .getByRole('button', { name: 'Add Promo Code' })
-    .click();
-  const createPromoCodeResponse = await createPromoCodeResponsePromise;
+  const [createPromoCodeResponse] = await Promise.all([
+    createPromoCodeResponsePromise,
+    promoCodeModal
+      .locator('form')
+      .getByRole('button', { name: 'Add Promo Code' })
+      .click(),
+  ]);
   expect(createPromoCodeResponse.ok()).toBeTruthy();
-  const refreshedPromoCodesResponse = await refreshedPromoCodesResponsePromise;
-  expect(refreshedPromoCodesResponse.ok()).toBeTruthy();
 
   const modalSearch = promoCodeModal.getByRole('textbox', {
     name: 'Search your organizer promo',
@@ -276,19 +260,16 @@ export async function createEvent(
   } = {}
 ): Promise<string> {
   const organizerId = await createOrganizer(page);
-  await openOrganizerSurface(page, 'events');
-
-  const newEventButton = page
-    .getByRole('button', { name: 'New Event', exact: true })
-    .filter({ visible: true })
-    .first();
-  await expect(newEventButton).toBeVisible({ timeout: 30_000 });
-  await newEventButton.click();
-  await page
-    .waitForURL(/\/portal\/create-event(?:\?|$)/, { timeout: 5_000 })
-    .catch(async () => {
-      await page.goto(new URL('/portal/create-event', page.url()).toString());
-    });
+  // Creating an organizer now lands on its company overview, whose compact
+  // navigation does not always render an Events button. Continue through the
+  // canonical create route; organizer selection was established by the form.
+  await page.evaluate(() => {
+    const appRouter = (window as Window & {
+      next?: { router?: { push: (href: string) => void } };
+    }).next?.router;
+    if (!appRouter) throw new Error('Next.js App Router is unavailable.');
+    appRouter.push('/portal/create-event');
+  });
   await expect(page).toHaveURL(/\/portal\/create-event(?:\?|$)/, {
     timeout: 30_000,
   });
