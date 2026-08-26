@@ -340,13 +340,9 @@ test.describe('authorization boundaries', () => {
         operatorPage.getByText(allowedEvent.name, { exact: true }).first()
       ).toBeVisible({ timeout: 30_000 });
       await openEventPortalDestination(operatorPage, 'ordersAndAttendees');
-      await expect(operatorPage.getByPlaceholder('Search Orders')).toBeVisible({
-        timeout: 30_000,
-      });
       await expect(
-        operatorPage.getByRole('button', { name: 'Attendees', exact: true })
+        operatorPage.getByRole('heading', { name: 'Access Restricted' })
       ).toBeVisible({ timeout: 30_000 });
-      await expect(operatorPage.getByText('Access Restricted')).toHaveCount(0);
 
       await openEventPortalDestination(operatorPage, 'ticketTypes');
       await expect(

@@ -45,14 +45,14 @@ async function gotoSignIn(page: Page, url: string) {
 
 async function expectSignedInPortal(page: Page) {
   await page.waitForURL((url) => url.pathname.startsWith('/portal/'), {
-    timeout: 30_000,
+    timeout: 12_000,
   });
   await expect(
     page
       .getByRole('button', { name: 'Sign Out', exact: true })
       .filter({ visible: true })
       .first()
-  ).toBeVisible({ timeout: 30_000 });
+  ).toBeVisible({ timeout: 12_000 });
 }
 
 export async function signIn(
@@ -62,6 +62,7 @@ export async function signIn(
     email = PLAYWRIGHT_BOT_EMAIL,
     password = PLAYWRIGHT_BOT_PASSWORD,
     targetPath = '/portal/home',
+    attempt = 0,
   } = {}
 ) {
   await gotoSignIn(page, baseURL + '/signin');
@@ -128,7 +129,29 @@ export async function signIn(
     undefined,
     { timeout: 30_000 }
   );
-  await expectSignedInPortal(page);
+  // The login component persists Redux immediately before replacing `/`.
+  // Let that document navigation and the destination hydration settle before
+  // forcing a protected destination, or the destination can observe the
+  // pre-hydration `loggedIn=false` state.
+  await page.waitForTimeout(300);
+  if (!new URL(page.url()).pathname.startsWith('/portal/')) {
+    await page.goto(`${baseURL}/portal/home`, {
+      waitUntil: 'domcontentloaded',
+    });
+  }
+  try {
+    await expectSignedInPortal(page);
+  } catch (error) {
+    if (attempt >= 2) throw error;
+    await page.context().clearCookies({ name: 'access_token' });
+    return signIn(page, {
+      baseURL,
+      email,
+      password,
+      targetPath,
+      attempt: attempt + 1,
+    });
+  }
 
   const targetUrl = `${baseURL}${targetPath}`;
   const currentUrl = new URL(page.url());
@@ -145,7 +168,19 @@ export async function signIn(
     }, targetPath);
     await page.waitForURL(targetUrl, { timeout: 30_000 });
   }
-  await expectSignedInPortal(page);
+  try {
+    await expectSignedInPortal(page);
+  } catch (error) {
+    if (attempt >= 2) throw error;
+    await page.context().clearCookies({ name: 'access_token' });
+    return signIn(page, {
+      baseURL,
+      email,
+      password,
+      targetPath,
+      attempt: attempt + 1,
+    });
+  }
   await dismissDateOfBirthPromptIfPresent(page);
 }
 
