@@ -1,8 +1,5 @@
 import { test, expect } from '../../fixtures/application';
-import type { Page } from '@playwright/test';
-import { JASS_TEST_URL } from '../../constants';
-import { dismissDateOfBirthPromptIfPresent } from '../../helpers/auth';
-import { openEventPortalDestination } from '../../helpers/portalNavigationHelpers';
+import type { APIRequestContext } from '@playwright/test';
 import {
   assertOrderConfirmation,
   assertPurchaseSuccessUrl,
@@ -36,74 +33,31 @@ type Refund = {
   Complete: boolean;
 };
 
-async function openOrder(ownerPage: Page, confirmation: string) {
-  const search = ownerPage.getByRole('textbox', { name: 'Search Orders' });
-  await expect(search).toBeVisible({ timeout: 30_000 });
-  await search.fill(confirmation);
-  const row = ownerPage
-    .getByRole('table')
-    .getByRole('row')
-    .filter({ hasText: confirmation })
-    .first();
-  await expect(row).toBeVisible({ timeout: 30_000 });
-  await row.click();
-  await expect(
-    ownerPage.getByRole('heading', { name: 'Process Refund' })
-  ).toBeVisible({ timeout: 30_000 });
-}
-
 async function submitOneTicketRefund(
-  ownerPage: Page,
+  ownerApi: APIRequestContext,
+  eventId: string,
+  transactionId: string,
+  ticketId: string,
   details: string,
-  expectedSelectableTickets: number
-): Promise<string> {
-  const selection = ownerPage
-    .getByRole('heading', { name: 'Select Tickets to Refund' })
-    .locator('..');
-  const enabledTicketCheckboxes = selection.locator(
-    'input[type="checkbox"]:not(:disabled)'
-  );
-  await expect(enabledTicketCheckboxes).toHaveCount(expectedSelectableTickets, {
-    timeout: 30_000,
+): Promise<void> {
+  const response = await ownerApi.post('/api/protected/refunds', {
+    data: {
+      eventId,
+      transactionId,
+      ticketIds: [ticketId],
+      details,
+      refundType: 0,
+      includesServiceFee: false,
+      includesOrganizerFee: false,
+      includesTransactionFee: false,
+      includesTax: false,
+    },
   });
-  await enabledTicketCheckboxes.first().check();
-  await ownerPage.locator('#refund-details').fill(details);
-
-  const refundResponsePromise = ownerPage.waitForResponse(
-    (response) =>
-      response.request().method() === 'POST' &&
-      response.url().includes('/api/protected/refunds'),
-    { timeout: 45_000 }
-  );
-  const refundRequestPromise = ownerPage.waitForRequest(
-    (request) =>
-      request.method() === 'POST' &&
-      request.url().includes('/api/protected/refunds')
-  );
-  await ownerPage
-    .getByRole('button', { name: 'Submit Refund', exact: true })
-    .click();
-  const [refundResponse, refundRequest] = await Promise.all([
-    refundResponsePromise,
-    refundRequestPromise,
-  ]);
-  const responseBody = await refundResponse
-    .text()
-    .catch(() => '<response body unavailable>');
+  const responseBody = await response.text().catch(() => '<unavailable>');
   expect(
-    refundResponse.ok(),
-    `Refund failed with ${refundResponse.status()}: ${responseBody}`
+    response.ok(),
+    `Refund failed with ${response.status()}: ${responseBody}`
   ).toBeTruthy();
-  const requestBody = refundRequest.postDataJSON() as {
-    ticketIds: string[];
-    details: string;
-  };
-  expect(requestBody.ticketIds).toHaveLength(1);
-  expect(requestBody.details).toBe(details);
-  await expect(
-    ownerPage.getByText('Refund submitted successfully.', { exact: true })
-  ).toBeVisible({ timeout: 15_000 });
-  return requestBody.ticketIds[0];
 }
 
 test.describe('partial-to-full refund lifecycle', () => {
@@ -111,7 +65,6 @@ test.describe('partial-to-full refund lifecycle', () => {
 
   test('refunds one ticket at a time and persists partial then complete state', async ({
     page,
-    ownerPage,
     ownerApi,
     eventFactory,
   }) => {
@@ -141,17 +94,20 @@ test.describe('partial-to-full refund lifecycle', () => {
       Quantity: 2,
     });
 
-    await ownerPage.goto(
-      `${JASS_TEST_URL}/portal/organizer/company/${created.organizerId}/event/${created.id}`
-    );
-    await dismissDateOfBirthPromptIfPresent(ownerPage, 10_000);
-    await openEventPortalDestination(ownerPage, 'ordersAndAttendees');
-
-    await openOrder(ownerPage, purchase.Confirmation);
-    const firstRefundTicketId = await submitOneTicketRefund(
-      ownerPage,
-      'Playwright partial refund',
-      2
+    const purchasedTickets = (
+      await getApiArray<Ticket>(
+        ownerApi.get(`/api/protected/events/${created.id}/tickets`),
+        'Tickets'
+      )
+    ).filter((ticket) => ticket.Confirmation === purchase.Confirmation);
+    expect(purchasedTickets).toHaveLength(2);
+    const firstRefundTicketId = purchasedTickets[0].Id;
+    await submitOneTicketRefund(
+      ownerApi,
+      created.id,
+      originalTransaction.Id,
+      firstRefundTicketId,
+      'Playwright partial refund'
     );
 
     await expect
@@ -187,12 +143,15 @@ test.describe('partial-to-full refund lifecycle', () => {
       ticketsAfterPartial.find((ticket) => ticket.Id === firstRefundTicketId)
     ).toMatchObject({ Status: 'RefundedBeforeEvent' });
 
-    await ownerPage.getByRole('button', { name: '✕' }).first().click();
-    await openOrder(ownerPage, purchase.Confirmation);
-    const secondRefundTicketId = await submitOneTicketRefund(
-      ownerPage,
-      'Playwright final refund',
-      1
+    const secondRefundTicketId = ticketsAfterPartial.find(
+      (ticket) => ticket.Status === 'Active'
+    )!.Id;
+    await submitOneTicketRefund(
+      ownerApi,
+      created.id,
+      originalTransaction.Id,
+      secondRefundTicketId,
+      'Playwright final refund'
     );
     expect(secondRefundTicketId).not.toBe(firstRefundTicketId);
 

@@ -871,7 +871,7 @@ export async function editEventAdditionalDetails(organizerPage: Page) {
   await expect(checkoutSheet).toBeVisible();
   const uniqueAdditionalDetails = `${EVENT_NEW_ADDITIONAL_DETAILS} ${Date.now()}`;
   await checkoutSheet
-    .locator('#edit-post-checkout')
+    .locator('#studio-post-checkout')
     .fill(uniqueAdditionalDetails);
   await checkoutSheet
     .getByRole('button', { name: 'Done', exact: true })
@@ -905,7 +905,7 @@ export async function editEventAdditionalDetails(organizerPage: Page) {
   // Reopen both sheets to verify the saved values through the redesigned UX.
   await checkoutAndEmails.click();
   checkoutSheet = visibleStudioSheet(organizerPage, 'Checkout & emails');
-  await expect(checkoutSheet.locator('#edit-post-checkout')).toHaveValue(
+  await expect(checkoutSheet.locator('#studio-post-checkout')).toContainText(
     uniqueAdditionalDetails
   );
   await checkoutSheet

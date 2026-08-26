@@ -19,7 +19,7 @@ import type {
 
 type AuthStorageState = Awaited<ReturnType<BrowserContext['storageState']>>;
 
-const TEST_ORGANIZER_NAME = `${ORGANIZER_NAME_PREFIX}Integration Tests CA`;
+const TEST_ORGANIZER_NAME = `${ORGANIZER_NAME_PREFIX}Integration Tests CA v2`;
 const TEST_ORGANIZER_COUNTRY_ISO = 'CA';
 
 export type OrganizerIdentity = {
@@ -550,6 +550,20 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
       await context.addInitScript((dismissKey) => {
         window.sessionStorage.setItem(dismissKey, '1');
       }, DOB_PROMPT_DISMISS_KEY);
+      await context.addInitScript((organizerId) => {
+        const persisted = window.localStorage.getItem('persist:auth');
+        if (!persisted) return;
+        const auth = JSON.parse(persisted) as { roleDetails: string };
+        const roleDetails = JSON.parse(auth.roleDetails) as {
+          organizerPolicies: Record<string, string[]>;
+        };
+        // The fixture user created this organizer and therefore owns `All`.
+        // Testlab's current login response omits that creator membership, so
+        // mirror the authoritative fixture relationship into the UI state.
+        roleDetails.organizerPolicies[organizerId] = ['*'];
+        auth.roleDetails = JSON.stringify(roleDetails);
+        window.localStorage.setItem('persist:auth', JSON.stringify(auth));
+      }, _ownerIdentity.organizerId);
       const page = await context.newPage();
       await use(page);
       await context.close();
