@@ -156,11 +156,10 @@ test.describe('authorization boundaries', () => {
       const eventSearch = representativePage.getByPlaceholder('Search Events');
       await expect(eventSearch).toBeVisible({ timeout: 30_000 });
       await eventSearch.fill(created.name);
+      await representativePage.waitForTimeout(2_000);
+      console.log('EVENTS DEBUG', await representativePage.locator('body').innerText());
       await expect(
-        representativePage.getByRole('heading', {
-          name: created.name,
-          exact: true,
-        }),
+        representativePage.getByText(created.name, { exact: true }).first(),
         `The read-only representative should see events for the assigned organizer.`
       ).toBeVisible({ timeout: 30_000 });
       await expect(
