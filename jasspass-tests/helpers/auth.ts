@@ -129,11 +129,6 @@ export async function signIn(
     undefined,
     { timeout: 30_000 }
   );
-  // The login component persists Redux immediately before replacing `/`.
-  // Let that document navigation and the destination hydration settle before
-  // forcing a protected destination, or the destination can observe the
-  // pre-hydration `loggedIn=false` state.
-  await page.waitForTimeout(300);
   if (!new URL(page.url()).pathname.startsWith('/portal/')) {
     await page.goto(`${baseURL}/portal/home`, {
       waitUntil: 'domcontentloaded',
@@ -156,16 +151,9 @@ export async function signIn(
   const targetUrl = `${baseURL}${targetPath}`;
   const currentUrl = new URL(page.url());
   if (`${currentUrl.pathname}${currentUrl.search}` !== targetPath) {
-    // Keep this as a client-side App Router transition. A document reload of
-    // protected organizer routes can run their mount-time auth guard before
-    // redux-persist rehydrates, which makes the UI log out a valid session.
-    await page.evaluate((path) => {
-      const appRouter = (window as Window & {
-        next?: { router?: { push: (href: string) => void } };
-      }).next?.router;
-      if (!appRouter) throw new Error('Next.js App Router is unavailable.');
-      appRouter.push(path);
-    }, targetPath);
+    // Use a real document navigation. Protected routes must survive direct
+    // entry and refresh; a client-side transition would hide rehydration bugs.
+    await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
     await page.waitForURL(targetUrl, { timeout: 30_000 });
   }
   try {
