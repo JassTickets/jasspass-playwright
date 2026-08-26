@@ -61,7 +61,7 @@ export async function signIn(
     baseURL = JASS_TEST_URL,
     email = PLAYWRIGHT_BOT_EMAIL,
     password = PLAYWRIGHT_BOT_PASSWORD,
-    targetPath = '/portal/organizer',
+    targetPath = '/portal/home',
   } = {}
 ) {
   await gotoSignIn(page, baseURL + '/signin');
@@ -102,7 +102,14 @@ export async function signIn(
   );
   await page.getByRole('button', { name: 'Sign in' }).click();
   const loginResponse = await loginResponsePromise;
-  expect(loginResponse.ok()).toBeTruthy();
+  if (!loginResponse.ok()) {
+    const loginResponseBody = await loginResponse
+      .text()
+      .catch(() => '<response body unavailable>');
+    throw new Error(
+      `Login failed with ${loginResponse.status()} ${loginResponse.statusText()}: ${loginResponseBody}`
+    );
+  }
 
   await page.waitForURL((url) => !url.pathname.includes('/signin'), {
     timeout: 30000,
@@ -124,8 +131,19 @@ export async function signIn(
   await expectSignedInPortal(page);
 
   const targetUrl = `${baseURL}${targetPath}`;
-  if (page.url() !== targetUrl) {
-    await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
+  const currentUrl = new URL(page.url());
+  if (`${currentUrl.pathname}${currentUrl.search}` !== targetPath) {
+    // Keep this as a client-side App Router transition. A document reload of
+    // protected organizer routes can run their mount-time auth guard before
+    // redux-persist rehydrates, which makes the UI log out a valid session.
+    await page.evaluate((path) => {
+      const appRouter = (window as Window & {
+        next?: { router?: { push: (href: string) => void } };
+      }).next?.router;
+      if (!appRouter) throw new Error('Next.js App Router is unavailable.');
+      appRouter.push(path);
+    }, targetPath);
+    await page.waitForURL(targetUrl, { timeout: 30_000 });
   }
   await expectSignedInPortal(page);
   await dismissDateOfBirthPromptIfPresent(page);
