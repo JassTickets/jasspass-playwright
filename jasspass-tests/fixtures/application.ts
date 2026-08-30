@@ -10,7 +10,7 @@ import {
   ORGANIZER_NAME_PREFIX,
   PLAYWRIGHT_BOT_STRIPE_CONNECT_ID,
 } from '../constants';
-import { DOB_PROMPT_DISMISS_KEY, signIn } from '../helpers/auth';
+import { installDateOfBirthPromptHandler, signIn } from '../helpers/auth';
 import { createAndPublishSeatingMap } from '../helpers/seatingHelpers';
 import type {
   SeatingMapDefinition,
@@ -547,24 +547,8 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
       const context = await browser.newContext({
         storageState: ownerStorageState,
       });
-      await context.addInitScript((dismissKey) => {
-        window.sessionStorage.setItem(dismissKey, '1');
-      }, DOB_PROMPT_DISMISS_KEY);
-      await context.addInitScript((organizerId) => {
-        const persisted = window.localStorage.getItem('persist:auth');
-        if (!persisted) return;
-        const auth = JSON.parse(persisted) as { roleDetails: string };
-        const roleDetails = JSON.parse(auth.roleDetails) as {
-          organizerPolicies: Record<string, string[]>;
-        };
-        // The fixture user created this organizer and therefore owns `All`.
-        // Testlab's current login response omits that creator membership, so
-        // mirror the authoritative fixture relationship into the UI state.
-        roleDetails.organizerPolicies[organizerId] = ['*'];
-        auth.roleDetails = JSON.stringify(roleDetails);
-        window.localStorage.setItem('persist:auth', JSON.stringify(auth));
-      }, _ownerIdentity.organizerId);
       const page = await context.newPage();
+      await installDateOfBirthPromptHandler(page);
       await use(page);
       await context.close();
     },

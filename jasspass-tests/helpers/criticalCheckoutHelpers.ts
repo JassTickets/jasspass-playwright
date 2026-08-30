@@ -304,9 +304,16 @@ export async function submitPurchase(
     purchaseResponse.ok(),
     `Purchase failed with ${purchaseResponse.status()}: ${responseBody}`
   ).toBeTruthy();
-  await page.waitForURL(/\/payment\/success\/event\/[^/]+\/[^/?]+(?:\?|$)/, {
-    timeout: 45_000,
-  });
+  try {
+    await page.waitForURL(
+      /\/payment\/success\/event\/[^/]+\/[^/?]+(?:\?|$)/,
+      { timeout: 45_000 }
+    );
+  } catch {
+    throw new Error(
+      `Purchase succeeded but the UI did not navigate to confirmation. Current URL: ${page.url()}`
+    );
+  }
   const confirmation = new URL(page.url()).pathname.split('/').pop() ?? '';
   expect(
     confirmation,

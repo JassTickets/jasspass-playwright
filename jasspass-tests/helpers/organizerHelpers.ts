@@ -72,6 +72,9 @@ export async function setStripeTestAccount(
       `Assign Stripe test account failed with ${stripeConnectResponse.status()}: ${body}`
     );
   }
+  // Refresh organizer/payment-method state so finance surfaces can request the
+  // newly assigned Stripe dashboard link immediately.
+  await page.reload({ waitUntil: 'domcontentloaded' });
   return true;
 }
 
@@ -142,9 +145,7 @@ export async function createOrganizer(
 
   await page.locator('#org-contact-email:visible').first().fill(email);
   await page
-    .locator(
-      '#studio-estimated-revenue:visible, #estimatedMonthlyRevenue:visible'
-    )
+    .locator('#studio-estimated-revenue:visible, #estimatedMonthlyRevenue:visible')
     .selectOption('under_5k');
   await page
     .locator('#studio-event-frequency:visible, #eventFrequency:visible')
@@ -190,22 +191,6 @@ export async function createOrganizer(
   await expect(page).toHaveURL(new RegExp(`${organizerPath}(?:\\?|$)`), {
     timeout: 30_000,
   });
-
-  // The create sheet grants the creator full access in Redux, but its
-  // persistence can race the immediate organizer navigation/reload used by
-  // these legacy flows. Ensure the persisted state contains the entitlement
-  // that the successful create response just established.
-  await page.evaluate((createdOrganizerId) => {
-    const persisted = window.localStorage.getItem('persist:auth');
-    if (!persisted) return;
-    const auth = JSON.parse(persisted) as { roleDetails: string };
-    const roleDetails = JSON.parse(auth.roleDetails) as {
-      organizerPolicies: Record<string, string[]>;
-    };
-    roleDetails.organizerPolicies[createdOrganizerId] = ['*'];
-    auth.roleDetails = JSON.stringify(roleDetails);
-    window.localStorage.setItem('persist:auth', JSON.stringify(auth));
-  }, organizerId);
 
   // Change the Stripe Connect ID to point to the onboarded Playwright bot's Stripe Connect ID.
   // The manual Stripe-Connect-ID form is a debug-only affordance rendered only when

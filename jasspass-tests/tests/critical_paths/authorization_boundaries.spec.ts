@@ -298,13 +298,21 @@ test.describe('authorization boundaries', () => {
       ).not.toContain(ownerIdentity.organizerId);
 
       const assignedEvents = await getApiArray<OperatorEventSummary>(
-        operatorPage.request.get('/api/protected/operator/events'),
+        operatorPage.request.get(
+          `/api/protected/operator/events?search=${encodeURIComponent(allowedEvent.name)}`
+        ),
         'Events'
       );
       expect(assignedEvents.map((event) => event.Id)).toContain(
         allowedEvent.id
       );
-      expect(assignedEvents.map((event) => event.Id)).not.toContain(
+      const isolatedEvents = await getApiArray<OperatorEventSummary>(
+        operatorPage.request.get(
+          `/api/protected/operator/events?search=${encodeURIComponent(isolatedEvent.name)}`
+        ),
+        'Events'
+      );
+      expect(isolatedEvents.map((event) => event.Id)).not.toContain(
         isolatedEvent.id
       );
 
@@ -341,8 +349,11 @@ test.describe('authorization boundaries', () => {
       ).toBeVisible({ timeout: 30_000 });
       await openEventPortalDestination(operatorPage, 'ordersAndAttendees');
       await expect(
-        operatorPage.getByRole('heading', { name: 'Access Restricted' })
+        operatorPage.getByRole('button', { name: 'Attendees', exact: true })
       ).toBeVisible({ timeout: 30_000 });
+      await expect(
+        operatorPage.getByRole('button', { name: 'Orders', exact: true })
+      ).toBeVisible();
 
       await openEventPortalDestination(operatorPage, 'ticketTypes');
       await expect(

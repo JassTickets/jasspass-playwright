@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
-  createOrganizer,
+  selectFirstOrganizer,
   addPromoCode,
   editPromoCode,
   deletePromoCode,
@@ -13,7 +13,8 @@ test.setTimeout(60_000);
 test('managePromoCodes', async ({ page }) => {
   console.log('[INFO] Executing Manage Promo Codes test...');
 
-  await createOrganizer(page);
+  // Sign in and select first organizer
+  await selectFirstOrganizer(page);
 
   // Add a new promo code
   const promoCode = await addPromoCode(page);

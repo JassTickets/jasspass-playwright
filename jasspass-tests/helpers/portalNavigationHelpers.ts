@@ -108,36 +108,24 @@ async function openGroupedLeaf(
   groupName: string,
   leafName: string
 ): Promise<Locator> {
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const leaf = visibleButton(page, leafName);
-    if (await leaf.isVisible().catch(() => false)) {
-      try {
-        // EventPortalSidebar can remount while its permission-backed data
-        // settles. Bound the click so a detached leaf is re-resolved here
-        // instead of consuming the entire test timeout.
-        await leaf.evaluate((button: HTMLButtonElement) => button.click());
-        return leaf;
-      } catch {
-        continue;
-      }
-    }
-
+  const leaf = visibleButton(page, leafName);
+  if (!(await leaf.isVisible().catch(() => false))) {
     const group = visibleButton(page, groupName);
     await expect(group).toBeVisible({ timeout: 30_000 });
-    try {
-      await group.evaluate((button: HTMLButtonElement) => button.click());
-      await visibleButton(page, leafName)
-        .waitFor({ state: 'visible', timeout: 5_000 })
-        .catch(() => undefined);
-    } catch {
-      // Re-resolve both controls on the next attempt after a sidebar remount.
+    if ((await group.getAttribute('aria-expanded')) !== 'true') {
+      await group.click();
     }
   }
 
-  const leaf = visibleButton(page, leafName);
   await expect(leaf).toBeVisible({ timeout: 30_000 });
-  await leaf.evaluate((button: HTMLButtonElement) => button.click());
-  return leaf;
+  await leaf.click();
+  const activeLeaf = visibleButton(page, leafName);
+  await expect(activeLeaf).toHaveCSS(
+    'border-left-color',
+    'rgb(255, 225, 103)',
+    { timeout: 30_000 }
+  );
+  return activeLeaf;
 }
 
 export async function openEventPortalDestination(
@@ -154,58 +142,24 @@ export async function openOrganizerSurface(
   section?: OrganizerSection
 ): Promise<Locator> {
   const destination = ORGANIZER_SURFACES[surface];
-  let leaf = visibleButton(page, destination.leaf);
-  const leafOrGroup = destination.group
-    ? visibleButton(page, destination.group)
-    : leaf;
+  const leaf = destination.group
+    ? await openGroupedLeaf(page, destination.group, destination.leaf)
+    : visibleButton(page, destination.leaf);
 
-  if (await leafOrGroup.isVisible({ timeout: 5_000 }).catch(() => false)) {
-    leaf = destination.group
-      ? await openGroupedLeaf(page, destination.group, destination.leaf)
-      : leaf;
-
-    if (!destination.group) {
-      await leaf.click();
-    }
+  if (!destination.group) {
+    await expect(leaf).toBeVisible({ timeout: 30_000 });
+    await leaf.click();
   }
 
-  await page
-    .waitForURL((url) => url.searchParams.get('tab') === surface, {
-      timeout: 5_000,
-    })
-    .catch(async () => {
-      const url = new URL(page.url());
-      url.searchParams.set('tab', surface);
-      const target = `${url.pathname}${url.search}`;
-      await page.evaluate((path) => {
-        const appRouter = (window as Window & {
-          next?: { router?: { push: (href: string) => void } };
-        }).next?.router;
-        if (!appRouter) throw new Error('Next.js App Router is unavailable.');
-        appRouter.push(path);
-      }, target);
-      await page.waitForURL(url.toString(), { timeout: 30_000 });
-    });
   await expect(page).toHaveURL(
-    (url) => url.searchParams.get('tab') === surface
+    (url) => url.searchParams.get('tab') === surface,
+    { timeout: 30_000 }
   );
 
   if (section) {
     const sectionTab = visibleTab(page, ORGANIZER_SECTIONS[section]);
-    if (await sectionTab.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await sectionTab.click();
-    } else {
-      const url = new URL(page.url());
-      url.searchParams.set('section', section);
-      const target = `${url.pathname}${url.search}`;
-      await page.evaluate((path) => {
-        const appRouter = (window as Window & {
-          next?: { router?: { push: (href: string) => void } };
-        }).next?.router;
-        if (!appRouter) throw new Error('Next.js App Router is unavailable.');
-        appRouter.push(path);
-      }, target);
-    }
+    await expect(sectionTab).toBeVisible({ timeout: 30_000 });
+    await sectionTab.click();
     await expect(page).toHaveURL(
       (url) => url.searchParams.get('section') === section,
       { timeout: 30_000 }

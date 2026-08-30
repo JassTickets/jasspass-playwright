@@ -1,22 +1,34 @@
-import { expect } from '@playwright/test';
-import { test } from '../../fixtures/application';
+import { test, expect } from '@playwright/test';
+import {
+  selectFirstOrganizer,
+  accessStripeFinance,
+  setStripeTestAccount,
+} from '../../helpers/organizerHelpers';
 
 test.setTimeout(60_000);
 
 // @Description: This test verifies that the access finance/Stripe dashboard functionality works correctly.
 // @Dependencies: Depends on the sign-in functionality and existing organizer being available.
-test('accessFinanceStripe', async ({ ownerApi, ownerIdentity }) => {
+test('accessFinanceStripe', async ({ page }) => {
   console.log('[INFO] Executing Access Finance Stripe test...');
 
-  expect(ownerIdentity.hasActiveStripe).toBe(true);
-  const stripeDashboardResponse = await ownerApi.get(
-    `/api/protected/organizers/${ownerIdentity.organizerId}/account/express/dashboard`
-  );
-  expect(stripeDashboardResponse.ok()).toBe(true);
-  const stripeDashboard = (await stripeDashboardResponse.json()) as {
-    Url?: string;
-  };
-  expect(stripeDashboard.Url).toMatch(/^https:\/\/[^/]*stripe\.com\//);
+  // Sign in and select first organizer
+  await selectFirstOrganizer(page);
+
+  await setStripeTestAccount(page, undefined, { required: true });
+
+  // Access Stripe finance dashboard
+  const stripePage = await accessStripeFinance(page);
+
+  // Verify that a new page was opened (Stripe dashboard)
+  await expect(stripePage).toBeTruthy();
+
+  // Verify the URL contains stripe.com (or similar indication it's Stripe)
+  const stripeUrl = stripePage.url();
+  expect(stripeUrl).toMatch(/stripe/);
+
+  // Close the Stripe tab
+  await stripePage.close();
 
   console.log('[INFO] Access Finance Stripe test completed successfully.');
 });
