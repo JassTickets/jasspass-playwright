@@ -59,32 +59,28 @@ async function refundSeat(
   await expect(ticketChoice).toHaveCount(1);
   const ticketCheckbox = ticketChoice.locator('input[type="checkbox"]');
   await expect(ticketCheckbox).toBeEnabled();
-  await expect(async () => {
-    if (!(await ticketCheckbox.isChecked())) await ticketCheckbox.check();
-    await expect(ticketCheckbox).toBeChecked();
-  }).toPass({ timeout: 15_000 });
+  await ticketCheckbox.check();
+  await expect(ticketCheckbox).toBeChecked();
   await ownerPage.locator('#refund-details').fill(details);
 
-  const responsePromise = ownerPage.waitForResponse(
-    (response) =>
-      response.request().method() === 'POST' &&
-      response.url().includes('/api/protected/refunds'),
-    { timeout: 45_000 }
-  );
-  const requestPromise = ownerPage.waitForRequest(
-    (request) =>
-      request.method() === 'POST' &&
-      request.url().includes('/api/protected/refunds')
-  );
   const submitRefund = ownerPage.getByRole('button', {
     name: 'Submit Refund',
     exact: true,
   });
   await expect(submitRefund).toBeEnabled({ timeout: 15_000 });
-  await submitRefund.click();
   const [response, request] = await Promise.all([
-    responsePromise,
-    requestPromise,
+    ownerPage.waitForResponse(
+      (candidate) =>
+        candidate.request().method() === 'POST' &&
+        candidate.url().includes('/api/protected/refunds'),
+      { timeout: 45_000 }
+    ),
+    ownerPage.waitForRequest(
+      (candidate) =>
+        candidate.method() === 'POST' &&
+        candidate.url().includes('/api/protected/refunds')
+    ),
+    submitRefund.click(),
   ]);
   const responseText = await response
     .text()
