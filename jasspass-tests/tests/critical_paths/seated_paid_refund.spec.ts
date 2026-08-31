@@ -59,8 +59,10 @@ async function refundSeat(
   await expect(ticketChoice).toHaveCount(1);
   const ticketCheckbox = ticketChoice.locator('input[type="checkbox"]');
   await expect(ticketCheckbox).toBeEnabled();
-  await ticketCheckbox.check();
-  await expect(ticketCheckbox).toBeChecked();
+  await expect(async () => {
+    if (!(await ticketCheckbox.isChecked())) await ticketCheckbox.check();
+    await expect(ticketCheckbox).toBeChecked();
+  }).toPass({ timeout: 15_000 });
   await ownerPage.locator('#refund-details').fill(details);
 
   const submitRefund = ownerPage.getByRole('button', {
