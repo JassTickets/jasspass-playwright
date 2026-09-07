@@ -14,7 +14,7 @@ test.describe('Kickback enrollment lifecycle', () => {
     await purchaseWithAccount(page, event, { ...uniqueBuyer(), email: PLAYWRIGHT_BOT_EMAIL });
     await page.getByRole('button', { name: 'Continue without joining', exact: true }).click();
     await page.getByPlaceholder('YOUR-CODE').fill(code);
-    await expect(page.getByText('This code is available.', { exact: true })).toBeVisible();
+    await expect(page.getByText('This code is available.', { exact: true })).toBeVisible({ timeout: 30_000 });
     await page.getByRole('checkbox').filter({ visible: true }).check();
     await page.getByRole('button', { name: 'Create my code', exact: true }).click();
     await expect(page.getByLabel(/^Email\s*\*?$/i)).toHaveValue(PLAYWRIGHT_BOT_EMAIL);

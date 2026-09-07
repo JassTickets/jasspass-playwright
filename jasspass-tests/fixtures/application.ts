@@ -543,8 +543,17 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
         baseURL: JASS_TEST_URL,
         storageState: ownerStorageState,
       });
-      await use(api);
-      await api.dispose();
+      try {
+        await use(api);
+      } finally {
+        try {
+          // Organizer provisioning refreshes authorization and invalidates the old
+          // token. Reuse the updated cookies in the next test's owner contexts.
+          ownerStorageState.cookies = (await api.storageState()).cookies;
+        } finally {
+          await api.dispose();
+        }
+      }
     },
 
     ownerPage: async (

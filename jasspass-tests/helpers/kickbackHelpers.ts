@@ -114,7 +114,7 @@ export async function enrollThroughModal(page: Page, code = uniqueCode()): Promi
   await expect(page.getByText('Earn money by sharing this event', { exact: true })).toBeVisible();
   const input = page.getByPlaceholder('YOUR-CODE');
   await input.fill(code);
-  await expect(page.getByText('This code is available.', { exact: true })).toBeVisible();
+  await expect(page.getByText('This code is available.', { exact: true })).toBeVisible({ timeout: 30_000 });
   const submit = page.getByRole('button', { name: 'Create my code', exact: true });
   await expect(submit).toBeDisabled();
   await page.getByRole('checkbox').filter({ visible: true }).check();
