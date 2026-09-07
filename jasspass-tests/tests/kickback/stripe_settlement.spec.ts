@@ -3,9 +3,9 @@ import { test, expect } from '../../fixtures/kickback';
 import { type CreatedEvent } from '../../fixtures/application';
 import { createMatrixOrganizer, stripeAccountIdFor, type MatrixCountry, type MatrixCurrency } from '../../helpers/countryCurrencyMatrixHelpers';
 import { getApiArray } from '../../helpers/criticalCheckoutHelpers';
-import { dismissDateOfBirthPromptIfPresent } from '../../helpers/auth';
+import { dismissDateOfBirthPromptIfPresent, installDateOfBirthPromptHandler } from '../../helpers/auth';
 import { assertBrowserIdentity, json, ownProfile, promoterPath, purchase, uniqueBuyer, uniqueCode,
-  waitForAccount, type KickbackTransaction, type OrderTicket, type Promotion } from '../../helpers/kickbackHelpers';
+  purchaseWithAccount, type KickbackTransaction, type OrderTicket, type Promotion } from '../../helpers/kickbackHelpers';
 import { JASS_TEST_URL } from '../../constants';
 
 type LedgerPayment = {
@@ -45,9 +45,11 @@ for (const accountCountry of ['US', 'CA', 'ES'] as const) {
       expect(probe.status(), 'Deploy the Kickback testlab fixture API and UI proxy before running settlement tests').toBe(200);
       expect(await probe.json()).toEqual({ Available: true });
 
+      // This user makes multiple purchases after sign-in; handle the optional global DOB prompt.
+      await installDateOfBirthPromptHandler(page);
       const buyer = uniqueBuyer(`Settlement${accountCountry}`);
       const bootstrap = await kickbackEvent({ isFreeEvent: true, tickets: [{ type: 'Fixture account', price: 0 }] });
-      await Promise.all([waitForAccount(page), purchase(page, bootstrap, buyer, { free: true })]);
+      await purchaseWithAccount(page, bootstrap, buyer, { free: true });
       const profile = await assertBrowserIdentity(page, buyer.email);
       const path = promoterPath(profile.Id);
       expect(await json(await page.request.get(`${path}/account/onboarded`), 'Read fresh account'))

@@ -2,7 +2,7 @@ import { type APIRequestContext, type Page } from '@playwright/test';
 import { test as kickback, expect } from '../../fixtures/kickback';
 import { type CreatedEvent } from '../../fixtures/application';
 import { getApiArray } from '../../helpers/criticalCheckoutHelpers';
-import { json, ownProfile, promoterPath, purchase, uniqueBuyer, uniqueCode, waitForAccount,
+import { json, ownProfile, promoterPath, uniqueBuyer, uniqueCode, purchaseWithAccount,
   type BuyerProfile, type OrderTicket, type Promotion } from '../../helpers/kickbackHelpers';
 
 type BuyerFixture = { page: Page; event: CreatedEvent; profile: BuyerProfile; confirmation: string; path: string };
@@ -11,7 +11,7 @@ const test = kickback.extend<{ ticketPrice: number; buyer: BuyerFixture }>({
   buyer: async ({ page, kickbackEvent, ownerApi, ticketPrice }, use) => {
     const event = await kickbackEvent({ isFreeEvent: ticketPrice === 0,
       tickets: [{ type: 'API contract admission', price: ticketPrice }] });
-    const [, order] = await Promise.all([waitForAccount(page), purchase(page, event, uniqueBuyer('Api'), { free: ticketPrice === 0 })]);
+    const [, order] = await purchaseWithAccount(page, event, uniqueBuyer('Api'), { free: ticketPrice === 0 });
     const profile = await ownProfile(page.request);
     await expect.poll(async () => {
       const tickets = await getApiArray<OrderTicket>(ownerApi.get(`/api/protected/events/${event.id}/tickets`), 'Tickets');

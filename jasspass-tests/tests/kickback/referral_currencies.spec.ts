@@ -1,6 +1,6 @@
 import { test, expect } from '../../fixtures/kickback';
 import { assertBrowserIdentity, closeProfilePrompt, enrollThroughModal, json, promoterPath,
-  purchase, uniqueBuyer, uniqueCode, waitForAccount, type Promotion, type KickbackTransaction, type OrderTicket } from '../../helpers/kickbackHelpers';
+  purchase, uniqueBuyer, uniqueCode, purchaseWithAccount, type Promotion, type KickbackTransaction, type OrderTicket } from '../../helpers/kickbackHelpers';
 import { createMatrixOrganizer, stripeAccountIdFor, type MatrixCountry, type MatrixCurrency } from '../../helpers/countryCurrencyMatrixHelpers';
 import { getApiArray } from '../../helpers/criticalCheckoutHelpers';
 import { dismissDateOfBirthPromptIfPresent } from '../../helpers/auth';
@@ -23,7 +23,7 @@ test('[MC-01 MC-02 CM-01 RF-01 NT-08] one real promoter earns USD, CAD and EUR w
     const event = await kickbackEvent({ organizer, eventCountryIso: country, currencyIso: currency });
     let promotion: Promotion;
     if (!profile) {
-      await Promise.all([waitForAccount(page), purchase(page, event, buyer)]);
+      await purchaseWithAccount(page, event, buyer);
       profile = await assertBrowserIdentity(page, buyer.email);
       await closeProfilePrompt(page); promotion = await enrollThroughModal(page);
       await page.getByRole('button', { name: 'Done', exact: true }).click();

@@ -1,5 +1,5 @@
 import { test, expect } from '../../fixtures/kickback';
-import { assertBrowserIdentity, closeProfilePrompt, json, ownProfile, promoterPath, purchase, uniqueBuyer, waitForAccount } from '../../helpers/kickbackHelpers';
+import { assertBrowserIdentity, closeProfilePrompt, json, ownProfile, promoterPath, purchase, uniqueBuyer, purchaseWithAccount } from '../../helpers/kickbackHelpers';
 import { JASS_TEST_URL, PLAYWRIGHT_BOT_EMAIL } from '../../constants';
 import { getApiArray } from '../../helpers/criticalCheckoutHelpers';
 import type { OrderTicket } from '../../helpers/kickbackHelpers';
@@ -22,7 +22,7 @@ test.describe('Checkout session boundaries', () => {
 
   test('[AC-10] forwarded individual ticket never bootstraps the purchaser account', async ({ page, browser, ownerApi, kickbackEvent }) => {
     const event = await kickbackEvent({ isFreeEvent: true, tickets: [{ type: 'Free admission', price: 0 }] });
-    const [_, order] = await Promise.all([waitForAccount(page), purchase(page, event, uniqueBuyer('Forwarded'), { free: true })]);
+    const [_, order] = await purchaseWithAccount(page, event, uniqueBuyer('Forwarded'), { free: true });
     const tickets = await getApiArray<OrderTicket>(ownerApi.get(`/api/protected/events/${event.id}/tickets`), 'Tickets');
     const ticket = tickets.find(t => t.Confirmation === order.Confirmation)!;
     expect(ticket).toBeDefined();
@@ -39,7 +39,7 @@ test.describe('Checkout session boundaries', () => {
 
   test('[PV-05] changing the proxy URL user ID cannot change the authenticated promoter identity', async ({ page, ownerIdentity, kickbackEvent }) => {
     const event = await kickbackEvent({ isFreeEvent: true, tickets: [{ type: 'Free admission', price: 0 }] });
-    await Promise.all([waitForAccount(page), purchase(page, event, uniqueBuyer('ProxyScope'), { free: true })]);
+    await purchaseWithAccount(page, event, uniqueBuyer('ProxyScope'), { free: true });
     const user = await ownProfile(page.request);
     expect(user.Id).not.toBe(ownerIdentity.userId);
     const own = await json(await page.request.get(promoterPath(user.Id, '/profile')), 'Own promoter profile');

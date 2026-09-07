@@ -4878,7 +4878,7 @@
       "manual withdrawal of old wallet",
       "refund and recovery"
     ],
-    "executionStatus": "blocked: testlab fixture endpoint not deployed",
+    "executionStatus": "US account completed automatic transfers and wallet withdrawals in USD/CAD/EUR; refund reconciliation failed. CA/ES accounts not rerun after DOB fix. See kickback-results.json.",
     "excludedFromThisFixture": "Actual Stripe-hosted onboarding and incomplete-account states"
   }
 }

@@ -1,6 +1,6 @@
 {
   "recordedAt": "2026-09-07",
-  "status": "incomplete-with-confirmed-regressions-and-deployment-blockers",
+  "status": "ci-failed-product-regressions-and-test-harness-issues",
   "sourceCommits": {
     "api": "d88499856dc5c0a9133d450c2ec60b9ca3bf3cb7",
     "ui": "6bf50c6012eb9bffc3068c6a9101c904001c1d34"
@@ -9,41 +9,19 @@
   "testlabUrl": "https://testlab-env191.jasspass.com",
   "browser": {
     "totalDistinctTests": 73,
-    "passed": 68,
-    "failed": 5,
-    "skipped": 0,
-    "completedSingleRun": false,
-    "evidenceType": "Latest outcomes combined from the initial 70-test run and a 6-test correction/deployment-check run. Not a single 73-test pass.",
-    "runs": [
-      {
-        "report": ".kickback/testlab-results.json",
-        "total": 70,
-        "passed": 65,
-        "failed": 5,
-        "durationSeconds": 860
-      },
-      {
-        "report": ".kickback/testlab-corrections.json",
-        "total": 6,
-        "passed": 3,
-        "failed": 3,
-        "durationSeconds": 63
-      }
-    ],
-    "failureClassification": {
-      "productRegressions": 2,
-      "missingTestlabFixtureDeployment": 3
+    "completedSingleRun": true,
+    "evidenceType": "Two completed GitHub Actions runs; see ciRuns for separate results.",
+    "latestUiRun": {
+      "passed": 68,
+      "failed": 5,
+      "skipped": 0
     },
-    "productRegressions": [
-      "Refunded USD/CAD/EUR sales retain wallet commission after real checkout.",
-      "Foreign promoter payment-history access returns HTTP 500 instead of 403."
-    ],
-    "testCorrectionsVerified": [
-      "Organizer discount-code list intentionally excludes buyer-promotion codes.",
-      "Hiding an already-hidden event returns HTTP 304 and completes cleanup.",
-      "A valid currency with no promoter profile returns HTTP 404; malformed currency returns HTTP 400."
-    ],
-    "limits": "16 portal cases control promoter API responses; checkout resilience cases inject selected response failures. New settlement lifecycles stop at missing endpoint preflight and have not exercised transfers. Real Google OAuth and Stripe-hosted onboarding remain unverified."
+    "latestApiRun": {
+      "passed": 66,
+      "failed": 7,
+      "skipped": 0
+    },
+    "limits": "16 portal cases control API responses. Settlement tests reached deployed fixtures but timed out on the DOB prompt before account attachment or payouts. Checkout account timeouts include the time spent buying the ticket."
   },
   "stripeFixture": {
     "implementation": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
@@ -59,11 +37,13 @@
     },
     "requiredCountryCurrencyTuples": 9,
     "implementedLifecycleTests": 3,
-    "executedLifecycleTests": 0,
-    "preflight": "All three cases receive HTTP 404; deploy API controller and UI proxy. No paid fixture created by these cases.",
+    "executedLifecycleTests": 1,
+    "preflight": "Both CI jobs passed the deployment check. Three lifecycle cases per run were blocked by the global date-of-birth modal at the first paid qualifying purchase.",
     "usesExistingOrganizerAccountIds": true,
     "additionalPromoterCredentialsRequired": false,
-    "noMockedPayouts": true
+    "noMockedPayouts": true,
+    "executionNote": "Focused US-account rerun completed three automatic transfers and three wallet withdrawals in USD/CAD/EUR, then failed only refund reconciliation. CA/ES account lifecycles have not been rerun after the DOB correction.",
+    "passedLifecycleTests": 0
   },
   "fixtureUnitTests": {
     "backend": {
@@ -88,9 +68,9 @@
   },
   "ciConfiguration": {
     "workingTreeWired": true,
-    "pushedOrDeployed": false,
-    "allSpecFilesDiscovered": 54,
-    "projectTestInstances": 456,
+    "pushedOrDeployed": true,
+    "allSpecFilesDiscovered": 56,
+    "projectTestInstances": 462,
     "projects": [
       "chromium",
       "firefox",
@@ -230,8 +210,199 @@
       "failure": "Live USD/CAD/EUR referral checkout and wallet assertions passed; refund teardown left 90 available commission cents per currency after all tickets were refunded.",
       "limits": "16 portal cases use controlled promoter API responses. Real Stripe promoter onboarding/transfers/withdrawals and real Google OAuth are untested."
     },
-    "note": "The local backend harness was retired and removed from the deliverable. Its 206 cases and 54 financial tuples are not current CI coverage."
+    "note": "The local backend harness was retired and removed from the deliverable. Its 206 cases and 54 financial tuples are not current CI coverage.",
+    "beforeFixtureDeploymentBrowser": {
+      "totalDistinctTests": 73,
+      "passed": 68,
+      "failed": 5,
+      "skipped": 0,
+      "completedSingleRun": false,
+      "evidenceType": "Latest outcomes combined from the initial 70-test run and a 6-test correction/deployment-check run. Not a single 73-test pass.",
+      "runs": [
+        {
+          "report": ".kickback/testlab-results.json",
+          "total": 70,
+          "passed": 65,
+          "failed": 5,
+          "durationSeconds": 860
+        },
+        {
+          "report": ".kickback/testlab-corrections.json",
+          "total": 6,
+          "passed": 3,
+          "failed": 3,
+          "durationSeconds": 63
+        }
+      ],
+      "failureClassification": {
+        "productRegressions": 2,
+        "missingTestlabFixtureDeployment": 3
+      },
+      "productRegressions": [
+        "Refunded USD/CAD/EUR sales retain wallet commission after real checkout.",
+        "Foreign promoter payment-history access returns HTTP 500 instead of 403."
+      ],
+      "testCorrectionsVerified": [
+        "Organizer discount-code list intentionally excludes buyer-promotion codes.",
+        "Hiding an already-hidden event returns HTTP 304 and completes cleanup.",
+        "A valid currency with no promoter profile returns HTTP 404; malformed currency returns HTTP 400."
+      ],
+      "limits": "16 portal cases control promoter API responses; checkout resilience cases inject selected response failures. New settlement lifecycles stop at missing endpoint preflight and have not exercised transfers. Real Google OAuth and Stripe-hosted onboarding remain unverified."
+    }
   },
   "findingsReport": "docs/kickback-bugs.md",
-  "refundEvidence": "docs/kickback-refund-evidence.json"
+  "refundEvidence": "docs/kickback-refund-evidence.json",
+  "ciRuns": [
+    {
+      "repository": "jasstickets-ui",
+      "attempt": 2,
+      "jobUrl": "https://github.com/JassTickets/jasstickets-ui/actions/runs/34145198214/job/101841518083",
+      "passed": 68,
+      "failed": 5,
+      "skipped": 0,
+      "durationMinutes": 29.6,
+      "failures": {
+        "knownProductBugs": 2,
+        "settlementDobPrompt": 3
+      }
+    },
+    {
+      "repository": "jasstickets-api",
+      "attempt": 2,
+      "jobUrl": "https://github.com/JassTickets/jasstickets-api/actions/runs/34145209359/job/101841581343",
+      "passed": 66,
+      "failed": 7,
+      "skipped": 0,
+      "durationMinutes": 26.2,
+      "failures": {
+        "knownProductBugs": 2,
+        "settlementDobPrompt": 3,
+        "accountWaitStartedBeforePurchase": 2
+      }
+    }
+  ],
+  "ciSourceCommit": "8e708561e5017c9c3196aa1ce4b31f5fc194ea68",
+  "testHarnessCorrections": {
+    "status": "verified in focused testlab rerun: both checkout cases passed; US settlement completed payouts and failed only refund cleanup",
+    "changes": [
+      "Register the existing DOB prompt handler before the settlement buyer makes multiple purchases.",
+      "Capture account responses before purchase, but start the 60-second account deadline after purchase completion."
+    ]
+  },
+  "focusedVerification": {
+    "report": ".kickback/ci-followup-results.json",
+    "status": "completed",
+    "promoterAccountCountry": "US",
+    "transfers": [
+      {
+        "WalletPayoutRequestedAtUtc": null,
+        "EventId": "6a9f197ccc4b0e30f1caae14",
+        "TransactionId": "6a9f19bbcc4b0e30f1caae71",
+        "AmountCents": 90,
+        "CurrencyIso": "USD",
+        "SettlementMode": "AutomaticProviderPayout",
+        "AutomaticPayoutStatus": "Paid",
+        "PspReferenceId": "tr_1UD8q9BqNcDUS8X3cm3Z9ser",
+        "Id": "6a9f19bdcc4b0e30f1caae78"
+      },
+      {
+        "WalletPayoutRequestedAtUtc": "2026-09-07T20:08:58.29Z",
+        "EventId": "6a9f197ccc4b0e30f1caae14",
+        "TransactionId": "6a9f198ccc4b0e30f1caae23",
+        "AmountCents": 90,
+        "CurrencyIso": "USD",
+        "SettlementMode": "AutomaticProviderPayout",
+        "AutomaticPayoutStatus": "Paid",
+        "PspReferenceId": "tr_1UD8sVBqNcDUS8X3yfOvcQ1x",
+        "Id": "6a9f198fcc4b0e30f1caae2b"
+      },
+      {
+        "WalletPayoutRequestedAtUtc": null,
+        "EventId": "6a9f1992cc4b0e30f1caae34",
+        "TransactionId": "6a9f19c6cc4b0e30f1caae7a",
+        "AmountCents": 90,
+        "CurrencyIso": "CAD",
+        "SettlementMode": "AutomaticProviderPayout",
+        "AutomaticPayoutStatus": "Paid",
+        "PspReferenceId": "tr_1UD8qKBqNcDUS8X3CGiV1dPL",
+        "Id": "6a9f19c8cc4b0e30f1caae81"
+      },
+      {
+        "WalletPayoutRequestedAtUtc": "2026-09-07T20:11:01.409Z",
+        "EventId": "6a9f1992cc4b0e30f1caae34",
+        "TransactionId": "6a9f199dcc4b0e30f1caae42",
+        "AmountCents": 90,
+        "CurrencyIso": "CAD",
+        "SettlementMode": "AutomaticProviderPayout",
+        "AutomaticPayoutStatus": "Paid",
+        "PspReferenceId": "tr_1UD8uRBqNcDUS8X3wHpSnCH2",
+        "Id": "6a9f199fcc4b0e30f1caae49"
+      },
+      {
+        "WalletPayoutRequestedAtUtc": null,
+        "EventId": "6a9f19a2cc4b0e30f1caae51",
+        "TransactionId": "6a9f19cecc4b0e30f1caae83",
+        "AmountCents": 90,
+        "CurrencyIso": "EUR",
+        "SettlementMode": "AutomaticProviderPayout",
+        "AutomaticPayoutStatus": "Paid",
+        "PspReferenceId": "tr_1UD8qTBqNcDUS8X36QX0REoK",
+        "Id": "6a9f19d0cc4b0e30f1caae8a"
+      },
+      {
+        "WalletPayoutRequestedAtUtc": "2026-09-07T20:13:01.109Z",
+        "EventId": "6a9f19a2cc4b0e30f1caae51",
+        "TransactionId": "6a9f19adcc4b0e30f1caae5f",
+        "AmountCents": 90,
+        "CurrencyIso": "EUR",
+        "SettlementMode": "AutomaticProviderPayout",
+        "AutomaticPayoutStatus": "Paid",
+        "PspReferenceId": "tr_1UD8wNBqNcDUS8X33Wtw14UC",
+        "Id": "6a9f19afcc4b0e30f1caae66"
+      }
+    ],
+    "passed": 2,
+    "failed": 1,
+    "skipped": 0,
+    "durationSeconds": 701.6,
+    "checkoutCases": {
+      "invalidCodeHELLO": "passed",
+      "hiddenEventEligibility": "passed"
+    },
+    "settlement": {
+      "testStatus": "failed",
+      "accountCountry": "US",
+      "automaticTransfers": 3,
+      "walletWithdrawals": 3,
+      "currencies": [
+        "USD",
+        "CAD",
+        "EUR"
+      ],
+      "failure": "Only financial fixture teardown failed: successful ticket refunds did not reverse commissions for any of the three events.",
+      "notRerun": [
+        "CA account lifecycle",
+        "ES account lifecycle",
+        "full 73-test suite"
+      ]
+    }
+  },
+  "productFixes": {
+    "refundTicketAllocations": {
+      "status": "implemented locally; deployment and live verification pending",
+      "backendTests": {
+        "passed": 474,
+        "failed": 0,
+        "skipped": 0,
+        "report": "/private/tmp/kickback-refund-fix/verified.trx"
+      },
+      "regressionBeforeFix": {
+        "failed": 6,
+        "report": "/private/tmp/kickback-refund-fix/before.trx"
+      },
+      "newAllocationCases": 6,
+      "refundMatrixCases": 18,
+      "limits": "Service tests use fake repositories/providers. Existing affected data is not repaired. Refund-before-ledger race is separate and unresolved."
+    }
+  }
 }

@@ -1,10 +1,10 @@
 import { test, expect } from '../../fixtures/kickback';
 import {
   assertBrowserIdentity, closeProfilePrompt, enrollThroughModal, json, promoterPath,
-  purchase, revisitConfirmation, uniqueBuyer, waitForAccount, type Promotion,
+  uniqueBuyer, purchaseWithAccount, type Promotion,
 } from '../../helpers/kickbackHelpers';
 import { getApiArray } from '../../helpers/criticalCheckoutHelpers';
-import { JASS_TEST_URL, PLAYWRIGHT_BOT_EMAIL, PLAYWRIGHT_BOT_PASSWORD } from '../../constants';
+import { PLAYWRIGHT_BOT_EMAIL, PLAYWRIGHT_BOT_PASSWORD } from '../../constants';
 
 test.describe('Kickback checkout identity', () => {
   test.setTimeout(240_000);
@@ -12,7 +12,7 @@ test.describe('Kickback checkout identity', () => {
   test('[AC-01 AC-05 AC-14 AC-16 KB-01 KB-04] new guest becomes the ticket owner and enrolls once', async ({ page, kickbackEvent, ownerApi }) => {
     const event = await kickbackEvent();
     const buyer = uniqueBuyer();
-    const [account, order] = await Promise.all([waitForAccount(page), purchase(page, event, buyer)]);
+    const [account, order] = await purchaseWithAccount(page, event, buyer);
     expect(account.Status).toBe('Created');
     const profile = await assertBrowserIdentity(page, buyer.email);
     await closeProfilePrompt(page);
@@ -36,7 +36,7 @@ test.describe('Kickback checkout identity', () => {
   test('[AC-02 AC-18] existing guest keeps an anonymous session until matching password sign-in', async ({ page, kickbackEvent }) => {
     const event = await kickbackEvent();
     const buyer = { ...uniqueBuyer('Existing'), email: PLAYWRIGHT_BOT_EMAIL };
-    const [account] = await Promise.all([waitForAccount(page), purchase(page, event, buyer)]);
+    const [account] = await purchaseWithAccount(page, event, buyer);
     expect(account).toMatchObject({ Status: 'ExistingAccount', Email: buyer.email });
     expect(account.LoginData).toBeFalsy();
     expect((await page.request.get('/api/protected/profile/me')).ok()).toBe(false);
@@ -59,7 +59,7 @@ test.describe('Kickback checkout identity', () => {
   test('[AC-12 KB-03] zero-total guest gets an account but no paid-ticket promotion eligibility', async ({ page, kickbackEvent }) => {
     const event = await kickbackEvent({ isFreeEvent: true, tickets: [{ type: 'Free admission', price: 0 }] });
     const buyer = uniqueBuyer('Free');
-    const [account, order] = await Promise.all([waitForAccount(page), purchase(page, event, buyer, { free: true })]);
+    const [account, order] = await purchaseWithAccount(page, event, buyer, { free: true });
     expect(account.Status).toBe('Created');
     const profile = await assertBrowserIdentity(page, buyer.email);
     const eligibility = await json<{ Status: string; CanEnroll: boolean }>(await page.request.get(

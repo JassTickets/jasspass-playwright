@@ -1,7 +1,7 @@
 import { test, expect } from '../../fixtures/kickback';
 import {
-  assertBrowserIdentity, closeProfilePrompt, enrollThroughModal, json, ownProfile, promoterPath,
-  purchase, uniqueBuyer, uniqueCode, waitForAccount, type Promotion,
+  assertBrowserIdentity, closeProfilePrompt, enrollThroughModal, json, promoterPath,
+  uniqueBuyer, uniqueCode, purchaseWithAccount, type Promotion,
 } from '../../helpers/kickbackHelpers';
 import { JASS_TEST_URL, PLAYWRIGHT_BOT_EMAIL, PLAYWRIGHT_BOT_PASSWORD } from '../../constants';
 import { dismissDateOfBirthPromptIfPresent } from '../../helpers/auth';
@@ -11,7 +11,7 @@ test.describe('Kickback enrollment lifecycle', () => {
 
   test('[KB-11 KB-15] submitted guest code resumes after password authentication', async ({ page, kickbackEvent }) => {
     const event = await kickbackEvent(); const code = uniqueCode();
-    await Promise.all([waitForAccount(page), purchase(page, event, { ...uniqueBuyer(), email: PLAYWRIGHT_BOT_EMAIL })]);
+    await purchaseWithAccount(page, event, { ...uniqueBuyer(), email: PLAYWRIGHT_BOT_EMAIL });
     await page.getByRole('button', { name: 'Continue without joining', exact: true }).click();
     await page.getByPlaceholder('YOUR-CODE').fill(code);
     await expect(page.getByText('This code is available.', { exact: true })).toBeVisible();
@@ -35,7 +35,7 @@ test.describe('Kickback enrollment lifecycle', () => {
   test('[KB-18 KB-16 OR-04 PV-08] sharing, My Tickets deep link, revoke and reactivate preserve the same personal code', async ({ page, kickbackEvent, ownerApi, context }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     const event = await kickbackEvent(); const buyer = uniqueBuyer('Sharing');
-    await Promise.all([waitForAccount(page), purchase(page, event, buyer)]);
+    await purchaseWithAccount(page, event, buyer);
     const profile = await assertBrowserIdentity(page, buyer.email);
     await closeProfilePrompt(page); const promotion = await enrollThroughModal(page);
     await page.getByRole('button', { name: 'Copy promo code', exact: true }).click();
@@ -60,7 +60,7 @@ test.describe('Kickback enrollment lifecycle', () => {
 
   test('[ST-01 ST-05 ST-17] promoter and organizer expose the same countries and selecting one does not convert balances', async ({ page, kickbackEvent, ownerApi }) => {
     const event = await kickbackEvent(); const buyer = uniqueBuyer('Country');
-    await Promise.all([waitForAccount(page), purchase(page, event, buyer)]);
+    await purchaseWithAccount(page, event, buyer);
     const profile = await assertBrowserIdentity(page, buyer.email);
     await closeProfilePrompt(page); await enrollThroughModal(page);
     await page.getByRole('button', { name: 'Done', exact: true }).click();

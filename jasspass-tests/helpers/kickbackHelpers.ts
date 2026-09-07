@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { expect, type APIRequestContext, type APIResponse, type Page } from '@playwright/test';
+import { expect, type APIRequestContext, type APIResponse, type Page, type Response } from '@playwright/test';
 import { JASS_TEST_URL } from '../constants';
 import type { CreatedEvent } from '../fixtures/application';
 import {
@@ -74,15 +74,41 @@ export async function purchase(
   if (!free) return submitStripeCheckout(page);
   return submitPurchase(page, 'RSVP');
 }
+
+export async function purchaseWithAccount(
+  page: Page, event: CreatedEvent, buyer: Buyer, options?: Parameters<typeof purchase>[3],
+): Promise<[AccountResult, { Confirmation: string }]> {
+  let accountResponse: Response | undefined;
+  const capture = (response: Response) => {
+    if (isAccountResponse(response)) accountResponse ??= response;
+  };
+  // Capture early responses, but give account fulfillment its own timeout AFTER checkout.
+  // Starting a 60-second response wait before navigation/payment also times the purchase.
+  page.on('response', capture);
+  try {
+    const order = await purchase(page, event, buyer, options);
+    await expect.poll(() => Boolean(accountResponse), {
+      message: 'Account bootstrap should respond after the purchase completes',
+      timeout: 60_000, intervals: [100, 250, 500],
+    }).toBe(true);
+    return [await readAccountResponse(accountResponse!), order];
+  } finally { page.off('response', capture); }
+}
+
+function isAccountResponse(response: Response): boolean {
+  return response.request().method() === 'POST'
+    && new URL(response.url()).pathname === '/api/public/auth/post-checkout/account';
+}
+
+async function readAccountResponse(response: Response): Promise<AccountResult> {
+  expect(response.ok(), `Account bootstrap: HTTP ${response.status()}`).toBeTruthy();
+  const result = await response.json() as AccountResult;
+  expect(result.LoginData && 'Token' in result.LoginData).not.toBe(true);
+  return result;
+}
+
 export function waitForAccount(page: Page): Promise<AccountResult> {
-  return page.waitForResponse(r => r.request().method() === 'POST'
-    && new URL(r.url()).pathname === '/api/public/auth/post-checkout/account', { timeout: 60_000 })
-    .then(async response => {
-      expect(response.ok(), `Account bootstrap: HTTP ${response.status()}`).toBeTruthy();
-      const result = await response.json() as AccountResult;
-      expect(result.LoginData && 'Token' in result.LoginData).not.toBe(true);
-      return result;
-    });
+  return page.waitForResponse(isAccountResponse, { timeout: 60_000 }).then(readAccountResponse);
 }
 export async function enrollThroughModal(page: Page, code = uniqueCode()): Promise<Promotion> {
   await expect(page.getByText('Earn money by sharing this event', { exact: true })).toBeVisible();

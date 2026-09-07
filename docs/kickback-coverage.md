@@ -4,7 +4,7 @@ Recorded 2026-09-07. **This is an implementation index, not a full-coverage clai
 
 144 matrix rows; 66 with current Playwright references; 78 without. Retired local backend references have been moved to `historicalLocalTestReferences` in the JSON matrix and do not count as CI coverage.
 
-See [execution results](kickback-results.json), [test instructions](kickback-testing.md), and [findings](kickback-bugs.md). The three settlement tests are implemented but blocked until their API/UI fixture routes are deployed to testlab.
+See [execution results](kickback-results.json), [test instructions](kickback-testing.md), and [findings](kickback-bugs.md). The fixture routes are deployed. Both CI runs attempted all three settlement tests but the date-of-birth modal blocked checkout; the test handler is corrected locally. The focused US-account rerun completed automatic transfers and wallet withdrawals in all three currencies, then failed only refund reconciliation. CA/ES account cases have not been rerun since the correction.
 
 ## Rows without current Playwright references
 

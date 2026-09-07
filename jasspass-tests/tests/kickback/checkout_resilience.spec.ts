@@ -1,6 +1,6 @@
 import { test, expect } from '../../fixtures/kickback';
 import {
-  assertBrowserIdentity, closeProfilePrompt, json, promoterPath, purchase, uniqueBuyer, waitForAccount,
+  assertBrowserIdentity, purchase, uniqueBuyer, purchaseWithAccount, waitForAccount,
 } from '../../helpers/kickbackHelpers';
 import { PLAYWRIGHT_BOT_EMAIL } from '../../constants';
 
@@ -48,7 +48,7 @@ test.describe('Checkout account recovery', () => {
   test('[AC-09 KB-15] declining sign-in leaves tickets accessible and does not enroll', async ({ page, kickbackEvent }) => {
     const event = await kickbackEvent();
     const buyer = { ...uniqueBuyer('Decline'), email: PLAYWRIGHT_BOT_EMAIL };
-    await Promise.all([waitForAccount(page), purchase(page, event, buyer)]);
+    await purchaseWithAccount(page, event, buyer);
     await page.getByRole('button', { name: 'Continue without joining', exact: true }).click();
     await expect(page.getByText('Earn money by sharing this event', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Not now', exact: true }).click();
