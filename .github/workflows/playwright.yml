@@ -1,5 +1,6 @@
 name: Playwright Tests
 on:
+  workflow_dispatch:
   push:
     branches: [main, master]
   pull_request:
@@ -9,6 +10,8 @@ jobs:
     name: ${{ matrix.suite.name }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    env:
+      JASS_TEST_URL: https://testlab-env191.jasspass.com
     strategy:
       fail-fast: false
       matrix:
@@ -22,20 +25,28 @@ jobs:
           - name: Seating Integ Tests
             project_args: --project=seating-integration
             browsers: chromium
+          - name: Kickback Tests
+            project_args: --project=kickback
+            browsers: chromium
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
       - name: Install dependencies
-        run: npm install -g yarn && yarn
+        run: npm install -g yarn && yarn install --frozen-lockfile
+      - name: Type-check Kickback tests
+        if: matrix.suite.name == 'Kickback Tests'
+        run: yarn test:kickback:typecheck
       - name: Install Playwright Browsers
         run: yarn playwright install --with-deps ${{ matrix.suite.browsers }}
       - name: Run Playwright tests
-        run: yarn playwright test ${{ matrix.suite.project_args }} --reporter=line,github
+        run: yarn playwright test ${{ matrix.suite.project_args }} --reporter=line,github,html
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: playwright-report-${{ matrix.suite.name }}
-          path: playwright-report/
+          path: |
+            playwright-report/
+            test-results/
           retention-days: 30

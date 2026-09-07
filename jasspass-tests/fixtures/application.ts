@@ -111,6 +111,10 @@ export type CreateEventOptions = {
   strictTicketIdentification?: boolean;
   customCheckoutItems?: CustomCheckoutItemInput[];
   postCheckoutMessage?: string;
+  buyerPromotionSettings?: {
+    IsEnabled: boolean;
+    Fee: { Percentage: number; FixedAmount: number };
+  };
   cleanup?: boolean;
 };
 
@@ -280,6 +284,9 @@ function buildEventPayload(
     emailLanguage: 'English',
     organizerFeeLabel: 'Processing Fees',
     strictTicketIdentification: options.strictTicketIdentification ?? false,
+    ...(options.buyerPromotionSettings
+      ? { buyerPromotionSettings: options.buyerPromotionSettings }
+      : {}),
     ...(!isFreeEvent ? { eventPaymentMethods: ['Stripe'] } : {}),
     startDateTimeUtc: startsAt.toISOString(),
     endDateTimeUtc: endsAt.toISOString(),

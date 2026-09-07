@@ -1,0 +1,170 @@
+[
+  {
+    "eventId": "6a9ebeca9666a3532b9292a6",
+    "organizerId": "6a9ebec89666a3532b9292a0",
+    "transactions": [
+      {
+        "id": "6a9ebed69666a3532b9292b4",
+        "status": "CompletelyRefunded",
+        "currency": "EUR",
+        "net": 90,
+        "processing": "Completed"
+      },
+      {
+        "id": "6a9ebecf9666a3532b9292a9",
+        "status": "CompletelyRefunded",
+        "currency": "EUR",
+        "net": 0,
+        "processing": "NotApplicable"
+      }
+    ],
+    "tickets": [
+      {
+        "id": "6a9ebed89666a3532b9292b6",
+        "transactionId": "6a9ebed69666a3532b9292b4",
+        "status": "RefundedBeforeEvent"
+      },
+      {
+        "id": "6a9ebed19666a3532b9292ac",
+        "transactionId": "6a9ebecf9666a3532b9292a9",
+        "status": "RefundedBeforeEvent"
+      }
+    ],
+    "stats": [
+      {
+        "promoterId": "6a9ebeb39666a3532b929275",
+        "currency": "EUR",
+        "total": 90,
+        "settlement": {
+          "GrossCommissionCents": 100,
+          "PlatformFeeCents": 10,
+          "OriginalNetCommissionCents": 90,
+          "ReversedNetCommissionCents": 0,
+          "NetCommissionCents": 90,
+          "AutomaticNetCommissionCents": 0,
+          "WalletNetCommissionCents": 90,
+          "WalletAvailableNetCommissionCents": 90,
+          "AutomaticPaidNetCommissionCents": 0,
+          "AutomaticPendingNetCommissionCents": 0,
+          "AutomaticFailedNetCommissionCents": 0,
+          "PayoutRecoveryOutstandingCents": 0,
+          "PayoutRecoveryFailedCount": 0,
+          "AutomaticCommissionCount": 0,
+          "WalletCommissionCount": 1
+        }
+      }
+    ]
+  },
+  {
+    "eventId": "6a9ebeba9666a3532b929289",
+    "organizerId": "6a9ebeb99666a3532b929283",
+    "transactions": [
+      {
+        "id": "6a9ebec49666a3532b929297",
+        "status": "CompletelyRefunded",
+        "currency": "CAD",
+        "net": 90,
+        "processing": "Completed"
+      },
+      {
+        "id": "6a9ebebf9666a3532b92928c",
+        "status": "CompletelyRefunded",
+        "currency": "CAD",
+        "net": 0,
+        "processing": "NotApplicable"
+      }
+    ],
+    "tickets": [
+      {
+        "id": "6a9ebec69666a3532b929299",
+        "transactionId": "6a9ebec49666a3532b929297",
+        "status": "RefundedBeforeEvent"
+      },
+      {
+        "id": "6a9ebec19666a3532b92928f",
+        "transactionId": "6a9ebebf9666a3532b92928c",
+        "status": "RefundedBeforeEvent"
+      }
+    ],
+    "stats": [
+      {
+        "promoterId": "6a9ebeb39666a3532b929275",
+        "currency": "CAD",
+        "total": 90,
+        "settlement": {
+          "GrossCommissionCents": 100,
+          "PlatformFeeCents": 10,
+          "OriginalNetCommissionCents": 90,
+          "ReversedNetCommissionCents": 0,
+          "NetCommissionCents": 90,
+          "AutomaticNetCommissionCents": 0,
+          "WalletNetCommissionCents": 90,
+          "WalletAvailableNetCommissionCents": 90,
+          "AutomaticPaidNetCommissionCents": 0,
+          "AutomaticPendingNetCommissionCents": 0,
+          "AutomaticFailedNetCommissionCents": 0,
+          "PayoutRecoveryOutstandingCents": 0,
+          "PayoutRecoveryFailedCount": 0,
+          "AutomaticCommissionCount": 0,
+          "WalletCommissionCount": 1
+        }
+      }
+    ]
+  },
+  {
+    "eventId": "6a9ebea99666a3532b929268",
+    "organizerId": "6a9ebea79666a3532b929262",
+    "transactions": [
+      {
+        "id": "6a9ebeb79666a3532b929278",
+        "status": "CompletelyRefunded",
+        "currency": "USD",
+        "net": 90,
+        "processing": "Completed"
+      },
+      {
+        "id": "6a9ebeae9666a3532b92926b",
+        "status": "CompletelyRefunded",
+        "currency": "USD",
+        "net": 0,
+        "processing": "NotApplicable"
+      }
+    ],
+    "tickets": [
+      {
+        "id": "6a9ebeb89666a3532b92927a",
+        "transactionId": "6a9ebeb79666a3532b929278",
+        "status": "RefundedBeforeEvent"
+      },
+      {
+        "id": "6a9ebeb09666a3532b92926d",
+        "transactionId": "6a9ebeae9666a3532b92926b",
+        "status": "RefundedBeforeEvent"
+      }
+    ],
+    "stats": [
+      {
+        "promoterId": "6a9ebeb39666a3532b929275",
+        "currency": "USD",
+        "total": 90,
+        "settlement": {
+          "GrossCommissionCents": 100,
+          "PlatformFeeCents": 10,
+          "OriginalNetCommissionCents": 90,
+          "ReversedNetCommissionCents": 0,
+          "NetCommissionCents": 90,
+          "AutomaticNetCommissionCents": 0,
+          "WalletNetCommissionCents": 90,
+          "WalletAvailableNetCommissionCents": 90,
+          "AutomaticPaidNetCommissionCents": 0,
+          "AutomaticPendingNetCommissionCents": 0,
+          "AutomaticFailedNetCommissionCents": 0,
+          "PayoutRecoveryOutstandingCents": 0,
+          "PayoutRecoveryFailedCount": 0,
+          "AutomaticCommissionCount": 0,
+          "WalletCommissionCount": 1
+        }
+      }
+    ]
+  }
+]

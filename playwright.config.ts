@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { JASS_TEST_URL } from './jasspass-tests/constants';
 
 const countryCurrencyMatrixTest =
   '**/critical_paths/country_currency_matrix.spec.ts';
@@ -17,6 +18,7 @@ const seatingIntegrationTests = [
   '**/event_portal/seated_event_management.spec.ts',
 ];
 const isolatedIntegrationTests = [
+  '**/kickback/**/*.spec.ts',
   countryCurrencyMatrixTest,
   ...seatingIntegrationTests,
 ];
@@ -46,8 +48,7 @@ export default defineConfig({
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    // baseURL: 'http://127.0.0.1:3000',
+    baseURL: JASS_TEST_URL,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -55,6 +56,18 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
+    {
+      name: 'kickback',
+      testMatch: '**/kickback/**/*.spec.ts',
+      retries: 0,
+      use: {
+        ...devices['Desktop Chrome'],
+        actionTimeout: 20_000,
+        navigationTimeout: 45_000,
+        trace: 'retain-on-failure',
+        screenshot: 'only-on-failure',
+      },
+    },
     {
       name: 'chromium',
       testIgnore: isolatedIntegrationTests,

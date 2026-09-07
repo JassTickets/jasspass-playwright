@@ -1,0 +1,4884 @@
+{
+  "schemaVersion": 1,
+  "studiedAt": "2026-09-07",
+  "scope": "Testlab Playwright scenario definitions and current implementation references. Retired local backend tests are historical evidence only, excluded from current coverage and CI.",
+  "sourceCommits": {
+    "ui": "6bf50c6012eb9bffc3068c6a9101c904001c1d34",
+    "api": "d88499856dc5c0a9133d450c2ec60b9ca3bf3cb7",
+    "playwright": "dd3ae6a"
+  },
+  "legend": {
+    "P0": "Release-critical money, identity, ownership, or core behavior",
+    "P1": "Required regression coverage",
+    "P2": "Secondary UX coverage",
+    "B": "Playwright browser plus authoritative API assertions",
+    "I": "Integration through deployed testlab APIs and workers; fault cases require restricted testlab controls where indicated",
+    "S": "Real Stripe test-mode contract plus app ledger where applicable",
+    "U": "Unit/component parameterization"
+  },
+  "sources": {
+    "account": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/PostCheckoutAccountService.cs",
+      "line": 43
+    },
+    "session": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/AuthService.cs",
+      "line": 209
+    },
+    "completion": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/TransactionsService.cs",
+      "line": 520
+    },
+    "confirmation": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/components/common/OrderConfirmationComponent.tsx",
+      "line": 297
+    },
+    "account_proxy": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(server)/api/public/auth/post-checkout/account/route.ts",
+      "line": 1
+    },
+    "account_flow": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/utils/postCheckoutAccountFlow.ts",
+      "line": 97
+    },
+    "signin": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/components/common/PostCheckoutModals/SignInModal.tsx",
+      "line": 158
+    },
+    "google": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/components/common/Auth/SignInComponent.tsx",
+      "line": 88
+    },
+    "google_proxy": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(server)/api/public/auth/google/route.ts",
+      "line": 35
+    },
+    "profile": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/components/common/PostCheckoutModals/AddImageAndSocialsModal.tsx",
+      "line": 89
+    },
+    "enroll": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/BuyerPromotionService.cs",
+      "line": 117
+    },
+    "eligibility": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/BuyerPromotionService.cs",
+      "line": 462
+    },
+    "code": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/utils/buyerPromotionCode.ts",
+      "line": 1
+    },
+    "modal": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/components/common/PostCheckoutModals/BuyerPromotionModal.tsx",
+      "line": 110
+    },
+    "resume": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/utils/buyerPromotionAutoResume.ts",
+      "line": 1
+    },
+    "mytickets": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/components/portal-components/user-portal/MyTicketsPage.tsx",
+      "line": 147
+    },
+    "settings": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/EventsService.cs",
+      "line": 2842
+    },
+    "legacy_create": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/components/portal-components/event-portal/sub-components/create-event/CreateEvent.tsx",
+      "line": 168
+    },
+    "studio_edit": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/components/studio/event-canvas/EditEventCanvas.tsx",
+      "line": 779
+    },
+    "organizer_controls": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/components/portal-components/event-portal/main-components/EventPromotersComponent.tsx",
+      "line": 417
+    },
+    "attribution": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/PaymentsService.cs",
+      "line": 1135
+    },
+    "pricing": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/PaymentsService.cs",
+      "line": 1751
+    },
+    "settlement": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/PromoterSettlementService.cs",
+      "line": 18
+    },
+    "processing": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/CommissionProcessingService.cs",
+      "line": 199
+    },
+    "payout_claim": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/PromoterPaymentsService.cs",
+      "line": 981
+    },
+    "countries": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/StripeOnboardingCountryPolicy.cs",
+      "line": 7
+    },
+    "country_repo": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Repositories/StripeOnboardingCountryRepository.cs",
+      "line": 23
+    },
+    "onboarding": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/EventPromotersService.cs",
+      "line": 344
+    },
+    "readiness": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/StripeConnectAccountStatusService.cs",
+      "line": 20
+    },
+    "organizer_country": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/OrganizersService.cs",
+      "line": 1184
+    },
+    "selector": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/components/common/StripeOnboardingCountrySelect.tsx",
+      "line": 15
+    },
+    "onboarding_ui": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/components/portal-components/promoter-portal/PromoterOnboardingCountryModal.tsx",
+      "line": 21
+    },
+    "navigation": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/utils/promoterPayoutNavigation.ts",
+      "line": 13
+    },
+    "stripe": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/StripePromoterPayoutProviderService.cs",
+      "line": 115
+    },
+    "wallet": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/PromoterWalletService.cs",
+      "line": 25
+    },
+    "wallet_ui": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/components/portal-components/promoter-portal/PromoterWalletCard.tsx",
+      "line": 35
+    },
+    "wallet_refresh": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/utils/promoterWallet.ts",
+      "line": 6
+    },
+    "wallet_proxy": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(server)/api/protected/users/[id]/promoter/wallet/payouts/route.ts",
+      "line": 5
+    },
+    "summary": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Models/ValueObjects/PromoterSettlementSummary.cs",
+      "line": 66
+    },
+    "stats": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/PromoterPaymentsService.cs",
+      "line": 607
+    },
+    "statement": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/PromoterPaymentsService.cs",
+      "line": 842
+    },
+    "event_stats": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/PromoterPaymentsService.cs",
+      "line": 757
+    },
+    "portal": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/components/portal-components/promoter-portal/PromoterPortal.tsx",
+      "line": 142
+    },
+    "reconciliation": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/PromoterCommissionReconciliationService.cs",
+      "line": 20
+    },
+    "transaction_claim": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Repositories/TransactionRepository.cs",
+      "line": 74
+    },
+    "refund": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/RefundsService.cs",
+      "line": 411
+    },
+    "reversal": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/PromoterPaymentsService.cs",
+      "line": 1129
+    },
+    "admin": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/AdminPromoterOperationsService.cs",
+      "line": 106
+    },
+    "permissions": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Controllers/PrivateEventPromotersController.cs",
+      "line": 374
+    },
+    "organizer_permissions": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Controllers/PrivateBuyerPromotionsController.cs",
+      "line": 10
+    },
+    "notifications": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/PromoterNotificationService.cs",
+      "line": 29
+    },
+    "email_preview": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-api/JassTicketsApi/Services/BuyerPromotionEmailOfferBuilder.cs",
+      "line": 17
+    },
+    "modal_preview": {
+      "path": "/Users/christianjaimes/dev/jass/e2e/jasstickets-ui/app/(client)/utils/buyerPromotionPreview.ts",
+      "line": 13
+    }
+  },
+  "groups": [
+    {
+      "prefix": "AC",
+      "name": "Checkout identity and profile sequence",
+      "existingCoverage": "Existing PostCheckoutAccountServiceTests, AuthServiceTests, AuthControllerPostCheckoutAccountTests, postCheckoutAccountFlow.test.ts and account proxy tests; browser sequence and real cookie identity remain to implement.",
+      "caseIds": [
+        "AC-01",
+        "AC-02",
+        "AC-03",
+        "AC-04",
+        "AC-05",
+        "AC-06",
+        "AC-07",
+        "AC-08",
+        "AC-09",
+        "AC-10",
+        "AC-11",
+        "AC-12",
+        "AC-13",
+        "AC-14",
+        "AC-15",
+        "AC-16",
+        "AC-17",
+        "AC-18",
+        "AC-19",
+        "AC-20"
+      ]
+    },
+    {
+      "prefix": "KB",
+      "name": "Kickback eligibility, personal codes, and auth continuation",
+      "existingCoverage": "BuyerPromotionServiceTests and buyerPromotion helper tests cover branches; real repository races and full modal/auth sequence are missing.",
+      "caseIds": [
+        "KB-01",
+        "KB-02",
+        "KB-03",
+        "KB-04",
+        "KB-05",
+        "KB-06",
+        "KB-07",
+        "KB-08",
+        "KB-09",
+        "KB-10",
+        "KB-11",
+        "KB-12",
+        "KB-13",
+        "KB-14",
+        "KB-15",
+        "KB-16",
+        "KB-17",
+        "KB-18",
+        "KB-19",
+        "KB-20"
+      ]
+    },
+    {
+      "prefix": "OR",
+      "name": "Organizer controls and lifecycle",
+      "existingCoverage": "EventsServiceTests, BuyerPromotionSettingsTests, BuyerPromotionServiceTests, organizer controller tests; no dedicated Playwright coverage.",
+      "caseIds": [
+        "OR-01",
+        "OR-02",
+        "OR-03",
+        "OR-04",
+        "OR-05",
+        "OR-06",
+        "OR-07",
+        "OR-08",
+        "OR-09",
+        "OR-10"
+      ]
+    },
+    {
+      "prefix": "ST",
+      "name": "Shared onboarding countries and Stripe account lifecycle",
+      "existingCoverage": "StripeOnboardingCountryPolicyTests, repository tests, EventPromotersOnboardingTests, organizer onboarding tests and selector/navigation tests; real UI/provider journey remains.",
+      "caseIds": [
+        "ST-01",
+        "ST-02",
+        "ST-03",
+        "ST-04",
+        "ST-05",
+        "ST-06",
+        "ST-07",
+        "ST-08",
+        "ST-09",
+        "ST-10",
+        "ST-11",
+        "ST-12",
+        "ST-13",
+        "ST-14",
+        "ST-15",
+        "ST-16",
+        "ST-17",
+        "ST-18"
+      ]
+    },
+    {
+      "prefix": "CM",
+      "name": "Attribution and commission arithmetic",
+      "existingCoverage": "PaymentsServiceTests, PromoterSettlementServiceTests, CommissionProcessingServiceTests and ledger tests cover many calculations; endpoint-to-ledger assertions and real funding are missing.",
+      "caseIds": [
+        "CM-01",
+        "CM-02",
+        "CM-03",
+        "CM-04",
+        "CM-05",
+        "CM-06",
+        "CM-07",
+        "CM-08",
+        "CM-09",
+        "CM-10",
+        "CM-11",
+        "CM-12"
+      ]
+    },
+    {
+      "prefix": "WL",
+      "name": "Wallet requests and payout execution",
+      "existingCoverage": "PromoterWalletServiceTests and frontend wallet tests exist; real Mongo claims, worker execution, and browser balances remain to implement.",
+      "caseIds": [
+        "WL-01",
+        "WL-02",
+        "WL-03",
+        "WL-04",
+        "WL-05",
+        "WL-06",
+        "WL-07",
+        "WL-08",
+        "WL-09",
+        "WL-10",
+        "WL-11",
+        "WL-12",
+        "WL-13",
+        "WL-14",
+        "WL-15",
+        "WL-16",
+        "WL-17",
+        "WL-18"
+      ]
+    },
+    {
+      "prefix": "MC",
+      "name": "Mixed settlement, currencies, and geography",
+      "existingCoverage": "Cross-event currency unit tests and the older organizer/currency matrix exist; the single-promoter mixed wallet/automatic lifecycle is not covered.",
+      "caseIds": [
+        "MC-01",
+        "MC-02",
+        "MC-03",
+        "MC-04",
+        "MC-05",
+        "MC-06",
+        "MC-07",
+        "MC-08",
+        "MC-09",
+        "MC-10"
+      ]
+    },
+    {
+      "prefix": "RF",
+      "name": "Refunds, processing failures, and recovery",
+      "existingCoverage": "RefundsServiceTests, PromoterPaymentsServiceFullTests and processor/admin tests cover individual branches; ordered failure/recovery journeys need integration tests.",
+      "caseIds": [
+        "RF-01",
+        "RF-02",
+        "RF-03",
+        "RF-04",
+        "RF-05",
+        "RF-06",
+        "RF-07",
+        "RF-08",
+        "RF-09",
+        "RF-10",
+        "RF-11",
+        "RF-12",
+        "RF-13",
+        "RF-14"
+      ]
+    },
+    {
+      "prefix": "PV",
+      "name": "Portal, permissions, reporting, and UX",
+      "existingCoverage": "PromoterPaymentsServiceFullTests, portal helper/component tests and controller tests exist; complete browser/API authorization and pagination require coverage.",
+      "caseIds": [
+        "PV-01",
+        "PV-02",
+        "PV-03",
+        "PV-04",
+        "PV-05",
+        "PV-06",
+        "PV-07",
+        "PV-08",
+        "PV-09",
+        "PV-10",
+        "PV-11",
+        "PV-12",
+        "PV-13",
+        "PV-14"
+      ]
+    },
+    {
+      "prefix": "NT",
+      "name": "Notifications and asynchronous operational evidence",
+      "existingCoverage": "PromoterNotificationServiceTests, BuyerPromotionEmailOfferBuilderTests and admin tests exist; captured-mail end-to-end assertions remain.",
+      "caseIds": [
+        "NT-01",
+        "NT-02",
+        "NT-03",
+        "NT-04",
+        "NT-05",
+        "NT-06",
+        "NT-07",
+        "NT-08"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "AC-01",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P0",
+      "layer": "B",
+      "name": "New guest account and automatic session",
+      "preconditions": "Unique buyer email; successful paid online order",
+      "action": "Finish purchase and remain on full confirmation",
+      "expected": "One active account; tickets attach by email; session identity matches buyer; token absent from JSON; profile step precedes Kickback",
+      "variants": [
+        "Stripe",
+        "representative non-Stripe online completion where supported"
+      ],
+      "sources": [
+        "account",
+        "completion",
+        "account_proxy",
+        "confirmation"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_identity.spec.ts",
+          "line": 12
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutAccountTests.cs",
+          "line": 10
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-02",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Existing password account as guest",
+      "preconditions": "Active local account with known password; no browser session",
+      "action": "Buy with that email, choose sign-in, authenticate",
+      "expected": "No new account or password email; no auto-session before auth; locked checkout email; correct account afterwards",
+      "variants": [
+        "normalized email case/whitespace",
+        "account created by another checkout"
+      ],
+      "sources": [
+        "account",
+        "signin",
+        "session"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_identity.spec.ts",
+          "line": 36
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutAccountTests.cs",
+          "line": 32
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-03",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Existing Google-only account as guest",
+      "preconditions": "Existing account with null PasswordHash; deterministic OAuth fixture",
+      "action": "Complete purchase and authenticate with matching Google email",
+      "expected": "Existing account retained; no generated replacement password; correct cookie and profile; Kickback resumes",
+      "variants": [
+        "Google email case/whitespace",
+        "account missing country"
+      ],
+      "sources": [
+        "account",
+        "google",
+        "signin"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "coverageNote": "Backend Google-only classification is tested; real browser OAuth and its variants are not.",
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutAccountTests.cs",
+          "line": 107
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-04",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Already authenticated purchaser",
+      "preconditions": "Buyer session loaded and initialized",
+      "action": "Purchase without signing out",
+      "expected": "Session preserved; no guest bootstrap request or duplicate account; own-ticket eligibility evaluated",
+      "variants": [
+        "complete profile",
+        "incomplete profile",
+        "organizer/attendee roles"
+      ],
+      "sources": [
+        "confirmation",
+        "eligibility"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/signed_in_checkout.spec.ts",
+          "line": 10
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-05",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Webhook completes before confirmation loads",
+      "preconditions": "New guest; confirmation browser not yet opened",
+      "action": "Complete transaction server-side, then open confirmation",
+      "expected": "Account and credential email exist before page visit; later session reuses source marker and same user",
+      "variants": [
+        "repeated completion notification",
+        "delayed browser"
+      ],
+      "sources": [
+        "completion",
+        "account"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_identity.spec.ts",
+          "line": 12
+        }
+      ],
+      "coverageNote": "Provisioner and confirmation races are tested. Full signed webhook delivery is not exercised by these tests.",
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutAccountTests.cs",
+          "line": 10
+        },
+        {
+          "path": "integration/Kickback.Tests/CheckoutAccountTests.cs",
+          "line": 91
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-06",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Duplicate account creation race",
+      "preconditions": "Two completion/confirmation requests for same transaction",
+      "action": "Run requests concurrently against real user repository",
+      "expected": "One account and source marker; no inconsistent identity; no duplicate credential email on ordinary retry",
+      "variants": [
+        "same transaction",
+        "two transactions with same new email"
+      ],
+      "sources": [
+        "account",
+        "session"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutAccountTests.cs",
+          "line": 32
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-07",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Account bootstrap transient recovery",
+      "preconditions": "Completed order with tickets; intercept only temporary failures",
+      "action": "Return retryable failures then success",
+      "expected": "Tickets stay visible; bounded retry succeeds; no false existing-account dialog or duplicate profile/promoter offers",
+      "variants": [
+        "404",
+        "408",
+        "409",
+        "425",
+        "429",
+        "500",
+        "network error"
+      ],
+      "sources": [
+        "account_flow",
+        "confirmation"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_resilience.spec.ts",
+          "line": 13
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-08",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Bootstrap exhausted or nonretryable",
+      "preconditions": "Completed order; account endpoint fails",
+      "action": "Exhaust retries or return terminal 400/403, then explicit retry",
+      "expected": "Failure state preserves tickets; account-dependent offers paused; explicit retry can recover without duplicate account",
+      "variants": [
+        "missing session in Created response",
+        "unmount during request"
+      ],
+      "sources": [
+        "account_flow",
+        "confirmation"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_resilience.spec.ts",
+          "line": 31
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-09",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Decline existing-account sign-in",
+      "preconditions": "Existing-account guest order",
+      "action": "Choose Continue without joining",
+      "expected": "Ticket access retained; guest Kickback may appear if locally qualifying; accepting it still requires ownership proof",
+      "variants": [
+        "Kickback enabled",
+        "disabled",
+        "free order"
+      ],
+      "sources": [
+        "confirmation",
+        "signin"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_resilience.spec.ts",
+          "line": 48
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-10",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Forwarded individual ticket URL",
+      "preconditions": "Guest opens single-ticket route",
+      "action": "View ticket and optional signup/sign-in",
+      "expected": "No automatic full-order account bootstrap; no automatic Kickback enrollment; ticket remains accessible",
+      "variants": [
+        "new email",
+        "existing email",
+        "forwarded to different person"
+      ],
+      "sources": [
+        "confirmation",
+        "account_flow"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/signed_in_checkout.spec.ts",
+          "line": 23
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-11",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Provisioning transaction eligibility",
+      "preconditions": "Transaction state and ticket ownership fixtures",
+      "action": "Call account provisioner/HTTP endpoint",
+      "expected": "Only permitted online completed states with active purchaser-email ticket can create account; no mutation otherwise",
+      "variants": [
+        "Complete",
+        "PartiallyRefunded",
+        "Overpaid",
+        "pending",
+        "failed",
+        "completely refunded",
+        "POS",
+        "External",
+        "Complimentary"
+      ],
+      "sources": [
+        "account"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutAccountTests.cs",
+          "line": 48
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-12",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Zero-total online account vs Kickback",
+      "preconditions": "New guest, free or fully discounted online order",
+      "action": "Complete checkout",
+      "expected": "Account creation may succeed; positive-paid-ticket requirement prevents Kickback; no commission",
+      "variants": [
+        "free tier",
+        "100-percent discount",
+        "zero custom price"
+      ],
+      "sources": [
+        "account",
+        "eligibility",
+        "confirmation"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_identity.spec.ts",
+          "line": 59
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutAccountTests.cs",
+          "line": 48
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-13",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Buyer and holder identities",
+      "preconditions": "Multi-ticket order with distinct purchaser/holder emails",
+      "action": "Complete, link accounts, inspect ticket UserIds, request eligibility",
+      "expected": "Only actual owned active paid tickets qualify; purchaser account bootstrap requires purchaser-email active ticket",
+      "variants": [
+        "signed-in buyer for another email",
+        "multiple holders",
+        "transferred ticket",
+        "case normalization"
+      ],
+      "sources": [
+        "account",
+        "eligibility",
+        "completion"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutAccountTests.cs",
+          "line": 75
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-14",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Missing profile fields only",
+      "preconditions": "Authenticated order; fetch current profile",
+      "action": "Open profile prompt, save missing data, continue",
+      "expected": "Existing profile fields preserved; only missing inputs requested; correct profile returned to Redux; Kickback follows once",
+      "variants": [
+        "missing photo",
+        "Instagram",
+        "DOB",
+        "all missing",
+        "none missing"
+      ],
+      "sources": [
+        "profile",
+        "confirmation"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_identity.spec.ts",
+          "line": 12
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-15",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Profile failure and dismissal",
+      "preconditions": "Profile incomplete",
+      "action": "Fail load/save, retry, or dismiss",
+      "expected": "Tickets accessible; no stacked DOB/Kickback dialogs; dismissal releases next step without false saved data",
+      "variants": [
+        "image upload failure",
+        "invalid DOB",
+        "slow profile request"
+      ],
+      "sources": [
+        "profile",
+        "confirmation"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-16",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Session persistence and identity consistency",
+      "preconditions": "Automatically created buyer",
+      "action": "Reload confirmation, visit My Tickets and promoter portal, then sign out",
+      "expected": "Cookie-backed profile and Redux agree; own tickets remain; sign-out clears access; no second account",
+      "variants": [
+        "Chromium",
+        "Firefox",
+        "WebKit"
+      ],
+      "sources": [
+        "account_proxy",
+        "confirmation",
+        "session"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_identity.spec.ts",
+          "line": 12
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutAccountTests.cs",
+          "line": 10
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-17",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Credential delivery failure boundary",
+      "preconditions": "New user signup inserts but subsequent work or session issue fails",
+      "action": "Fault post-insert work/session creation; retry",
+      "expected": "Existing account recoverable; temporary-password send is attempted before session failure; no phantom account rollback",
+      "variants": [
+        "ticket-attach failure",
+        "session failure",
+        "email provider failure recorded"
+      ],
+      "sources": [
+        "account",
+        "completion"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/BoundaryTests.cs",
+          "line": 42
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-18",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Wrong password and verification",
+      "preconditions": "Existing local account from guest checkout",
+      "action": "Enter wrong password; recover/authenticate normally",
+      "expected": "No access or draft loss on failure; unverified account follows normal verification; correct auth resumes once",
+      "variants": [
+        "Google-only password attempt",
+        "missing country",
+        "email verification required"
+      ],
+      "sources": [
+        "signin",
+        "session",
+        "google"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_identity.spec.ts",
+          "line": 36
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-19",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Terms and optional phone",
+      "preconditions": "New guest and explicit signup/Google-registration variants",
+      "action": "Clear phone where optional; submit terms correctly",
+      "expected": "Optional phone stays cleared; required terms remain last in signup forms; purchase and promoter consent are separate",
+      "variants": [
+        "empty phone",
+        "existing phone cleared",
+        "missing checkout terms",
+        "missing promoter terms"
+      ],
+      "sources": [
+        "confirmation",
+        "signin",
+        "modal"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "AC-20",
+      "group": "Checkout identity and profile sequence",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Full-confirmation replay policy",
+      "preconditions": "Source-created active account vs unrelated existing account",
+      "action": "Revisit source confirmation after logout and after account state changes",
+      "expected": "Record current same-source session behavior; unrelated/inactive user never gains session; expiry expectations must be explicitly decided",
+      "variants": [
+        "active source",
+        "inactive source",
+        "different source",
+        "elapsed age"
+      ],
+      "sources": [
+        "account",
+        "session"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutAccountTests.cs",
+          "line": 123
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-01",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Eligible buyer enrolls",
+      "preconditions": "Owned active paid ticket; enabled future approved visible event",
+      "action": "Pick available code, accept terms, continue",
+      "expected": "One enrollment/code/global promoter; zero buyer discount; exact event scope and terms snapshot; success sharing view",
+      "variants": [
+        "existing promoter on another event",
+        "no promoter profile"
+      ],
+      "sources": [
+        "enroll",
+        "eligibility",
+        "modal"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_identity.spec.ts",
+          "line": 12
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 47
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 64
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/EnrollmentTests.cs",
+          "line": 7
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-02",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Eligibility truth table",
+      "preconditions": "Seed event/user/ticket/enrollment states",
+      "action": "Query eligibility and attempt new enrollment",
+      "expected": "CanEnroll/CanOpenPromotion and mutation refusal agree with each documented status",
+      "variants": [
+        "all ten eligibility statuses",
+        "private-but-visible event"
+      ],
+      "sources": [
+        "eligibility",
+        "enroll"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 93
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/EnrollmentTests.cs",
+          "line": 30
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-03",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Ticket proof boundaries",
+      "preconditions": "Valid user with manipulated confirmation/event/ticket proof",
+      "action": "Submit eligibility and acceptance requests",
+      "expected": "No new enrollment without owned active paid ticket for this event/order",
+      "variants": [
+        "wrong confirmation",
+        "wrong event",
+        "wrong owner",
+        "inactive",
+        "refunded",
+        "free",
+        "missing confirmation"
+      ],
+      "sources": [
+        "eligibility",
+        "enroll"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_identity.spec.ts",
+          "line": 59
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 93
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/EnrollmentTests.cs",
+          "line": 30
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-04",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Existing active buyer promotion",
+      "preconditions": "Already enrolled buyer with qualifying order",
+      "action": "Reopen confirmation reminder or My Tickets",
+      "expected": "Existing code/share experience; no automatic new enrollment offer, new code, or repeated terms acceptance",
+      "variants": [
+        "same order",
+        "another qualifying order"
+      ],
+      "sources": [
+        "enroll",
+        "modal",
+        "mytickets"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_identity.spec.ts",
+          "line": 12
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-05",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Existing active acceptance idempotency",
+      "preconditions": "Active enrollment; well-formed accept request",
+      "action": "Repeat acceptance or race requests",
+      "expected": "Same enrollment/code; IsAlreadyPromoter response; no extra notification from repeated ordinary accept",
+      "variants": [
+        "same code",
+        "different otherwise-valid proposed code"
+      ],
+      "sources": [
+        "enroll"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 47
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 73
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/EnrollmentTests.cs",
+          "line": 7
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-06",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Disabled/revoked buyer cannot self-reactivate",
+      "preconditions": "Existing disabled or revoked enrollment",
+      "action": "Submit accept again",
+      "expected": "Refused; original code/terms/ledger unchanged",
+      "variants": [
+        "event enabled again but enrollment revoked",
+        "active assigned promoter"
+      ],
+      "sources": [
+        "enroll",
+        "eligibility"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 109
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/EnrollmentTests.cs",
+          "line": 101
+        },
+        {
+          "path": "integration/Kickback.Tests/ReportingTests.cs",
+          "line": 58
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-07",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Code normalization and boundaries",
+      "preconditions": "Modal ready with no enrollment",
+      "action": "Type code variants and inspect continue state",
+      "expected": "Normalized UI code and authoritative API validation agree; no submission for invalid code",
+      "variants": [
+        "2/3/24/25 characters",
+        "accents",
+        "spaces",
+        "leading/trailing hyphen",
+        "double hyphen",
+        "punctuation"
+      ],
+      "sources": [
+        "code",
+        "modal"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 38
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/EnrollmentTests.cs",
+          "line": 71
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-08",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Organizer-wide uniqueness vs event scope",
+      "preconditions": "Two events under one organizer and another organizer",
+      "action": "Check/claim same code across events",
+      "expected": "Same-organizer collision even across events; different organizer may use same text; code only applies to its event",
+      "variants": [
+        "ordinary promo collision",
+        "inactive code collision"
+      ],
+      "sources": [
+        "enroll",
+        "code",
+        "attribution"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 47
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/EnrollmentTests.cs",
+          "line": 7
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-09",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Concurrent code claim",
+      "preconditions": "Two eligible buyers see same available code",
+      "action": "Accept concurrently against real Mongo",
+      "expected": "One owner/code/enrollment; loser receives conflict; no orphan promoter/code state from failed transaction",
+      "variants": [
+        "same event",
+        "different events same organizer"
+      ],
+      "sources": [
+        "enroll"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutCalculationTests.cs",
+          "line": 48
+        },
+        {
+          "path": "integration/Kickback.Tests/EnrollmentTests.cs",
+          "line": 83
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-10",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Availability debounce and stale requests",
+      "preconditions": "User typing and delayed responses",
+      "action": "Change code rapidly; reopen modal; fail/retry lookup",
+      "expected": "Latest code controls button; old response cannot authorize new code; failed lookup has retry and no acceptance",
+      "variants": [
+        "aborted request",
+        "cache within modal",
+        "reopen cache invalidation"
+      ],
+      "sources": [
+        "modal",
+        "resume"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-11",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Guest draft resumes after password auth",
+      "preconditions": "Existing-account guest declined initial sign-in",
+      "action": "Submit code/terms, authenticate matching account, resolve profile",
+      "expected": "Exact draft rechecked after auth, then accepted once; no second consent or code entry",
+      "variants": [
+        "complete profile",
+        "missing profile",
+        "delayed availability"
+      ],
+      "sources": [
+        "confirmation",
+        "modal",
+        "resume",
+        "signin"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/promotion_lifecycle.spec.ts",
+          "line": 12
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-12",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Guest draft resumes after Google auth",
+      "preconditions": "Existing Google-only guest with pending draft",
+      "action": "Authenticate matching Google account",
+      "expected": "Same enrollment continuation invariants; browser and server identity match purchaser",
+      "variants": [
+        "Google profile completion",
+        "missing country"
+      ],
+      "sources": [
+        "google",
+        "confirmation",
+        "resume"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-13",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Submitted code taken during auth",
+      "preconditions": "Guest submitted available code, then another buyer claims it",
+      "action": "Finish authentication",
+      "expected": "Fresh availability/409 prevents enrollment with taken code; editable recoverable offer",
+      "variants": [
+        "lookup unavailable",
+        "acceptance conflict after fresh lookup"
+      ],
+      "sources": [
+        "modal",
+        "resume"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-14",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Editing cancels auto-submit",
+      "preconditions": "Auth-returned draft with availability in flight",
+      "action": "Edit code before fresh response, including restoring old text",
+      "expected": "No automatic enrollment; explicit user action required",
+      "variants": [
+        "new valid code",
+        "old code restored",
+        "invalid edit"
+      ],
+      "sources": [
+        "modal",
+        "resume"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-15",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Cancel, Back, close, and reload",
+      "preconditions": "Guest draft or authenticated offer open",
+      "action": "Exercise each dismissal and reopen route",
+      "expected": "Cancel auth clears pending draft; Back may return to offer; ordinary dismissal does not loop; reload does not assume draft persistence",
+      "variants": [
+        "Escape",
+        "close button",
+        "Not now",
+        "back",
+        "reload"
+      ],
+      "sources": [
+        "signin",
+        "confirmation",
+        "modal"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_resilience.spec.ts",
+          "line": 48
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/promotion_lifecycle.spec.ts",
+          "line": 12
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-16",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P1",
+      "layer": "B",
+      "name": "My Tickets email deep link",
+      "preconditions": "Captured valid promote link and owned paid ticket",
+      "action": "Open link, resolve auth, close offer",
+      "expected": "Correct event offer/share; query consumed once; closing cannot reopen",
+      "variants": [
+        "invalid event",
+        "ineligible user",
+        "event disabled",
+        "ended event"
+      ],
+      "sources": [
+        "mytickets",
+        "email_preview"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/promotion_lifecycle.spec.ts",
+          "line": 35
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-17",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Referral link and quantity recalculation",
+      "preconditions": "Active code/link from accepted buyer",
+      "action": "Open link as separate buyer and change ticket quantities",
+      "expected": "Referral persists through recalculation/checkout; zero discount correctly displayed; correct enrollment receives commission",
+      "variants": [
+        "slug path",
+        "ID path",
+        "mobile ticket picker"
+      ],
+      "sources": [
+        "modal",
+        "attribution"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-18",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P2",
+      "layer": "B",
+      "name": "Sharing affordances",
+      "preconditions": "Active and inactive enrollment modal",
+      "action": "Copy code/link, inspect WhatsApp URL, exercise native-share API fixture",
+      "expected": "Exact code/link; success/error feedback; no duplicate enrollment; inactive enrollment does not imply usable referral",
+      "variants": [
+        "native share available",
+        "unavailable",
+        "cancel",
+        "clipboard failure"
+      ],
+      "sources": [
+        "modal"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/promotion_lifecycle.spec.ts",
+          "line": 35
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-19",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Enrollment transaction rollback",
+      "preconditions": "New eligible buyer",
+      "action": "Inject code/enrollment insert failure within Mongo transaction",
+      "expected": "No partial enrollment/code; retry succeeds with correct unique ownership",
+      "variants": [
+        "promoter created in transaction",
+        "existing promoter reused"
+      ],
+      "sources": [
+        "enroll"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/BoundaryTests.cs",
+          "line": 20
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "KB-20",
+      "group": "Kickback eligibility, personal codes, and auth continuation",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Eligibility lookup fails closed",
+      "preconditions": "Logged-in buyer; eligibility endpoint unavailable",
+      "action": "Open confirmation/My Tickets",
+      "expected": "No automatic unverified offer; tickets usable; deliberate reopening/reload can recover as designed",
+      "variants": [
+        "403",
+        "500",
+        "timeout",
+        "unmount"
+      ],
+      "sources": [
+        "confirmation",
+        "eligibility",
+        "mytickets"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "OR-01",
+      "group": "Organizer controls and lifecycle",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Create/edit Kickback settings",
+      "preconditions": "Authorized organizer; intended UI surface",
+      "action": "Enable percentage/fixed/combined commission, save and reload",
+      "expected": "Exact settings persisted and reflected in purchase offer and future commissions",
+      "variants": [
+        "legacy buyerPromotion=true",
+        "Studio Money edit"
+      ],
+      "sources": [
+        "settings",
+        "legacy_create",
+        "studio_edit"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 163
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OrganizerSettingsTests.cs",
+          "line": 5
+        },
+        {
+          "path": "integration/Kickback.Tests/OrganizerSettingsTests.cs",
+          "line": 31
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "OR-02",
+      "group": "Organizer controls and lifecycle",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Commission validation",
+      "preconditions": "Settings form and direct API",
+      "action": "Submit invalid or zero enabled values",
+      "expected": "Clear validation; no invalid persisted setting; disabled zero defaults accepted",
+      "variants": [
+        "percent below 0/above 100",
+        "negative fixed",
+        "both zero",
+        "decimal values"
+      ],
+      "sources": [
+        "settings",
+        "studio_edit"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OrganizerSettingsTests.cs",
+          "line": 5
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "OR-03",
+      "group": "Organizer controls and lifecycle",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Disable and re-enable",
+      "preconditions": "Active and revoked enrollments with earned history",
+      "action": "Disable, retry same settings, re-enable",
+      "expected": "Referrals stop immediately; nonrevoked codes/enrollments reactivate coherently; revoked stays revoked; history unchanged",
+      "variants": [
+        "secondary write failure",
+        "repeated unchanged settings"
+      ],
+      "sources": [
+        "settings"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OrganizerSettingsTests.cs",
+          "line": 5
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "OR-04",
+      "group": "Organizer controls and lifecycle",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Organizer revoke/reactivate",
+      "preconditions": "Authorized event organizer; active buyer promoter with earnings",
+      "action": "Confirm revoke; view promoter history; reactivate",
+      "expected": "Future earning disabled then restored; current rate adopted on reactivation; historical earnings preserved",
+      "variants": [
+        "cancel dialog",
+        "unauthorized event",
+        "repeated operation"
+      ],
+      "sources": [
+        "organizer_controls",
+        "organizer_permissions",
+        "enroll"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/promotion_lifecycle.spec.ts",
+          "line": 35
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 109
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OrganizerSettingsTests.cs",
+          "line": 5
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "OR-05",
+      "group": "Organizer controls and lifecycle",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Rate change preserves snapshots",
+      "preconditions": "Earned sale and initiated in-flight sale; active/event-disabled/revoked enrollments",
+      "action": "Change commission, complete old sale, start new sale",
+      "expected": "Old transaction/ledger/ticket allocations unchanged; new eligible sales use updated rate; revoked refreshes only on reactivation",
+      "variants": [
+        "percentage",
+        "fixed",
+        "combined",
+        "platform fee change"
+      ],
+      "sources": [
+        "settings",
+        "settlement",
+        "processing"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 109
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/BoundaryTests.cs",
+          "line": 57
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "OR-06",
+      "group": "Organizer controls and lifecycle",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Duplicate event",
+      "preconditions": "Event has settings, buyer enrollments, assigned promoters, paid history",
+      "action": "Duplicate event using normal API",
+      "expected": "Settings copy per contract; no buyer enrollment/code/balance/payment copied; assigned attachments follow existing duplication rule",
+      "variants": [
+        "active/revoked buyer",
+        "multiple codes"
+      ],
+      "sources": [
+        "settings",
+        "enroll"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/EnrollmentTests.cs",
+          "line": 101
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "OR-07",
+      "group": "Organizer controls and lifecycle",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Hidden legacy fields preserve state",
+      "preconditions": "Enabled event edited without buyerPromotion query",
+      "action": "Change unrelated field and reload through settings surface",
+      "expected": "Hidden settings not reset or disabled accidentally",
+      "variants": [
+        "legacy form",
+        "simple wizard/update paths"
+      ],
+      "sources": [
+        "legacy_create",
+        "settings"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/EnrollmentTests.cs",
+          "line": 101
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "OR-08",
+      "group": "Organizer controls and lifecycle",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Event ends or becomes unavailable",
+      "preconditions": "Eligible event at checkout or offer time",
+      "action": "End/hide/disapprove event before new acceptance",
+      "expected": "New enrollment refused; existing history stays; no misleading new enrollment success",
+      "variants": [
+        "event deleted",
+        "end-time boundary",
+        "visibility change"
+      ],
+      "sources": [
+        "eligibility",
+        "enroll"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "OR-09",
+      "group": "Organizer controls and lifecycle",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Purchase initiated before settings change",
+      "preconditions": "Valid referral at transaction initiation",
+      "action": "Revoke/disable/change rate, then complete original payment",
+      "expected": "Frozen initiated financial attribution retained; new purchases enforce changed validity",
+      "variants": [
+        "revoked code",
+        "event switch",
+        "commission rate"
+      ],
+      "sources": [
+        "attribution",
+        "settlement",
+        "processing"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/BoundaryTests.cs",
+          "line": 57
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "OR-10",
+      "group": "Organizer controls and lifecycle",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Organizer view and buyer promoter row",
+      "preconditions": "Same promoter has buyer/assigned relationships and history",
+      "action": "View event and organizer promoter lists and statements",
+      "expected": "Correct relationship labels, rate, totals, controls; rows not duplicated or merged incorrectly",
+      "variants": [
+        "multiple attachments",
+        "revoked with earnings",
+        "zero-history inactive"
+      ],
+      "sources": [
+        "organizer_controls",
+        "stats",
+        "statement"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-01",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Shared enabled country options",
+      "preconditions": "Isolated known Mongo catalogue",
+      "action": "Open organizer and first-time promoter onboarding",
+      "expected": "Identical eligible ISO set from common policy; no event-currency fallback; localized ordering",
+      "variants": [
+        "English",
+        "Spanish",
+        "French",
+        "every enabled ISO"
+      ],
+      "sources": [
+        "countries",
+        "selector",
+        "onboarding_ui"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/promotion_lifecycle.spec.ts",
+          "line": 61
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OnboardingTests.cs",
+          "line": 7
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-02",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Catalogue mutations and invalid data",
+      "preconditions": "Seed enabled/disabled country documents",
+      "action": "Read options, mutate isolated records, read again",
+      "expected": "Disabled excluded; new reads see changes; malformed/duplicate records fail closed; no hardcoded fallback",
+      "variants": [
+        "empty",
+        "missing required fields",
+        "invalid ISO",
+        "case duplicate",
+        "repository/index failure"
+      ],
+      "sources": [
+        "country_repo",
+        "countries"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/BoundaryTests.cs",
+          "line": 8
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-03",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Supported and unsupported profile default",
+      "preconditions": "New promoter with specified profile country",
+      "action": "Open country modal",
+      "expected": "Supported profile preselected; unsupported profile gives empty explicit choice; no silent US substitution",
+      "variants": [
+        "lower-case profile",
+        "VE fixture",
+        "profile not in catalogue"
+      ],
+      "sources": [
+        "onboarding_ui",
+        "selector"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 106
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 135
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OnboardingTests.cs",
+          "line": 7
+        },
+        {
+          "path": "integration/Kickback.Tests/OnboardingTests.cs",
+          "line": 19
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-04",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Selected country independent of profile",
+      "preconditions": "Profile country differs from supported chosen country",
+      "action": "Start Stripe setup",
+      "expected": "Provider creation uses selected country; stored reservation/provider details match; profile country unchanged",
+      "variants": [
+        "all enabled countries",
+        "unsupported/missing selection"
+      ],
+      "sources": [
+        "onboarding"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
+          "line": 39
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OnboardingTests.cs",
+          "line": 7
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-05",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P0",
+      "layer": "S",
+      "name": "Promoter account creation shape",
+      "preconditions": "Disposable test user/country",
+      "action": "Create account through app activation",
+      "expected": "Express individual transfer-recipient configuration; stable UserId metadata; no card_payments requirement; country correct",
+      "variants": [
+        "full-agreement class",
+        "recipient-agreement class"
+      ],
+      "sources": [
+        "onboarding",
+        "stripe"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/promotion_lifecycle.spec.ts",
+          "line": 61
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 135
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OnboardingTests.cs",
+          "line": 19
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-06",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P0",
+      "layer": "B",
+      "name": "New/incomplete setup navigation",
+      "preconditions": "Promoter not ready",
+      "action": "Start/continue Stripe setup then return",
+      "expected": "Same-tab onboarding; return to portal; account reused; no duplicate country choice for existing/reserved account",
+      "variants": [
+        "cancel Stripe",
+        "expired link",
+        "refresh link"
+      ],
+      "sources": [
+        "navigation",
+        "onboarding",
+        "portal"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 106
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-07",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Ready dashboard navigation",
+      "preconditions": "Onboarded promoter",
+      "action": "Open Stripe dashboard",
+      "expected": "New tab reserved during click; opener cleared; loading resets; original portal retained",
+      "variants": [
+        "popup blocked",
+        "link API error",
+        "empty URL",
+        "user closes new tab"
+      ],
+      "sources": [
+        "navigation",
+        "portal"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OnboardingTests.cs",
+          "line": 29
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-08",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Concurrent account setup",
+      "preconditions": "New/reserved promoter, real atomic repository",
+      "action": "Race same-country and different-country starts",
+      "expected": "Single promoter/account reservation; same stable provider key; different-country conflict",
+      "variants": [
+        "crash after reservation",
+        "crash after provider create before attach"
+      ],
+      "sources": [
+        "onboarding"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OnboardingTests.cs",
+          "line": 29
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-09",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Failed link after account creation",
+      "preconditions": "Account exists but first link generation failed",
+      "action": "Retry activation",
+      "expected": "Same account reused; no duplicate creation; country remains immutable",
+      "variants": [
+        "fresh readiness false",
+        "true"
+      ],
+      "sources": [
+        "onboarding"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OnboardingTests.cs",
+          "line": 46
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-10",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Existing country removed or catalogue outage",
+      "preconditions": "Existing/reserved setup in formerly supported country",
+      "action": "Fetch status and continue while catalogue unavailable",
+      "expected": "Existing/reserved continuation works; no new-country fallback; new setups fail closed",
+      "variants": [
+        "account attached",
+        "reservation only"
+      ],
+      "sources": [
+        "onboarding",
+        "countries"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OnboardingTests.cs",
+          "line": 46
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-11",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Existing account country authority",
+      "preconditions": "Existing Stripe account with missing cached country",
+      "action": "Read status and attempt country change",
+      "expected": "Stripe country cached or explicit failure; profile never substituted; change rejected",
+      "variants": [
+        "Stripe country lookup fails",
+        "ready/incomplete"
+      ],
+      "sources": [
+        "onboarding"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 89
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OnboardingTests.cs",
+          "line": 60
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-12",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Expired uncertain account creation",
+      "preconditions": "Reservation without resolved account",
+      "action": "Retry just before/at/after 23-hour cutoff",
+      "expected": "Safe retry only inside window; old uncertain setup requires review without another provider account",
+      "variants": [
+        "22h59m",
+        "23h",
+        "24h"
+      ],
+      "sources": [
+        "onboarding"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 89
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-13",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Readiness truth table",
+      "preconditions": "Stripe account flags controlled independently",
+      "action": "Ask promoter and organizer readiness",
+      "expected": "Promoter requires submitted+payouts+active transfers; charges alone irrelevant; organizer rule stays distinct",
+      "variants": [
+        "each flag false",
+        "charges false with transfers active",
+        "provider timeout"
+      ],
+      "sources": [
+        "readiness",
+        "settlement"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 106
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-14",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Onboarding status response validation",
+      "preconditions": "Protected status response malformed or stale",
+      "action": "Click setup and refresh portal",
+      "expected": "Invalid payload does not imply ready; no invalid choice/navigation; useful recoverable error",
+      "variants": [
+        "Onboarded without account",
+        "missing country",
+        "duplicate countries",
+        "invalid country",
+        "network failure"
+      ],
+      "sources": [
+        "onboarding_ui",
+        "portal"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 126
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-15",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Organizer cross-country address",
+      "preconditions": "Organizer business country differs from selected Stripe country",
+      "action": "Attempt setup with old address, then explicit destination-country address",
+      "expected": "Correct country submitted; required destination address validated; home-country fallback only when appropriate",
+      "variants": [
+        "same country",
+        "different country",
+        "country without postal code"
+      ],
+      "sources": [
+        "organizer_country",
+        "selector"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-16",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Return from Stripe refreshes readiness",
+      "preconditions": "Portal previously incomplete, provider now ready",
+      "action": "Return/focus/refresh",
+      "expected": "Setup banner and wallet action reflect server readiness; old wallet remains until request",
+      "variants": [
+        "visible timer",
+        "tab focus",
+        "restricted account after prior readiness"
+      ],
+      "sources": [
+        "portal",
+        "wallet_refresh"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 141
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/BoundaryTests.cs",
+          "line": 125
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-17",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Country list independent of currency catalogue",
+      "preconditions": "Event/currency settings differ from onboarding fixture",
+      "action": "Fetch new-account options and select valid ISO",
+      "expected": "Event country/currency changes never enable unsupported Stripe countries",
+      "variants": [
+        "country added to event map only",
+        "currency changed"
+      ],
+      "sources": [
+        "countries",
+        "onboarding"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/promotion_lifecycle.spec.ts",
+          "line": 61
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "ST-18",
+      "group": "Shared onboarding countries and Stripe account lifecycle",
+      "priority": "P1",
+      "layer": "S",
+      "name": "Provider restrictions after onboarding",
+      "preconditions": "Previously ready account cannot receive a later transfer",
+      "action": "Complete referred sale or requested payout",
+      "expected": "Explicit retry/review state; funding/entitlement retained; never falsely Paid",
+      "variants": [
+        "transfers restricted",
+        "destination currency rejected",
+        "insufficient available balance"
+      ],
+      "sources": [
+        "stripe",
+        "processing"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "CM-01",
+      "group": "Attribution and commission arithmetic",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Two attribution models share ledger",
+      "preconditions": "Organizer-assigned and buyer-enrolled promoters",
+      "action": "Purchase through each referral path",
+      "expected": "Exactly one valid attribution and one ledger record per order; correct foreign keys; no fabricated attachment for buyer",
+      "variants": [
+        "OrganizerAssigned",
+        "BuyerAutoPromote"
+      ],
+      "sources": [
+        "attribution",
+        "processing"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/referral_currencies.spec.ts",
+          "line": 14
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutCalculationTests.cs",
+          "line": 5
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "CM-02",
+      "group": "Attribution and commission arithmetic",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Own-code purchase earns nothing",
+      "preconditions": "Promoter owns referral code",
+      "action": "Buy through own code signed in, then in guest context with same email",
+      "expected": "Purchase may complete but no financial self-attribution or commission",
+      "variants": [
+        "matching user/different email",
+        "different user/matching normalized email",
+        "different buyer"
+      ],
+      "sources": [
+        "attribution"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutCalculationTests.cs",
+          "line": 5
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "CM-03",
+      "group": "Attribution and commission arithmetic",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Percentage/fixed/combined calculation",
+      "preconditions": "Known ticket prices, tax/fee flags and pinned commission rules",
+      "action": "Initiate and complete order",
+      "expected": "Independent expected gross/platform/net equals transaction, per-ticket allocation, ledger, and display",
+      "variants": [
+        "percentage",
+        "fixed per ticket",
+        "combined",
+        "quantity 1/2/3"
+      ],
+      "sources": [
+        "pricing",
+        "settlement"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutCalculationTests.cs",
+          "line": 5
+        },
+        {
+          "path": "integration/Kickback.Tests/CheckoutCalculationTests.cs",
+          "line": 31
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "CM-04",
+      "group": "Attribution and commission arithmetic",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Eligible ticket composition",
+      "preconditions": "Mixed cart with paid/free/custom/voucher/discounted lines",
+      "action": "Apply appropriate code and complete",
+      "expected": "Commission only on eligible positive post-discount ticket price; tax/service/transaction fees not commission base",
+      "variants": [
+        "partial promo usage",
+        "free ticket",
+        "zero-discount referral",
+        "100-percent discount",
+        "voucher"
+      ],
+      "sources": [
+        "pricing",
+        "attribution"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutCalculationTests.cs",
+          "line": 5
+        },
+        {
+          "path": "integration/Kickback.Tests/CheckoutCalculationTests.cs",
+          "line": 31
+        },
+        {
+          "path": "integration/Kickback.Tests/SettlementMatrixTests.cs",
+          "line": 14
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "CM-05",
+      "group": "Attribution and commission arithmetic",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Pay-what-you-want referral",
+      "preconditions": "Custom-price tier with floor/ceiling",
+      "action": "Purchase positive and zero selected amounts using referral",
+      "expected": "Positive chosen amount earns commission without code reducing price; zero earns none; invalid price rejected",
+      "variants": [
+        "suggested price 0",
+        "min/max boundaries",
+        "mixed custom/regular cart"
+      ],
+      "sources": [
+        "pricing"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutCalculationTests.cs",
+          "line": 5
+        },
+        {
+          "path": "integration/Kickback.Tests/SettlementMatrixTests.cs",
+          "line": 14
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "CM-06",
+      "group": "Attribution and commission arithmetic",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Rounding and caps",
+      "preconditions": "Fractional-cent calculations and large fixed commissions",
+      "action": "Calculate/complete and inspect ticket allocation",
+      "expected": "Sum of ticket gross/platform/net equals order; deterministic remainder; capped per ticket; never negative",
+      "variants": [
+        "0.01",
+        "0.03",
+        "unequal prices",
+        "cap reached",
+        "platform fee consumes full gross"
+      ],
+      "sources": [
+        "settlement"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/BoundaryTests.cs",
+          "line": 125
+        },
+        {
+          "path": "integration/Kickback.Tests/CheckoutCalculationTests.cs",
+          "line": 48
+        },
+        {
+          "path": "integration/Kickback.Tests/SettlementMatrixTests.cs",
+          "line": 14
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "CM-07",
+      "group": "Attribution and commission arithmetic",
+      "priority": "P0",
+      "layer": "S",
+      "name": "Full gross collected in wallet and automatic modes",
+      "preconditions": "Eligible Stripe charge with known commissions",
+      "action": "Complete each settlement mode and inspect charge/application fee",
+      "expected": "Full promised gross retained in platform funding; net transfer only as appropriate; organizer receipts account for funding",
+      "variants": [
+        "direct/destination routing classes",
+        "absorbed fees",
+        "partner plus promoter"
+      ],
+      "sources": [
+        "settlement",
+        "stripe",
+        "processing"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutCalculationTests.cs",
+          "line": 48
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "CM-08",
+      "group": "Attribution and commission arithmetic",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Underfunded or unsupported provider",
+      "preconditions": "Positive attribution and provider lacks collection or charge too small",
+      "action": "Attempt purchase initiation",
+      "expected": "Reject before promising unfunded withdrawable earnings; no false funded ledger; ordinary nonreferral route remains testable",
+      "variants": [
+        "None",
+        "External",
+        "Spidi",
+        "ChinChin",
+        "capability missing"
+      ],
+      "sources": [
+        "settlement"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/BoundaryTests.cs",
+          "line": 108
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "CM-09",
+      "group": "Attribution and commission arithmetic",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Zero gross and zero net differ",
+      "preconditions": "No attribution/zero gross versus positive gross fully consumed by platform fee",
+      "action": "Process completed order",
+      "expected": "Zero gross is NotApplicable; positive gross/zero net may have ledger but no positive payout/withdrawal",
+      "variants": [
+        "both attribution types",
+        "Wallet",
+        "AutomaticProviderPayout"
+      ],
+      "sources": [
+        "settlement",
+        "processing"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/BoundaryTests.cs",
+          "line": 108
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "CM-10",
+      "group": "Attribution and commission arithmetic",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Snapshot invariance",
+      "preconditions": "Initiated sale or recorded ledger; mutable source rates/attachments",
+      "action": "Change source, retry processing",
+      "expected": "Exact original cents, currency, attribution and destination preserved; existing earned ledger reused",
+      "variants": [
+        "attachment removed",
+        "rate edited",
+        "platform fee changed"
+      ],
+      "sources": [
+        "processing",
+        "payout_claim"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 91
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "CM-11",
+      "group": "Attribution and commission arithmetic",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Duplicate webhook and lease ownership",
+      "preconditions": "Same completed transaction with pending processing",
+      "action": "Run duplicate/reordered workers with real unique indexes",
+      "expected": "One ledger and one effective transfer; live lease blocks second claim; expired lease recoverable",
+      "variants": [
+        "duplicate notification",
+        "process restart",
+        "first-commission index race"
+      ],
+      "sources": [
+        "transaction_claim",
+        "processing"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 132
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "CM-12",
+      "group": "Attribution and commission arithmetic",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Code scope/revocation at checkout",
+      "preconditions": "Code from another event or no longer active",
+      "action": "Apply it and attempt purchase",
+      "expected": "No new commission to invalid enrollment; pricing/validation explains unusable code without cross-event attribution",
+      "variants": [
+        "same organizer other event",
+        "revoked",
+        "disabled event",
+        "inactive code"
+      ],
+      "sources": [
+        "attribution",
+        "settings"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OrganizerSettingsTests.cs",
+          "line": 5
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-01",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Pre-onboarding funded wallet",
+      "preconditions": "Referred sale completes with no promoter Stripe account",
+      "action": "Open portal and inspect earnings",
+      "expected": "Funded net shown under correct currency; setup CTA; no withdrawal transfer",
+      "variants": [
+        "no account",
+        "incomplete account",
+        "readiness lookup failed"
+      ],
+      "sources": [
+        "settlement",
+        "wallet_ui"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 8
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 67
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
+          "line": 39
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/SettlementMatrixTests.cs",
+          "line": 14
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-02",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Onboarding does not sweep wallet",
+      "preconditions": "Old funded wallet rows",
+      "action": "Finish Stripe onboarding and refresh",
+      "expected": "Same wallet balance and original rows; no requested timestamp or transfer caused solely by readiness",
+      "variants": [
+        "one currency",
+        "multiple currencies"
+      ],
+      "sources": [
+        "wallet",
+        "processing",
+        "portal"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 8
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
+          "line": 39
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/SettlementMatrixTests.cs",
+          "line": 63
+        },
+        {
+          "path": "integration/Kickback.Tests/WalletTests.cs",
+          "line": 88
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-03",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Withdraw selected currency",
+      "preconditions": "Ready promoter; multiple eligible wallet records",
+      "action": "Click withdrawal for selected currency",
+      "expected": "202 reserves all eligible visible-at-start rows in only that currency; UI transitions through pending then paid after worker",
+      "variants": [
+        "USD",
+        "CAD",
+        "EUR",
+        "lowercase API currency"
+      ],
+      "sources": [
+        "wallet",
+        "wallet_ui",
+        "reconciliation"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
+          "line": 39
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/WalletTests.cs",
+          "line": 9
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-04",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "I",
+      "name": "No client amount or foreign owner control",
+      "preconditions": "Own wallet and another promoter wallet",
+      "action": "Send amount/user spoofing and manipulated proxy path",
+      "expected": "Owner comes from token; client cannot set withdrawal amount/destination; foreign balance unchanged",
+      "variants": [
+        "path ID mismatch",
+        "extra body fields",
+        "different logged-in identity"
+      ],
+      "sources": [
+        "wallet",
+        "wallet_proxy"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 147
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/WalletTests.cs",
+          "line": 9
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-05",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Eligibility filter excludes unsafe rows",
+      "preconditions": "Mix valid and invalid wallet rows",
+      "action": "Request payout through HTTP with real repository",
+      "expected": "Only fully funded clear unrequested unpaid positive-net rows claimed",
+      "variants": [
+        "Held",
+        "fully reversed",
+        "underfunded",
+        "wrong provider",
+        "paid timestamp",
+        "paid reference",
+        "requested",
+        "gross below net",
+        "negative reversal"
+      ],
+      "sources": [
+        "wallet"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/BoundaryTests.cs",
+          "line": 125
+        },
+        {
+          "path": "integration/Kickback.Tests/SettlementMatrixTests.cs",
+          "line": 63
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-06",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Empty or unavailable wallet",
+      "preconditions": "Empty/all held/fully reversed wallet",
+      "action": "Inspect card and attempt direct request",
+      "expected": "No misleading withdraw CTA; no transfer; endpoint rejects empty eligible set",
+      "variants": [
+        "wallet 0",
+        "wallet positive available 0",
+        "pending-only"
+      ],
+      "sources": [
+        "wallet",
+        "wallet_ui"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
+          "line": 39
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/WalletTests.cs",
+          "line": 55
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-07",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Currency input validation",
+      "preconditions": "Ready account with existing funds",
+      "action": "Send malformed/missing currency",
+      "expected": "Invalid input refused before account/ledger mutation; valid lowercase normalized",
+      "variants": [
+        "missing",
+        "2 chars",
+        "4 chars",
+        "digits",
+        "spaces",
+        "non-ASCII",
+        "valid unsupported 3-letter ISO"
+      ],
+      "sources": [
+        "wallet"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 147
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/BoundaryTests.cs",
+          "line": 142
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-08",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Incomplete or missing account cannot withdraw",
+      "preconditions": "Positive funded wallet",
+      "action": "Call endpoint despite disabled/setup UI",
+      "expected": "No claim before authoritative Stripe readiness; balance preserved",
+      "variants": [
+        "missing promoter",
+        "missing account",
+        "payouts disabled",
+        "transfers inactive",
+        "provider unavailable"
+      ],
+      "sources": [
+        "wallet",
+        "readiness"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
+          "line": 39
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 172
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/WalletTests.cs",
+          "line": 55
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-09",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Concurrent/repeated withdrawal requests",
+      "preconditions": "Same promoter/currency eligible rows",
+      "action": "Race two requests and repeat after completion",
+      "expected": "Each commission reserved once; sum of accepted counts matches unique rows; no duplicate transfer",
+      "variants": [
+        "two browser tabs",
+        "HTTP retry after lost response"
+      ],
+      "sources": [
+        "wallet",
+        "reconciliation"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
+          "line": 39
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OperationsTests.cs",
+          "line": 9
+        },
+        {
+          "path": "integration/Kickback.Tests/WalletTests.cs",
+          "line": 9
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-10",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Refund/hold races candidate enumeration",
+      "preconditions": "Eligible row read before concurrent state change",
+      "action": "Refund or hold before atomic wallet claim",
+      "expected": "Atomic returned state determines eligibility/net; no stale amount claimed",
+      "variants": [
+        "partial refund",
+        "full refund",
+        "hold",
+        "paid elsewhere"
+      ],
+      "sources": [
+        "wallet",
+        "refund"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/WalletTests.cs",
+          "line": 76
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-11",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Request partially fails after claims",
+      "preconditions": "Several wallet rows, inject failure after first claim",
+      "action": "Request then refresh/retry/reconcile",
+      "expected": "Prior claims remain durable and eventually process; retry only remaining rows; no balance loss/duplicate",
+      "variants": [
+        "500 response",
+        "lost connection",
+        "worker restart"
+      ],
+      "sources": [
+        "wallet",
+        "reconciliation"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/WalletTests.cs",
+          "line": 76
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-12",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "I",
+      "name": "New sale during wallet request",
+      "preconditions": "Candidate set enumerated before new wallet row appears",
+      "action": "Finish request, then request again",
+      "expected": "First request bounded to initial candidates; later row remains for next request",
+      "variants": [
+        "same currency",
+        "another currency"
+      ],
+      "sources": [
+        "wallet"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 8
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/WalletTests.cs",
+          "line": 88
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-13",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Wallet ledger changes but transaction does not",
+      "preconditions": "Completed Wallet transaction requested for payout",
+      "action": "Inspect both snapshots then run worker",
+      "expected": "Ledger AutomaticProviderPayout + request timestamp; transaction retains Wallet history; provider uses ledger destination/currency",
+      "variants": [
+        "refunded before request",
+        "after request before processing"
+      ],
+      "sources": [
+        "wallet",
+        "processing"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
+          "line": 39
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/WalletTests.cs",
+          "line": 55
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-14",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Durable request queue respects ongoing work",
+      "preconditions": "Requested Pending ledger with transaction states",
+      "action": "Invoke QueueRequestedPayouts/Reconcile",
+      "expected": "Completed transaction can be requeued; live processing/hold/review/retry state not overwritten",
+      "variants": [
+        "Completed",
+        "Processing",
+        "Held",
+        "FailedRetryable",
+        "FailedNeedsReview"
+      ],
+      "sources": [
+        "wallet",
+        "reconciliation"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 8
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-15",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "S",
+      "name": "Withdrawal transfers per underlying transaction",
+      "preconditions": "One request reserves multiple commissions",
+      "action": "Run processing and inspect provider transfers",
+      "expected": "Separate transaction-keyed net transfers sum to response amount; correct currency/destination; IDs stored",
+      "variants": [
+        "one record",
+        "several records",
+        "cross-event same currency"
+      ],
+      "sources": [
+        "stripe",
+        "processing",
+        "wallet"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 37
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
+          "line": 39
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-16",
+      "group": "Wallet requests and payout execution",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Busy/error/refresh UI",
+      "preconditions": "Positive available balance and slow request/stats refresh",
+      "action": "Double-click, fail stats/request, refresh manually",
+      "expected": "No second request while busy; stale balance not actionable during load error; recoverable feedback; no optimistic Paid claim",
+      "variants": [
+        "network error",
+        "500",
+        "stats stale",
+        "empty result after competing request"
+      ],
+      "sources": [
+        "wallet_ui",
+        "portal"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 37
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-17",
+      "group": "Wallet requests and payout execution",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Wallet refresh lifecycle",
+      "preconditions": "Portal mounted with hidden/visible transitions",
+      "action": "Advance visible timer, focus/hide/show, unmount",
+      "expected": "Refresh at 30 seconds only when visible plus focus/show; no leaked timer/listeners; readiness and stats update",
+      "variants": [
+        "open twice",
+        "currency switch",
+        "different user"
+      ],
+      "sources": [
+        "wallet_refresh",
+        "portal"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 51
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "WL-18",
+      "group": "Wallet requests and payout execution",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Currency switch during request",
+      "preconditions": "USD request in flight and CAD wallet present",
+      "action": "Switch selector before response completes",
+      "expected": "Request remains bound to original USD; CAD untouched; feedback cannot imply CAD was withdrawn",
+      "variants": [
+        "success",
+        "error",
+        "concurrent refresh"
+      ],
+      "sources": [
+        "portal",
+        "wallet_ui"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 67
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "MC-01",
+      "group": "Mixed settlement, currencies, and geography",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Mandatory three-currency mixed lifecycle",
+      "preconditions": "One promoter; USD/CAD/EUR events; no Stripe account initially",
+      "action": "Earn old wallet rows, onboard, earn new automatic rows, withdraw one currency then others",
+      "expected": "Old wallet coexists with new paid commissions; exact per-currency conservation at every phase; no sweep/FX sum/duplicate",
+      "variants": [
+        "see mandatory lifecycle in study",
+        "both attribution types across events"
+      ],
+      "sources": [
+        "wallet",
+        "stats",
+        "processing"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/referral_currencies.spec.ts",
+          "line": 14
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
+          "line": 39
+        }
+      ],
+      "coverageNote": "Deterministic provider mixed-wallet/automatic lifecycle is tested. Live purchases across three currencies reach wallets, but refund cleanup fails. Real automatic Stripe transfers and withdrawals remain untested.",
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 5
+        },
+        {
+          "path": "integration/Kickback.Tests/SettlementMatrixTests.cs",
+          "line": 63
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "MC-02",
+      "group": "Mixed settlement, currencies, and geography",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Full settlement/arithmetic cross-product",
+      "preconditions": "Deterministic isolated provider and pinned rates",
+      "action": "Parameterize both attributions x readiness decision x rate kind x currency",
+      "expected": "Every tuple preserves exact attribution, funding, gross/net, wallet/automatic and reversal semantics",
+      "variants": [
+        "OrganizerAssigned/BuyerAutoPromote",
+        "missing/incomplete/ready",
+        "percentage/fixed/combined",
+        "USD/CAD/EUR"
+      ],
+      "sources": [
+        "settlement",
+        "processing",
+        "wallet"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 8
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/referral_currencies.spec.ts",
+          "line": 14
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
+          "line": 39
+        }
+      ],
+      "coverageNote": "All 54 isolated backend arithmetic tuples pass. Real Stripe provider country/currency matrix is separate and incomplete.",
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 5
+        },
+        {
+          "path": "integration/Kickback.Tests/ReportingTests.cs",
+          "line": 9
+        },
+        {
+          "path": "integration/Kickback.Tests/SettlementMatrixTests.cs",
+          "line": 14
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "MC-03",
+      "group": "Mixed settlement, currencies, and geography",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Same currency across countries",
+      "preconditions": "Multiple events/organizers with same currency, distinct countries",
+      "action": "Earn, aggregate, and withdraw",
+      "expected": "Correct one currency bucket; owner-wide withdrawal spans eligible events only; event/organizer views stay scoped",
+      "variants": [
+        "US+CA event countries in USD where allowed",
+        "two organizers"
+      ],
+      "sources": [
+        "stats",
+        "wallet"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/SettlementMatrixTests.cs",
+          "line": 63
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "MC-04",
+      "group": "Mixed settlement, currencies, and geography",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Different currencies within attribution history",
+      "preconditions": "Imported/legacy ledger with same attribution in different currencies",
+      "action": "Read promoter and organizer cross-event stats",
+      "expected": "Separate currency totals/breakdowns/monthly series; original currency preserved regardless current event defaults",
+      "variants": [
+        "USD/CAD/EUR",
+        "upper/lowercase stored ISO"
+      ],
+      "sources": [
+        "stats"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
+          "line": 39
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/ReportingTests.cs",
+          "line": 9
+        },
+        {
+          "path": "integration/Kickback.Tests/SettlementMatrixTests.cs",
+          "line": 63
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "MC-05",
+      "group": "Mixed settlement, currencies, and geography",
+      "priority": "P0",
+      "layer": "S",
+      "name": "Required promoter-country x transfer-currency manifest",
+      "preconditions": "Explicit required enabled countries and test account registry",
+      "action": "Exercise every required promoter account-country/currency tuple",
+      "expected": "Each tuple either successful proven transfer or an explicit expected negative case; missing fixture never counts as pass",
+      "variants": [
+        "supported ISO set x required currencies",
+        "readiness flags asserted"
+      ],
+      "sources": [
+        "stripe",
+        "onboarding",
+        "processing"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
+          "line": 39
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/ReportingTests.cs",
+          "line": 9
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "MC-06",
+      "group": "Mixed settlement, currencies, and geography",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Independent geography pairwise matrix",
+      "preconditions": "Six separately named geography/currency dimensions",
+      "action": "Change allowed organizer/profile fields and make eligible purchases",
+      "expected": "Event country, business country, both Stripe countries and currency never substitute for each other",
+      "variants": [
+        "organizer country!=Stripe",
+        "promoter profile!=Stripe",
+        "event country!=both"
+      ],
+      "sources": [
+        "countries",
+        "organizer_country",
+        "onboarding",
+        "settlement"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 8
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "MC-07",
+      "group": "Mixed settlement, currencies, and geography",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Selected-currency charts and wallet",
+      "preconditions": "Mixed currencies and multiple months/events",
+      "action": "Change chart/wallet selector and ledger currency filter independently",
+      "expected": "Only selected currency in money charts/wallet; all-currency cards labeled; ledger filter does not change lifetime summary",
+      "variants": [
+        "refund in old month",
+        "case normalization",
+        "same symbol USD/CAD"
+      ],
+      "sources": [
+        "portal",
+        "stats",
+        "summary"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "MC-08",
+      "group": "Mixed settlement, currencies, and geography",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Post-sale country/currency immutability",
+      "preconditions": "Sold event and earned commissions",
+      "action": "Attempt event currency/country edit; edit organizer business country",
+      "expected": "Sold event economics locked; permitted business-country edit does not rewrite ledger, Stripe account or original currency",
+      "variants": [
+        "wallet",
+        "automatic paid",
+        "partial refund"
+      ],
+      "sources": [
+        "settings",
+        "stats",
+        "settlement"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OperationsTests.cs",
+          "line": 94
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "MC-09",
+      "group": "Mixed settlement, currencies, and geography",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Mixed wallet statuses in each currency",
+      "preconditions": "Available/held/requested/failed/paid/reversed rows in three currencies",
+      "action": "View each currency and withdraw eligible rows",
+      "expected": "Separate eligible and lifetime balances; held/reversed/paid/requested rows never paid twice; other currencies unchanged",
+      "variants": [
+        "all statuses together",
+        "two promoters"
+      ],
+      "sources": [
+        "wallet",
+        "summary",
+        "portal"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
+          "line": 39
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "MC-10",
+      "group": "Mixed settlement, currencies, and geography",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Unsupported or non-cent currency boundary",
+      "preconditions": "Currency outside current USD/CAD/EUR browser baseline",
+      "action": "Exercise configured API validation and calculations in isolated fixture",
+      "expected": "Explicit support/rejection recorded; no assumed two-decimal correctness for zero/three-decimal currencies; no silently fabricated conversion",
+      "variants": [
+        "enabled configured currency",
+        "disabled currency",
+        "zero-decimal candidate"
+      ],
+      "sources": [
+        "settlement",
+        "stripe"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "RF-01",
+      "group": "Refunds, processing failures, and recovery",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Partial refund before wallet withdrawal",
+      "preconditions": "Multi-price paid tickets with frozen allocations and wallet commission",
+      "action": "Refund one ticket then withdraw remainder",
+      "expected": "Exact selected net reversed; wallet reduced; no recovery debt on unpaid portion; only residual transfers",
+      "variants": [
+        "both attributions",
+        "USD/CAD/EUR"
+      ],
+      "sources": [
+        "refund",
+        "reversal",
+        "wallet"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/referral_currencies.spec.ts",
+          "line": 14
+        }
+      ],
+      "coverageNote": "Populated-ticket refund cases pass; actual ticket generation from webhook recalculation reproduces zero commission allocations in USD/CAD/EUR.",
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 5
+        },
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 39
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "RF-02",
+      "group": "Refunds, processing failures, and recovery",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Full refund before payout",
+      "preconditions": "Wallet or unclaimed automatic payout",
+      "action": "Refund all tickets then run request/processor",
+      "expected": "FullyReversed; no positive transfer; no recovery debt; historical gross/original net preserved",
+      "variants": [
+        "Wallet",
+        "AutomaticProviderPayout",
+        "net zero"
+      ],
+      "sources": [
+        "refund",
+        "processing"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 39
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "RF-03",
+      "group": "Refunds, processing failures, and recovery",
+      "priority": "P0",
+      "layer": "S",
+      "name": "Refund after successful transfer",
+      "preconditions": "Paid commission with provider reference",
+      "action": "Refund selected/all tickets through normal app flow",
+      "expected": "Exact transfer reversal; entitlement and recovery amounts agree; original Paid record retained",
+      "variants": [
+        "partial",
+        "full",
+        "both attribution types"
+      ],
+      "sources": [
+        "refund",
+        "stripe",
+        "reversal"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 39
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "RF-04",
+      "group": "Refunds, processing failures, and recovery",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Refund after amount claim before paid write",
+      "preconditions": "Payout amount frozen/Processing; provider call delayed",
+      "action": "Refund, then complete original provider call",
+      "expected": "Original idempotent amount does not change; correct recovery obligation created; later recovery does not double debit",
+      "variants": [
+        "partial refund",
+        "full refund",
+        "lost paid write"
+      ],
+      "sources": [
+        "payout_claim",
+        "reversal",
+        "processing"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 91
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "RF-05",
+      "group": "Refunds, processing failures, and recovery",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Duplicate and sequential partial refunds",
+      "preconditions": "Multiple refunded ticket selections",
+      "action": "Retry same refund and issue second distinct refund",
+      "expected": "Same refund once; distinct allocations accumulate; cannot reverse beyond earned amount",
+      "variants": [
+        "unequal ticket prices",
+        "rounding remainder",
+        "final full reversal"
+      ],
+      "sources": [
+        "refund",
+        "reversal"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 39
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "RF-06",
+      "group": "Refunds, processing failures, and recovery",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Caller cannot opt out of promoter reversal",
+      "preconditions": "Referred ticket and refund API",
+      "action": "Refund with IncludesPromoterFees false",
+      "expected": "Entitlement still follows refunded tickets; no retained commission on refunded sale",
+      "variants": [
+        "cash/POS refund of Stripe sale",
+        "normal online refund"
+      ],
+      "sources": [
+        "refund"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 39
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "RF-07",
+      "group": "Refunds, processing failures, and recovery",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Recovery failure does not block buyer",
+      "preconditions": "Provider reversal fails after entitlement reversal",
+      "action": "Complete buyer refund then inspect portal/admin",
+      "expected": "Buyer refunded; outstanding recovery amount/reason visible; original transfer not relabeled unpaid",
+      "variants": [
+        "insufficient recipient funds",
+        "provider unavailable",
+        "timeout"
+      ],
+      "sources": [
+        "refund",
+        "admin",
+        "summary"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OperationsTests.cs",
+          "line": 57
+        },
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 71
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "RF-08",
+      "group": "Refunds, processing failures, and recovery",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Retry recovery by refund identity",
+      "preconditions": "Several recovery obligations, one already recovered",
+      "action": "Admin retries with reason",
+      "expected": "Only remaining obligations retried with original keys/amounts; totals and audit correct; no duplicate clawback",
+      "variants": [
+        "expired claim lease",
+        "concurrent retries",
+        "partial success"
+      ],
+      "sources": [
+        "admin",
+        "reversal"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OperationsTests.cs",
+          "line": 57
+        },
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 71
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "RF-09",
+      "group": "Refunds, processing failures, and recovery",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Organizer funding not returned twice",
+      "preconditions": "Provider-refunded vs cash-refunded Stripe sale",
+      "action": "Refund paid/unpaid promoter commissions",
+      "expected": "Provider buyer refund reversing organizer transfer gets no extra commission return; outside-provider refund returns eligible funding only once",
+      "variants": [
+        "Wallet",
+        "automatic paid",
+        "clawback failure"
+      ],
+      "sources": [
+        "refund",
+        "stripe"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 39
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "RF-10",
+      "group": "Refunds, processing failures, and recovery",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Transient payout failure and retry",
+      "preconditions": "Collected commission; provider temporarily fails",
+      "action": "Process then reconcile successfully",
+      "expected": "Ledger persists, FailedRetryable then Paid; stable destination/currency/amount/key; one effective transfer",
+      "variants": [
+        "lost response",
+        "provider success followed by DB failure"
+      ],
+      "sources": [
+        "processing",
+        "payout_claim"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 132
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "RF-11",
+      "group": "Refunds, processing failures, and recovery",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Retry limits and uncertain transfer age",
+      "preconditions": "Repeatedly failing transfer or frozen first-attempt time",
+      "action": "Process eighth failure and age cutoff",
+      "expected": "NeedsReview at limit; no automatic replay after 23h; liability remains visible",
+      "variants": [
+        "attempt 7/8",
+        "22h59m/23h/24h"
+      ],
+      "sources": [
+        "processing"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OperationsTests.cs",
+          "line": 35
+        },
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 132
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "RF-12",
+      "group": "Refunds, processing failures, and recovery",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Risk hold across processing",
+      "preconditions": "Clear commission with controllable worker",
+      "action": "Hold before claim, attempt payout, release with reason",
+      "expected": "Hold prevents payout; release safely makes work eligible; paid/actively processing claim races handled without false hold guarantee",
+      "variants": [
+        "Wallet",
+        "automatic Pending",
+        "Processing",
+        "Paid"
+      ],
+      "sources": [
+        "admin",
+        "processing",
+        "wallet"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OperationsTests.cs",
+          "line": 9
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "RF-13",
+      "group": "Refunds, processing failures, and recovery",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Refund precedes first ledger insert probe",
+      "preconditions": "Completed referred order but ledger insert delayed/failed",
+      "action": "Refund before recording, then reconcile",
+      "expected": "Intended invariant: later recording/payout reflects refund; no refunded commission becomes payable; current source requires targeted reproduction",
+      "variants": [
+        "partial/full",
+        "Wallet/AutomaticProviderPayout"
+      ],
+      "sources": [
+        "refund",
+        "transaction_claim",
+        "processing"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 115
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "RF-14",
+      "group": "Refunds, processing failures, and recovery",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Missing event/source during recovery",
+      "preconditions": "Deferred transaction with missing event or removed original attachment",
+      "action": "Run reconciliation",
+      "expected": "Missing event produces explicit review state; existing earned ledger can still process without rebuilding live attachment rules",
+      "variants": [
+        "event absent",
+        "attachment absent with ledger",
+        "attribution absent without ledger"
+      ],
+      "sources": [
+        "reconciliation",
+        "processing"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/BoundaryTests.cs",
+          "line": 57
+        },
+        {
+          "path": "integration/Kickback.Tests/BoundaryTests.cs",
+          "line": 83
+        },
+        {
+          "path": "integration/Kickback.Tests/BoundaryTests.cs",
+          "line": 96
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "PV-01",
+      "group": "Portal, permissions, reporting, and UX",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Portal balances reconcile with complete ledger",
+      "preconditions": "More than ten commissions across statuses",
+      "action": "Open overview/earnings/codes and inspect API",
+      "expected": "Server totals cover all pages and agree with independent ledger sums; page size cannot alter balance",
+      "variants": [
+        "0",
+        "1",
+        "10",
+        "11",
+        "21 records"
+      ],
+      "sources": [
+        "portal",
+        "stats",
+        "summary"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/ReportingTests.cs",
+          "line": 9
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "PV-02",
+      "group": "Portal, permissions, reporting, and UX",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Payment search/filter pagination",
+      "preconditions": "More than two pages, same timestamps included",
+      "action": "Search confirmation/event as supported, filter status/currency, paginate",
+      "expected": "Filtering before paging; correct count; no duplicate/missing rows; reset to page 1 on filter changes",
+      "variants": [
+        "Active",
+        "PartiallyReversed",
+        "FullyReversed",
+        "currency+search combined"
+      ],
+      "sources": [
+        "portal",
+        "permissions"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/ReportingTests.cs",
+          "line": 9
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "PV-03",
+      "group": "Portal, permissions, reporting, and UX",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Promo-code pagination and performance",
+      "preconditions": "More than ten codes/relationships across events",
+      "action": "Search, paginate, expand performance",
+      "expected": "Correct codes/counts/event names and currency-separated performance; no full-ledger dependency",
+      "variants": [
+        "active/no sales",
+        "inactive with history",
+        "inactive zero-history"
+      ],
+      "sources": [
+        "portal",
+        "stats"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "PV-04",
+      "group": "Portal, permissions, reporting, and UX",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Own promoter financial data",
+      "preconditions": "Two authenticated promoters with distinct money",
+      "action": "Manipulate promoter ID for ledger and event IDs for statements/stats",
+      "expected": "No cross-user financial data; validate actual HTTP auth behavior, not controller return object only",
+      "variants": [
+        "unauthenticated",
+        "foreign promoter",
+        "foreign event"
+      ],
+      "sources": [
+        "permissions",
+        "statement"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 124
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/testlab_api.spec.ts",
+          "line": 172
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/ReportingTests.cs",
+          "line": 44
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "PV-05",
+      "group": "Portal, permissions, reporting, and UX",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Self-scoped proxy identity",
+      "preconditions": "URL user ID differs from token",
+      "action": "Call profile/stats/enrollment/onboarding/wallet proxy paths",
+      "expected": "Backend scopes to token; no foreign data or mutations; do not assume every path mismatch must return 403",
+      "variants": [
+        "path ID of other user",
+        "missing token"
+      ],
+      "sources": [
+        "wallet_proxy",
+        "permissions",
+        "enroll"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/signed_in_checkout.spec.ts",
+          "line": 40
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "PV-06",
+      "group": "Portal, permissions, reporting, and UX",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Organizer authority boundaries",
+      "preconditions": "Organizer/operator with and without promoter policy",
+      "action": "View/update/revoke/reactivate event promoters",
+      "expected": "Authorized scope only; wrong event/organizer rejected; no financial history lost",
+      "variants": [
+        "representative policy allowed/denied",
+        "foreign enrollment ID"
+      ],
+      "sources": [
+        "organizer_permissions",
+        "organizer_controls"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "PV-07",
+      "group": "Portal, permissions, reporting, and UX",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Admin role and country scope",
+      "preconditions": "Admins with different allowed country scopes plus nonadmin",
+      "action": "Search and invoke each admin operation",
+      "expected": "No unauthorized rows/actions; actor/reason audit correct; client country filter cannot expand authorization",
+      "variants": [
+        "hold",
+        "release",
+        "retry payout",
+        "retry recovery",
+        "revoke",
+        "reactivate"
+      ],
+      "sources": [
+        "admin"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/OperationsTests.cs",
+          "line": 9
+        },
+        {
+          "path": "integration/Kickback.Tests/OperationsTests.cs",
+          "line": 57
+        },
+        {
+          "path": "integration/Kickback.Tests/OperationsTests.cs",
+          "line": 81
+        },
+        {
+          "path": "integration/Kickback.Tests/OperationsTests.cs",
+          "line": 94
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "PV-08",
+      "group": "Portal, permissions, reporting, and UX",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Inactive historical relationships",
+      "preconditions": "Earned assigned or buyer promotion later detached/revoked",
+      "action": "View profile, codes, stats, payments and statement",
+      "expected": "Earned/reversed history retained, no longer earning clearly indicated; inactive zero-history follows visibility contract",
+      "variants": [
+        "fully reversed history",
+        "multiple attachments for same event"
+      ],
+      "sources": [
+        "portal",
+        "stats",
+        "statement"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/promotion_lifecycle.spec.ts",
+          "line": 35
+        }
+      ],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/ReportingTests.cs",
+          "line": 58
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "PV-09",
+      "group": "Portal, permissions, reporting, and UX",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Per-event statements",
+      "preconditions": "Several events, each with one currency and many rows",
+      "action": "Download promoter and authorized organizer statements",
+      "expected": "Same event financial facts, original currency, chronological complete rows and totals; errors recoverable",
+      "variants": [
+        ">one page",
+        "partial/full reversal",
+        "wallet/automatic/recovery"
+      ],
+      "sources": [
+        "statement",
+        "portal"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/ReportingTests.cs",
+          "line": 9
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "PV-10",
+      "group": "Portal, permissions, reporting, and UX",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Same-event mixed-currency reporting probe",
+      "preconditions": "Imported mixed currency rows for same event",
+      "action": "Read event summary and generate statement",
+      "expected": "Intended invariant: split currencies or reject mixed output; never sum unlike currencies under first row currency",
+      "variants": [
+        "two currencies",
+        "ledger-only history"
+      ],
+      "sources": [
+        "event_stats",
+        "statement",
+        "stats"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/ReportingTests.cs",
+          "line": 74
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "PV-11",
+      "group": "Portal, permissions, reporting, and UX",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Wallet summary/request parity probe",
+      "preconditions": "Valid rows and isolated malformed/legacy rows",
+      "action": "Compare displayed available total with actual eligible request set",
+      "expected": "Valid data exactly agrees; inconsistent/paid/requested legacy rows cannot be advertised as withdrawable",
+      "variants": [
+        "missing old fields",
+        "already paid Wallet mode",
+        "negative reversal",
+        "underfunded"
+      ],
+      "sources": [
+        "wallet",
+        "summary"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/ReportingTests.cs",
+          "line": 106
+        },
+        {
+          "path": "integration/Kickback.Tests/WalletTests.cs",
+          "line": 76
+        },
+        {
+          "path": "integration/Kickback.Tests/WalletTests.cs",
+          "line": 88
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "PV-12",
+      "group": "Portal, permissions, reporting, and UX",
+      "priority": "P1",
+      "layer": "B",
+      "name": "Currency feedback and responsive dialogs",
+      "preconditions": "Mobile/desktop promoter and checkout pages",
+      "action": "Keyboard navigate, open/close modals, inspect long translated labels",
+      "expected": "Correct dialog focus, visible action/error, no overflow hiding required controls, busy actions blocked",
+      "variants": [
+        "mobile Chromium",
+        "desktop Firefox/WebKit",
+        "en/es/fr"
+      ],
+      "sources": [
+        "modal",
+        "onboarding_ui",
+        "wallet_ui"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "line": 157
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "PV-13",
+      "group": "Portal, permissions, reporting, and UX",
+      "priority": "P0",
+      "layer": "B",
+      "name": "Google mismatch session probe",
+      "preconditions": "Guest checkout for A; Google login returns existing B",
+      "action": "Select B, observe mismatch, read profile and reload",
+      "expected": "Intended invariant: no hidden switch to B behind A checkout UI; cookie-backed identity and client state remain consistent",
+      "variants": [
+        "pre-existing B session cookie",
+        "no prior cookie",
+        "auth draft present"
+      ],
+      "sources": [
+        "google",
+        "google_proxy",
+        "signin"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "PV-14",
+      "group": "Portal, permissions, reporting, and UX",
+      "priority": "P1",
+      "layer": "B",
+      "name": "No-promoter empty portal",
+      "preconditions": "Authenticated user with no promoter profile/enrollments",
+      "action": "Open portal, optionally create promoter profile",
+      "expected": "Useful empty/join state; no false earnings or Stripe readiness; profile identity reused by later enrollment",
+      "variants": [
+        "no profile",
+        "profile but no events",
+        "profile with only inactive zero-history"
+      ],
+      "sources": [
+        "portal",
+        "enroll",
+        "onboarding"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "NT-01",
+      "group": "Notifications and asynchronous operational evidence",
+      "priority": "P1",
+      "layer": "I",
+      "name": "First commission notification exactly once",
+      "preconditions": "Two simultaneous first sales for same promoter",
+      "action": "Process both against real unique index and captured email",
+      "expected": "One first-commission owner/notification attempt; both commissions recorded; correct onboarding reminder",
+      "variants": [
+        "Wallet",
+        "automatic",
+        "two currencies"
+      ],
+      "sources": [
+        "processing",
+        "notifications"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/CheckoutAccountTests.cs",
+          "line": 10
+        },
+        {
+          "path": "integration/Kickback.Tests/NotificationTests.cs",
+          "line": 9
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "NT-02",
+      "group": "Notifications and asynchronous operational evidence",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Enrollment notification and link",
+      "preconditions": "New accepted buyer enrollment",
+      "action": "Capture lifecycle email data and repeat acceptance",
+      "expected": "Correct recipient, event/code/share URL/locale/terms context; ordinary repeat does not duplicate enrollment notification",
+      "variants": [
+        "en/es/fr",
+        "missing/incomplete/ready account"
+      ],
+      "sources": [
+        "enroll",
+        "notifications"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/NotificationTests.cs",
+          "line": 9
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "NT-03",
+      "group": "Notifications and asynchronous operational evidence",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Payout success/failure and refund messages",
+      "preconditions": "Transfer/recovery state fixtures",
+      "action": "Process success/failure/refund",
+      "expected": "Captured content reflects exact currency/net and current financial state; wallet request is not bank-paid confirmation",
+      "variants": [
+        "first failure",
+        "review failure",
+        "paid",
+        "partial/full reversal"
+      ],
+      "sources": [
+        "notifications",
+        "processing",
+        "refund"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/NotificationTests.cs",
+          "line": 9
+        },
+        {
+          "path": "integration/Kickback.Tests/RefundAndRecoveryTests.cs",
+          "line": 71
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "NT-04",
+      "group": "Notifications and asynchronous operational evidence",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Email provider failure isolation",
+      "preconditions": "Captured email provider throws",
+      "action": "Enroll/record/pay/refund",
+      "expected": "Financial operation not undone by notification failure; error observable without corrupting state",
+      "variants": [
+        "lifecycle message categories"
+      ],
+      "sources": [
+        "notifications"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/NotificationTests.cs",
+          "line": 36
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "NT-05",
+      "group": "Notifications and asynchronous operational evidence",
+      "priority": "P0",
+      "layer": "I",
+      "name": "Email estimate cap probe",
+      "preconditions": "Commission percentage+fixed exceeds purchased sample price",
+      "action": "Build/capture confirmation email",
+      "expected": "Intended invariant: estimate respects same cap as actual commission; no inflated promise",
+      "variants": [
+        "fixed above ticket",
+        "percentage plus fixed",
+        "platform fee boundary"
+      ],
+      "sources": [
+        "email_preview",
+        "modal_preview",
+        "settlement"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "historicalLocalTestReferences": [
+        {
+          "path": "integration/Kickback.Tests/NotificationTests.cs",
+          "line": 50
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "NT-06",
+      "group": "Notifications and asynchronous operational evidence",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Reconciliation schedule/preflight",
+      "preconditions": "Isolated host with explicit job configuration",
+      "action": "Complete wallet request with worker off then trigger worker",
+      "expected": "Pending demonstrable before processing; explicit invocation completes; environment cannot silently leave accepted requests stuck",
+      "variants": [
+        "Testing registration off",
+        "enabled shortened interval",
+        "batch >100"
+      ],
+      "sources": [
+        "reconciliation",
+        "wallet"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "NT-07",
+      "group": "Notifications and asynchronous operational evidence",
+      "priority": "P0",
+      "layer": "S",
+      "name": "Required provider cases cannot silently pass",
+      "preconditions": "Required case manifest and intentionally missing account/balance",
+      "action": "Execute preflight and provider lane",
+      "expected": "Missing credentials/account/currency funds reported as blocked/failure, not green early return; each required tuple has evidence",
+      "variants": [
+        "no test account",
+        "unsettled currency",
+        "no catalogue",
+        "wrong deployed commit"
+      ],
+      "sources": [
+        "stripe",
+        "countries"
+      ],
+      "implementationStatus": "planned",
+      "testReferences": [],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    },
+    {
+      "id": "NT-08",
+      "group": "Notifications and asynchronous operational evidence",
+      "priority": "P1",
+      "layer": "I",
+      "name": "Financial cleanup preserves evidence",
+      "preconditions": "Completed test sales and queued/paid/recovery liabilities",
+      "action": "Run cleanup at success/failure/retry",
+      "expected": "Resolve or report liabilities before deleting parents; no hidden pending worker processing after event deletion; tokens/secrets absent in artifacts",
+      "variants": [
+        "failed assertion",
+        "retry",
+        "held commission",
+        "pending recovery"
+      ],
+      "sources": [
+        "refund",
+        "reconciliation",
+        "processing"
+      ],
+      "implementationStatus": "partial",
+      "testReferences": [
+        {
+          "path": "jasspass-tests/tests/kickback/referral_currencies.spec.ts",
+          "line": 14
+        }
+      ],
+      "executionNote": "References identify implemented assertions, not complete variants or successful execution. See kickback-results.json."
+    }
+  ],
+  "expansions": [
+    {
+      "id": "identity",
+      "case": "AC-01..AC-20",
+      "rule": "Run every main identity outcome at a supported baseline currency; do not multiply OAuth UI over every currency."
+    },
+    {
+      "id": "commission",
+      "case": "MC-02",
+      "dimensions": {
+        "attribution": [
+          "OrganizerAssigned",
+          "BuyerAutoPromote"
+        ],
+        "readiness": [
+          "missing",
+          "incomplete",
+          "ready"
+        ],
+        "rate": [
+          "percentage",
+          "fixed",
+          "combined"
+        ],
+        "currency": [
+          "USD",
+          "CAD",
+          "EUR"
+        ]
+      },
+      "requiredTupleCount": 54
+    },
+    {
+      "id": "geography",
+      "case": "MC-06",
+      "rule": "Pairwise valid combinations of organizer business country, organizer Stripe country, event country, event currency, promoter profile country, promoter Stripe country, plus explicit same/different and unsupported boundaries."
+    },
+    {
+      "id": "provider",
+      "case": "MC-05",
+      "rule": "Every required enabled promoter account country x required transfer currency, based on a pinned expected fixture manifest and actual provider capability evidence; no silent reduction of required cases."
+    },
+    {
+      "id": "mixed_lifecycle",
+      "case": "MC-01",
+      "rule": "One promoter, old wallet and new automatic earnings simultaneously in USD/CAD/EUR; selective withdrawals and refunds with state reconciliation after every transition."
+    }
+  ],
+  "updatedAt": "2026-09-07",
+  "studyVerification": {
+    "frontend": {
+      "files": 21,
+      "passed": 210,
+      "failed": 0
+    },
+    "backend": {
+      "passed": 382,
+      "failed": 0,
+      "skipped": 0,
+      "source": "clean tracked-source temporary snapshot"
+    },
+    "liveBrowserOrProviderExecuted": false
+  },
+  "verification": {
+    "report": "docs/kickback-results.json",
+    "interpretation": "Read the execution report. Test references do not establish complete matrix coverage."
+  },
+  "implementationSummary": {
+    "caseDefinitions": 144,
+    "withTestReferences": 66,
+    "withoutTestReferences": 78,
+    "completeCasesClaimed": 0
+  },
+  "fixtureManifest": {
+    "accountIdsSource": "jasspass-tests/helpers/countryCurrencyMatrixHelpers.ts: stripeAccountIdFor",
+    "requiredPromoterAccountCountries": [
+      "US",
+      "CA",
+      "ES"
+    ],
+    "requiredEventMarkets": [
+      {
+        "country": "US",
+        "currency": "USD"
+      },
+      {
+        "country": "CA",
+        "currency": "CAD"
+      },
+      {
+        "country": "ES",
+        "currency": "EUR"
+      }
+    ],
+    "requiredCountryCurrencyTuples": 9,
+    "lifecycle": [
+      "wallet before attachment",
+      "automatic new commission after attachment",
+      "manual withdrawal of old wallet",
+      "refund and recovery"
+    ],
+    "executionStatus": "blocked: testlab fixture endpoint not deployed",
+    "excludedFromThisFixture": "Actual Stripe-hosted onboarding and incomplete-account states"
+  }
+}

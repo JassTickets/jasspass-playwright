@@ -1,0 +1,237 @@
+{
+  "recordedAt": "2026-09-07",
+  "status": "incomplete-with-confirmed-regressions-and-deployment-blockers",
+  "sourceCommits": {
+    "api": "d88499856dc5c0a9133d450c2ec60b9ca3bf3cb7",
+    "ui": "6bf50c6012eb9bffc3068c6a9101c904001c1d34"
+  },
+  "deployedTestlabRevisionVerified": false,
+  "testlabUrl": "https://testlab-env191.jasspass.com",
+  "browser": {
+    "totalDistinctTests": 73,
+    "passed": 68,
+    "failed": 5,
+    "skipped": 0,
+    "completedSingleRun": false,
+    "evidenceType": "Latest outcomes combined from the initial 70-test run and a 6-test correction/deployment-check run. Not a single 73-test pass.",
+    "runs": [
+      {
+        "report": ".kickback/testlab-results.json",
+        "total": 70,
+        "passed": 65,
+        "failed": 5,
+        "durationSeconds": 860
+      },
+      {
+        "report": ".kickback/testlab-corrections.json",
+        "total": 6,
+        "passed": 3,
+        "failed": 3,
+        "durationSeconds": 63
+      }
+    ],
+    "failureClassification": {
+      "productRegressions": 2,
+      "missingTestlabFixtureDeployment": 3
+    },
+    "productRegressions": [
+      "Refunded USD/CAD/EUR sales retain wallet commission after real checkout.",
+      "Foreign promoter payment-history access returns HTTP 500 instead of 403."
+    ],
+    "testCorrectionsVerified": [
+      "Organizer discount-code list intentionally excludes buyer-promotion codes.",
+      "Hiding an already-hidden event returns HTTP 304 and completes cleanup.",
+      "A valid currency with no promoter profile returns HTTP 404; malformed currency returns HTTP 400."
+    ],
+    "limits": "16 portal cases control promoter API responses; checkout resilience cases inject selected response failures. New settlement lifecycles stop at missing endpoint preflight and have not exercised transfers. Real Google OAuth and Stripe-hosted onboarding remain unverified."
+  },
+  "stripeFixture": {
+    "implementation": "jasspass-tests/tests/kickback/stripe_settlement.spec.ts",
+    "promoterAccountCountries": [
+      "US",
+      "CA",
+      "ES"
+    ],
+    "eventMarkets": {
+      "US": "USD",
+      "CA": "CAD",
+      "ES": "EUR"
+    },
+    "requiredCountryCurrencyTuples": 9,
+    "implementedLifecycleTests": 3,
+    "executedLifecycleTests": 0,
+    "preflight": "All three cases receive HTTP 404; deploy API controller and UI proxy. No paid fixture created by these cases.",
+    "usesExistingOrganizerAccountIds": true,
+    "additionalPromoterCredentialsRequired": false,
+    "noMockedPayouts": true
+  },
+  "fixtureUnitTests": {
+    "backend": {
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "report": "/private/tmp/kickback-fixture-unit/kickback-fixture.trx"
+    },
+    "uiProxy": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "typecheck": "passed",
+  "coverage": {
+    "caseDefinitions": 144,
+    "withTestReferences": 66,
+    "withoutTestReferences": 78,
+    "completeCasesClaimed": 0,
+    "allVariantsCovered": false
+  },
+  "ciConfiguration": {
+    "workingTreeWired": true,
+    "pushedOrDeployed": false,
+    "allSpecFilesDiscovered": 54,
+    "projectTestInstances": 456,
+    "projects": [
+      "chromium",
+      "firefox",
+      "webkit",
+      "country-currency-matrix",
+      "seating-integration",
+      "kickback"
+    ],
+    "allProjectsExecutedLocally": false,
+    "integrationTarget": "testlab URL only",
+    "requiresLocalMongoOrDocker": false
+  },
+  "historical": {
+    "localBackend": {
+      "total": 206,
+      "passed": 188,
+      "failed": 18,
+      "skipped": 0,
+      "completedSingleRun": true,
+      "trxPath": ".kickback/results/kickback.trx",
+      "failures": [
+        {
+          "test": "Kickback.Tests.RefundAndRecoveryTests.Refunded_tickets_must_not_become_payable_when_first_ledger_record_is_delayed(ready: True, refundedTickets: 1)",
+          "message": "Expected reversed=900, actual=0; provider transferred=1800 cents."
+        },
+        {
+          "test": "Kickback.Tests.CheckoutAccountTests.Concurrent_confirmation_requests_create_one_user_and_one_credential_email(emailIndex: False)",
+          "message": "Assert.Single() Failure: The collection contained 8 items\nCollection: [\"6a9ec2ce47739f82eadd1769\", \"6a9ec2ce47739f82eadd1768\", \"6a9ec2ce47739f82eadd176a\", \"6a9ec2ce47739f82eadd176b\", \"6a9ec2ce47739f82eadd1762\", \u00b7\u00b7\u00b7]"
+        },
+        {
+          "test": "Kickback.Tests.RefundAndRecoveryTests.Refunded_tickets_must_not_become_payable_when_first_ledger_record_is_delayed(ready: False, refundedTickets: 2)",
+          "message": "Expected reversed=1800, actual=0; provider transferred=0 cents."
+        },
+        {
+          "test": "Kickback.Tests.ReportingTests.Mixed_currency_history_must_not_be_summed_under_a_single_event_currency(statement: False)",
+          "message": "Single-currency event summary reports 1800 USD cents from USD 900 + CAD 900."
+        },
+        {
+          "test": "Kickback.Tests.ReportingTests.Advertised_wallet_availability_equals_the_amount_that_can_actually_be_reserved(state: \"negative-reversal\", expected: 0)",
+          "message": "Wallet advertises 901 cents but only 0 cents can be requested (negative-reversal)."
+        },
+        {
+          "test": "Kickback.Tests.RefundAndRecoveryTests.Tickets_generated_from_webhook_recalculation_must_reverse_the_earned_commission_on_refund(currency: \"CAD\", country: \"CA\")",
+          "message": "Refund completed in CAD, but commission reversal was not 900 cents; generated ticket allocations total 0 cents."
+        },
+        {
+          "test": "Kickback.Tests.RefundAndRecoveryTests.Refunded_tickets_must_not_become_payable_when_first_ledger_record_is_delayed(ready: True, refundedTickets: 2)",
+          "message": "Expected reversed=1800, actual=0; provider transferred=1800 cents."
+        },
+        {
+          "test": "Kickback.Tests.ReportingTests.Advertised_wallet_availability_equals_the_amount_that_can_actually_be_reserved(state: \"inflated-net\", expected: 0)",
+          "message": "Wallet advertises 1001 cents but only 0 cents can be requested (inflated-net)."
+        },
+        {
+          "test": "Kickback.Tests.ReportingTests.Foreign_promoter_requests_are_denied_by_the_real_HTTP_pipeline(resource: \"payments\")",
+          "message": "Assert.Equal() Failure: Values differ\nExpected: Forbidden\nActual:   InternalServerError"
+        },
+        {
+          "test": "Kickback.Tests.NotificationTests.Email_offer_must_not_promise_more_than_the_ticket_commission_cap(percentage: 0, fixedAmount: 20)",
+          "message": "A $10 ticket with a capped $10 gross and $1 platform fee promises 1800 net cents in the email."
+        },
+        {
+          "test": "Kickback.Tests.ReportingTests.Mixed_currency_history_must_not_be_summed_under_a_single_event_currency(statement: True)",
+          "message": "Statement reports 1800 USD cents while including a different currency."
+        },
+        {
+          "test": "Kickback.Tests.ReportingTests.Advertised_wallet_availability_equals_the_amount_that_can_actually_be_reserved(state: \"paid\", expected: 0)",
+          "message": "Wallet advertises 900 cents but only 0 cents can be requested (paid)."
+        },
+        {
+          "test": "Kickback.Tests.RefundAndRecoveryTests.Tickets_generated_from_webhook_recalculation_must_reverse_the_earned_commission_on_refund(currency: \"EUR\", country: \"ES\")",
+          "message": "Refund completed in EUR, but commission reversal was not 900 cents; generated ticket allocations total 0 cents."
+        },
+        {
+          "test": "Kickback.Tests.RefundAndRecoveryTests.Refunded_tickets_must_not_become_payable_when_first_ledger_record_is_delayed(ready: False, refundedTickets: 1)",
+          "message": "Expected reversed=900, actual=0; provider transferred=0 cents."
+        },
+        {
+          "test": "Kickback.Tests.NotificationTests.Email_offer_must_not_promise_more_than_the_ticket_commission_cap(percentage: 80, fixedAmount: 5)",
+          "message": "A $10 ticket with a capped $10 gross and $1 platform fee promises 1170 net cents in the email."
+        },
+        {
+          "test": "Kickback.Tests.RefundAndRecoveryTests.Tickets_generated_from_webhook_recalculation_must_reverse_the_earned_commission_on_refund(currency: \"USD\", country: \"US\")",
+          "message": "Refund completed in USD, but commission reversal was not 900 cents; generated ticket allocations total 0 cents."
+        },
+        {
+          "test": "Kickback.Tests.CheckoutAccountTests.Concurrent_confirmation_requests_create_one_user_and_one_credential_email(emailIndex: True)",
+          "message": "Assert.Single() Failure: The collection contained 8 items\nCollection: [\"6a9ec2cd47739f82eadd170b@example.com\", \"6a9ec2cd47739f82eadd170b@example.com\", \"6a9ec2cd47739f82eadd170b@example.com\", \"6a9ec2cd47739f82eadd170b@example.com\", \"6a9ec2cd47739f82eadd170b@example.com\", \u00b7\u00b7\u00b7]"
+        },
+        {
+          "test": "Kickback.Tests.ReportingTests.Advertised_wallet_availability_equals_the_amount_that_can_actually_be_reserved(state: \"requested\", expected: 0)",
+          "message": "Wallet advertises 900 cents but only 0 cents can be requested (requested)."
+        }
+      ],
+      "limits": "Real Mongo/services; seeded funded orders and deterministic external payout provider. Two email estimate cases are pure helper tests."
+    },
+    "previousBrowserBatches": {
+      "totalDistinctTests": 36,
+      "passed": 35,
+      "failed": 1,
+      "skipped": 0,
+      "completedSingleRun": false,
+      "browser": "Chromium; includes one mobile viewport contract",
+      "evidenceType": "Latest results across separate focused batches, not a single 36-test run",
+      "files": [
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_identity.spec.ts",
+          "passed": 3,
+          "failed": 0
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/checkout_resilience.spec.ts",
+          "passed": 10,
+          "failed": 0
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/promotion_lifecycle.spec.ts",
+          "passed": 3,
+          "failed": 0
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/portal_contract.spec.ts",
+          "passed": 16,
+          "failed": 0
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/signed_in_checkout.spec.ts",
+          "passed": 3,
+          "failed": 0
+        },
+        {
+          "path": "jasspass-tests/tests/kickback/referral_currencies.spec.ts",
+          "passed": 0,
+          "failed": 1
+        }
+      ],
+      "failure": "Live USD/CAD/EUR referral checkout and wallet assertions passed; refund teardown left 90 available commission cents per currency after all tickets were refunded.",
+      "limits": "16 portal cases use controlled promoter API responses. Real Stripe promoter onboarding/transfers/withdrawals and real Google OAuth are untested."
+    },
+    "note": "The local backend harness was retired and removed from the deliverable. Its 206 cases and 54 financial tuples are not current CI coverage."
+  },
+  "findingsReport": "docs/kickback-bugs.md",
+  "refundEvidence": "docs/kickback-refund-evidence.json"
+}
