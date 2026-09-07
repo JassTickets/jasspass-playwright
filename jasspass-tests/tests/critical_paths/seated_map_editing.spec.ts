@@ -1,5 +1,6 @@
 import { test, expect } from '../../fixtures/application';
 import {
+  continueFromTicketStep,
   openEvent,
   selectTicketQuantity,
   visibleTicketPicker,
@@ -263,11 +264,7 @@ test.describe('published seating-map editing', () => {
             ),
         { timeout: 30_000 }
       );
-      await visibleTicketPicker(buyerPage)
-        .locator('[data-checkout-cta="true"]')
-        .filter({ visible: true })
-        .first()
-        .click();
+      await continueFromTicketStep(buyerPage);
       const rejectedHold = await rejectedHoldPromise;
       expect(rejectedHold.status()).toBe(409);
       expect(await errorMessage(rejectedHold)).toContain(

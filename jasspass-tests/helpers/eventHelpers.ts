@@ -30,7 +30,14 @@ import {
 import { signIn } from './auth';
 import { createOrganizer } from './organizerHelpers';
 import { fillIndividualStripeFields } from './stripeHelpers';
-import { openTicketPicker } from './criticalCheckoutHelpers';
+import {
+  closeTicketPicker,
+  fillGuestContact,
+  openCheckout,
+  openTicketPicker,
+  selectTicketQuantity,
+  submitPurchase,
+} from './criticalCheckoutHelpers';
 import {
   openEventPortalDestination,
   openOrganizerSurface,
@@ -141,19 +148,9 @@ async function findAndClickPromoCode(
 
 async function reloadStaleEventDataIfPresent(organizerPage: Page) {
   const overlay = organizerPage.locator('.absolute.inset-0.z-10.bg-black\\/60');
-  let reloadButton = organizerPage.getByRole('button', { name: /reload/i });
+  const reloadButton = organizerPage.getByRole('button', { name: /reload/i });
   if (await reloadButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-    try {
-      await reloadButton.click({ timeout: 3000 });
-    } catch {
-      reloadButton = organizerPage.getByRole('button', { name: /reload/i });
-      if (
-        (await overlay.count()) > 0 &&
-        (await reloadButton.isVisible({ timeout: 1000 }).catch(() => false))
-      ) {
-        await reloadButton.click({ timeout: 3000 }).catch(() => undefined);
-      }
-    }
+    await reloadButton.click();
   }
 
   await expect(overlay).toHaveCount(0, { timeout: 15000 });
@@ -238,17 +235,7 @@ async function openMessageAttendees(organizerPage: Page): Promise<Locator> {
     .first();
 
   await expect(toolsButton).toBeVisible({ timeout: 30_000 });
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    await toolsButton.click();
-    if (
-      await messageAttendeesButton
-        .isVisible({ timeout: 5_000 })
-        .catch(() => false)
-    ) {
-      break;
-    }
-  }
-
+  await toolsButton.click();
   await expect(messageAttendeesButton).toBeVisible({ timeout: 30_000 });
   await messageAttendeesButton.click();
   const messageModal = visibleModalShell(organizerPage, 'Message Attendees');
@@ -466,10 +453,7 @@ export async function createEvent(
       .getByText('General Admission Playwright', { exact: true })
       .first()
   ).toBeVisible({ timeout: 30_000 });
-  await ticketPicker
-    .getByRole('button', { name: 'Close', exact: true })
-    .click();
-  await expect(ticketPicker).toBeHidden({ timeout: 15_000 });
+  await closeTicketPicker(page);
 
   const url = page.url();
   console.log(`New event URL: ${url}`);
@@ -481,13 +465,15 @@ export async function purchaseTicket(
   eventId?: string
 ): Promise<string | undefined> {
   console.log('starting purchase ticket flow with eventId:', eventId);
+  let checkoutEventId = eventId;
   if (eventId) {
     //redirect to the event page using the eventId
     await page.goto(`${JASS_TEST_URL}/event/${eventId}`);
   } else {
     // No event ID passed: Create new event
-    await createEvent(page);
+    checkoutEventId = await createEvent(page);
   }
+  if (!checkoutEventId) throw new Error('Checkout event ID is unavailable.');
 
   // Best-effort capture of the organizer name from the event page so callers that
   // need it (e.g. operator-access checks) can reuse it. Returned optionally so the
@@ -504,55 +490,38 @@ export async function purchaseTicket(
   }
 
   // Select ticket and proceed
-  const ticketPicker = await openTicketPicker(page);
-  // Select +1
-  await ticketPicker
-    .getByRole('button', { name: /^Increase quantity for / })
-    .first()
-    .click();
-  //Timeout
-  await page.waitForTimeout(2000);
-  await ticketPicker
-    .locator('[data-checkout-cta="true"]')
-    .filter({ visible: true })
-    .first()
-    .click();
+  await selectTicketQuantity(
+    page,
+    checkoutEventId,
+    'General Admission Playwright',
+    1
+  );
+  await openCheckout(page);
 
-  // Fill buyer information
-  await page
-    .getByRole('textbox', { name: 'Enter first name' })
-    .fill(CONTACT_NAME);
-  await page.getByRole('textbox', { name: 'Enter last name' }).fill('Client');
-  await page
-    .getByRole('textbox', { name: 'Enter email address' })
-    .fill(PLAYWRIGHT_BOT_EMAIL);
-  await page.locator('#phone-input').nth(1).fill(CONTACT_PHONE_NUMBER);
-
-  await page.getByRole('button', { name: 'Proceed to Payment' }).click();
-
-  await expect(page.getByText('Payment Information')).toBeVisible({
-    timeout: 15000,
+  // Fill the currently visible checkout contact form. The unified checkout no
+  // longer exposes the old placeholder strings as accessible textbox names.
+  await fillGuestContact(page, {
+    firstName: CONTACT_NAME,
+    lastName: 'Client',
+    email: PLAYWRIGHT_BOT_EMAIL,
+    phone: CONTACT_PHONE_NUMBER,
   });
 
-  // Fill Stripe card fields
+  const proceedToPayment = page
+    .getByRole('button', { name: 'Proceed to Payment' })
+    .filter({ visible: true });
+  await expect(
+    proceedToPayment,
+    'A paid online order must include the payment step before checkout.'
+  ).toHaveCount(1);
+  await proceedToPayment.click();
+  await expect(page.getByText('Payment Information')).toBeVisible({
+    timeout: 15_000,
+  });
   await fillIndividualStripeFields(page);
 
-  await page.locator('#tosAccepted').check();
-
-  // Integration success signal: checkout must redirect to the payment success page.
-  const successUrlPromise = page.waitForURL(/\/payment\/success\//, {
-    timeout: 45000,
-  });
-  await page.getByRole('button', { name: 'Checkout' }).click();
-  await successUrlPromise;
-
-  // Close the modal (if any):
-  try {
-    await page.getByRole('button', { name: 'Close' }).click({ timeout: 3000 });
-  } catch {
-    // Some browsers navigate directly to the success page without a modal.
-  }
-  await page.getByRole('img', { name: 'Ticket QR Code' }).click();
+  await page.locator('#tosAccepted:visible').check();
+  await submitPurchase(page, 'Checkout');
 
   return organizerName;
 }
@@ -667,63 +636,6 @@ export async function deleteEvent(page: Page) {
   await page1.getByRole('button', { name: 'Delete', exact: true }).click();
 
   return { page1 };
-}
-
-export async function selectFirstEventStartingWithPBO(
-  page: Page
-): Promise<Page> {
-  // Sign in first
-  await signIn(page);
-
-  // Go to events page
-  await page.goto(`${JASS_TEST_URL}/events`);
-  const searchEventsInput = page.getByRole('textbox', {
-    name: 'Search events',
-  });
-  await expect(searchEventsInput).toBeVisible({ timeout: 30000 });
-  await searchEventsInput.click();
-  await searchEventsInput.fill(EVENT_NAME_PREFIX);
-
-  // Prefer event names created by this suite.
-  const preferredEventLink = page
-    .getByRole('link', { name: new RegExp(`^${EVENT_NAME_PREFIX}`) })
-    .first();
-  let selectedEventLink = preferredEventLink;
-
-  // Fallback to any PBO event if naming convention changed.
-  if (
-    !(await selectedEventLink.isVisible({ timeout: 10000 }).catch(() => false))
-  ) {
-    await searchEventsInput.fill(ORGANIZER_NAME_PREFIX.trim());
-    selectedEventLink = page.getByRole('link', { name: /^PBO/i }).first();
-  }
-
-  if (
-    !(await selectedEventLink.isVisible({ timeout: 10000 }).catch(() => false))
-  ) {
-    throw new Error(
-      `No events found for "${EVENT_NAME_PREFIX}" (or fallback "PBO"). Please ensure test events are available.`
-    );
-  }
-
-  // Click the first event found
-  await selectedEventLink.click();
-
-  // Wait for the event page to load and click "Organizer View"
-  const organizerViewLink = page.getByText('Organizer View');
-  await expect(organizerViewLink).toBeVisible({ timeout: 30000 });
-  const page2Promise = page.waitForEvent('popup');
-  await organizerViewLink.click();
-  const page2 = await page2Promise;
-
-  await expect(
-    page2
-      .getByRole('button', { name: 'Overview', exact: true })
-      .filter({ visible: true })
-      .first()
-  ).toBeVisible({ timeout: 30_000 });
-
-  return page2;
 }
 
 export async function openEventOrganizerPortal(
@@ -880,7 +792,7 @@ export async function editEventAdditionalDetails(organizerPage: Page) {
   await expect(checkoutSheet).toBeVisible();
   const uniqueAdditionalDetails = `${EVENT_NEW_ADDITIONAL_DETAILS} ${Date.now()}`;
   await checkoutSheet
-    .locator('#edit-post-checkout')
+    .locator('#studio-post-checkout')
     .fill(uniqueAdditionalDetails);
   await checkoutSheet
     .getByRole('button', { name: 'Done', exact: true })
@@ -914,7 +826,7 @@ export async function editEventAdditionalDetails(organizerPage: Page) {
   // Reopen both sheets to verify the saved values through the redesigned UX.
   await checkoutAndEmails.click();
   checkoutSheet = visibleStudioSheet(organizerPage, 'Checkout & emails');
-  await expect(checkoutSheet.locator('#edit-post-checkout')).toHaveValue(
+  await expect(checkoutSheet.locator('#studio-post-checkout')).toContainText(
     uniqueAdditionalDetails
   );
   await checkoutSheet
@@ -962,9 +874,9 @@ export async function manageEventPromoCodes(organizerPage: Page) {
     .click();
   await organizerPage.getByRole('checkbox', { name: 'Active' }).check();
   await organizerPage.getByRole('button', { name: 'Update' }).click();
-
-  // Timeout
-  await organizerPage.waitForTimeout(3000);
+  await expect(
+    organizerPage.getByRole('button', { name: 'Edit', exact: true }).first()
+  ).toBeVisible({ timeout: 30_000 });
 
   // Return confirmation message
   return organizerPage.getByText('No promo codes found for this');
@@ -1527,34 +1439,28 @@ export async function verifyOperatorAccess(
     .getByRole('cell')
     .filter({ hasText: /#[A-Z0-9]+/ })
     .first();
-  if ((await orderCell.count()) > 0) {
-    await orderCell.click();
-    const confirmationEmailResponsePromise = page.waitForResponse(
-      (response) =>
-        response.request().method() === 'POST' &&
-        new URL(response.url()).pathname ===
-          '/api/protected/transactions/confirmation/email',
-      { timeout: 30_000 }
-    );
-    await page.getByRole('button', { name: 'Send Confirmation Email' }).click();
-    const confirmationEmailResponse = await confirmationEmailResponsePromise;
-    const confirmationEmailResponseBody = await confirmationEmailResponse
-      .text()
-      .catch(() => '<unreadable>');
-    expect(
-      confirmationEmailResponse.ok(),
-      `Resend confirmation email failed with ${confirmationEmailResponse.status()}: ${confirmationEmailResponseBody}`
-    ).toBeTruthy();
-    await expect(page.getByText('Email sent successfully!')).toBeVisible({
-      timeout: 30_000,
-    });
-    await page.getByRole('button', { name: '✕' }).click();
-  }
-
-  // Close the modal.
-
-  //timeout
-  await page.waitForTimeout(2000);
+  await expect(orderCell).toBeVisible({ timeout: 30_000 });
+  await orderCell.click();
+  const confirmationEmailResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      new URL(response.url()).pathname ===
+        '/api/protected/transactions/confirmation/email',
+    { timeout: 30_000 }
+  );
+  await page.getByRole('button', { name: 'Send Confirmation Email' }).click();
+  const confirmationEmailResponse = await confirmationEmailResponsePromise;
+  const confirmationEmailResponseBody = await confirmationEmailResponse
+    .text()
+    .catch(() => '<unreadable>');
+  expect(
+    confirmationEmailResponse.ok(),
+    `Resend confirmation email failed with ${confirmationEmailResponse.status()}: ${confirmationEmailResponseBody}`
+  ).toBeTruthy();
+  await expect(page.getByText('Email sent successfully!')).toBeVisible({
+    timeout: 30_000,
+  });
+  await page.getByRole('button', { name: '✕' }).click();
 
   // Check attendees tab
   await page.getByRole('button', { name: 'Attendees', exact: true }).click();

@@ -233,9 +233,6 @@ export async function openOrganizerSeatingMap(
   organizerId: string,
   eventId: string
 ): Promise<void> {
-  await page.addInitScript(() => {
-    window.sessionStorage.setItem('dobPromptDismissed', '1');
-  });
   const navigation = await page.goto(
     `${JASS_TEST_URL}/portal/organizer/company/${organizerId}/event/${eventId}`
   );

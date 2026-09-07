@@ -47,9 +47,18 @@ test('operator policies comprehensive flow', async ({ browser }) => {
       );
     }
 
-    // Checkout ends on a public confirmation route. Re-establish the protected
-    // organizer session before continuing with portal administration.
-    await signIn(page1);
+    // Checkout ends on a public confirmation route, but it must not destroy the
+    // organizer session. Re-enter the protected portal with a real document
+    // navigation and assert that authentication persisted.
+    await page1.goto(`${JASS_TEST_URL}/portal/home`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await expect(
+      page1
+        .getByRole('button', { name: 'Sign Out', exact: true })
+        .filter({ visible: true })
+        .first()
+    ).toBeVisible({ timeout: 30_000 });
 
     // Open the event portal directly. The public-page Organizer View popup is
     // unrelated to the operator-policy behavior covered by this test.
@@ -64,9 +73,6 @@ test('operator policies comprehensive flow', async ({ browser }) => {
     // STEP 2: Add operator with policies
     console.log('[INFO] Step 2: Adding operator with all policies...');
     await addOperatorWithAllPolicies(organizerPage, PLAYWRIGHT_BOT2_EMAIL);
-
-    // Wait for policies to be saved
-    await organizerPage.waitForTimeout(2000);
 
     // STEP 3: Sign in as operator and verify access
     console.log(

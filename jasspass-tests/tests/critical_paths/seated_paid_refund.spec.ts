@@ -65,26 +65,24 @@ async function refundSeat(
   }).toPass({ timeout: 15_000 });
   await ownerPage.locator('#refund-details').fill(details);
 
-  const responsePromise = ownerPage.waitForResponse(
-    (response) =>
-      response.request().method() === 'POST' &&
-      response.url().includes('/api/protected/refunds'),
-    { timeout: 45_000 }
-  );
-  const requestPromise = ownerPage.waitForRequest(
-    (request) =>
-      request.method() === 'POST' &&
-      request.url().includes('/api/protected/refunds')
-  );
   const submitRefund = ownerPage.getByRole('button', {
     name: 'Submit Refund',
     exact: true,
   });
   await expect(submitRefund).toBeEnabled({ timeout: 15_000 });
-  await submitRefund.click();
   const [response, request] = await Promise.all([
-    responsePromise,
-    requestPromise,
+    ownerPage.waitForResponse(
+      (candidate) =>
+        candidate.request().method() === 'POST' &&
+        candidate.url().includes('/api/protected/refunds'),
+      { timeout: 45_000 }
+    ),
+    ownerPage.waitForRequest(
+      (candidate) =>
+        candidate.method() === 'POST' &&
+        candidate.url().includes('/api/protected/refunds')
+    ),
+    submitRefund.click(),
   ]);
   const responseText = await response
     .text()

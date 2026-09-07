@@ -39,6 +39,10 @@ export type HoldResponse = {
   ExpiresAtUtc: string;
   Seats?: HeldSeat[];
   SeatLabels: string[];
+  Validation?: {
+    Valid: boolean;
+    OrphanSeatLabels: string[];
+  } | null;
 };
 
 export type SeatingMapResponse = {

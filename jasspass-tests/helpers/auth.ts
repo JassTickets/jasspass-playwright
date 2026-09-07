@@ -5,12 +5,27 @@ import {
   JASS_TEST_URL,
 } from '../constants';
 
-export const DOB_PROMPT_DISMISS_KEY = 'dobPromptDismissed';
+const pagesWithDateOfBirthHandler = new WeakSet<Page>();
+
+export async function installDateOfBirthPromptHandler(page: Page) {
+  if (pagesWithDateOfBirthHandler.has(page)) return;
+
+  const remindMeLater = page.getByRole('button', {
+    name: 'Remind me later',
+    exact: true,
+  });
+  await page.addLocatorHandler(remindMeLater, async () => {
+    await remindMeLater.click();
+    await expect(remindMeLater).toBeHidden();
+  });
+  pagesWithDateOfBirthHandler.add(page);
+}
 
 export async function dismissDateOfBirthPromptIfPresent(
   page: Page,
   timeout = 3_000
 ) {
+  await installDateOfBirthPromptHandler(page);
   const remindMeLater = page.getByRole('button', {
     name: 'Remind me later',
     exact: true,
@@ -21,38 +36,24 @@ export async function dismissDateOfBirthPromptIfPresent(
     .catch(() => false);
 
   if (promptIsVisible) {
-    await remindMeLater.click();
     await expect(remindMeLater).toBeHidden();
-    return;
   }
-
-  // The profile request that decides whether to show this prompt can finish
-  // after a busy CI runner's timeout. Preserve the same "remind me later"
-  // session state so a late response cannot cover the portal mid-test.
-  await page.evaluate((dismissKey) => {
-    window.sessionStorage.setItem(dismissKey, '1');
-  }, DOB_PROMPT_DISMISS_KEY);
 }
 
 async function gotoSignIn(page: Page, url: string) {
-  try {
-    await page.goto(url, { waitUntil: 'commit', timeout: 30000 });
-  } catch (error) {
-    console.warn(`Sign-in navigation failed once; retrying: ${error}`);
-    await page.goto(url, { waitUntil: 'commit', timeout: 30000 });
-  }
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
 }
 
 async function expectSignedInPortal(page: Page) {
   await page.waitForURL((url) => url.pathname.startsWith('/portal/'), {
-    timeout: 30_000,
+    timeout: 12_000,
   });
   await expect(
     page
       .getByRole('button', { name: 'Sign Out', exact: true })
       .filter({ visible: true })
       .first()
-  ).toBeVisible({ timeout: 30_000 });
+  ).toBeVisible({ timeout: 12_000 });
 }
 
 export async function signIn(
@@ -61,37 +62,14 @@ export async function signIn(
     baseURL = JASS_TEST_URL,
     email = PLAYWRIGHT_BOT_EMAIL,
     password = PLAYWRIGHT_BOT_PASSWORD,
-    targetPath = '/portal/organizer',
+    targetPath = '/portal/home',
   } = {}
 ) {
+  await installDateOfBirthPromptHandler(page);
   await gotoSignIn(page, baseURL + '/signin');
 
   const emailInput = page.getByRole('textbox', { name: 'Email' });
-  const emailInputVisible = await emailInput
-    .isVisible({ timeout: 30000 })
-    .catch(() => false);
-
-  if (!emailInputVisible) {
-    await page.goto(`${baseURL}${targetPath}`, {
-      waitUntil: 'domcontentloaded',
-    });
-
-    if (!new URL(page.url()).pathname.includes('/signin')) {
-      await expectSignedInPortal(page);
-      await dismissDateOfBirthPromptIfPresent(page);
-      return;
-    }
-
-    const redirectedEmailInputVisible = await emailInput
-      .isVisible({ timeout: 15000 })
-      .catch(() => false);
-
-    if (!redirectedEmailInputVisible) {
-      await gotoSignIn(page, baseURL + '/signin');
-    }
-
-    await expect(emailInput).toBeVisible({ timeout: 30000 });
-  }
+  await expect(emailInput).toBeVisible({ timeout: 30000 });
 
   await emailInput.fill(email);
   await page.getByRole('textbox', { name: 'Password' }).fill(password);
@@ -102,7 +80,14 @@ export async function signIn(
   );
   await page.getByRole('button', { name: 'Sign in' }).click();
   const loginResponse = await loginResponsePromise;
-  expect(loginResponse.ok()).toBeTruthy();
+  if (!loginResponse.ok()) {
+    const loginResponseBody = await loginResponse
+      .text()
+      .catch(() => '<response body unavailable>');
+    throw new Error(
+      `Login failed with ${loginResponse.status()} ${loginResponse.statusText()}: ${loginResponseBody}`
+    );
+  }
 
   await page.waitForURL((url) => !url.pathname.includes('/signin'), {
     timeout: 30000,
@@ -121,11 +106,20 @@ export async function signIn(
     undefined,
     { timeout: 30_000 }
   );
+  if (!new URL(page.url()).pathname.startsWith('/portal/')) {
+    await page.goto(`${baseURL}/portal/home`, {
+      waitUntil: 'domcontentloaded',
+    });
+  }
   await expectSignedInPortal(page);
 
   const targetUrl = `${baseURL}${targetPath}`;
-  if (page.url() !== targetUrl) {
+  const currentUrl = new URL(page.url());
+  if (`${currentUrl.pathname}${currentUrl.search}` !== targetPath) {
+    // Use a real document navigation. Protected routes must survive direct
+    // entry and refresh; a client-side transition would hide rehydration bugs.
     await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
+    await page.waitForURL(targetUrl, { timeout: 30_000 });
   }
   await expectSignedInPortal(page);
   await dismissDateOfBirthPromptIfPresent(page);

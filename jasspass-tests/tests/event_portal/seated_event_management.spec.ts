@@ -211,9 +211,7 @@ test.describe('organizer seated-event management', () => {
     await expectSeatStatus(ownerApi, created.id, 'B-A1', 'Reserved');
     const bookingModal = visibleModalShell(ownerPage, 'Select Tickets');
     await expect(bookingModal).toBeVisible();
-    await expect(
-      bookingModal.getByRole('textbox', { name: 'Enter first name' })
-    ).toBeVisible();
+    await expect(bookingModal.locator('#FirstName')).toBeVisible();
 
     const restoreResponsePromise = ownerPage.waitForResponse(
       (response) =>

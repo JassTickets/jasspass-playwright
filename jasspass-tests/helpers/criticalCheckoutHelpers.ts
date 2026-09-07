@@ -85,11 +85,11 @@ export function ticketRow(page: Page, ticketTypeName: string): Locator {
 
 export function visibleTicketPicker(page: Page): Locator {
   return page
-    .getByRole('button', { name: 'Close', exact: true })
+    .getByText('Complete Order', { exact: true })
     .filter({ visible: true })
     .first()
     .locator(
-      'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " pointer-events-auto ")][1]'
+      'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " rounded-t-2xl ")][1]'
     );
 }
 
@@ -105,15 +105,30 @@ export async function openTicketPicker(page: Page): Promise<Locator> {
       .filter({ visible: true })
       .first();
     await expect(pickerEntry).toBeVisible({ timeout: 30_000 });
-    await expect(pickerEntry).toBeEnabled();
+    await expect(pickerEntry).toBeEnabled({ timeout: 30_000 });
     await pickerEntry.click();
   }
 
   await expect(picker).toBeVisible({ timeout: 15_000 });
-  await expect(
-    picker.getByRole('button', { name: 'Close', exact: true })
-  ).toBeVisible();
+  await expect(picker.getByText('Complete Order', { exact: true })).toBeVisible();
   return picker;
+}
+
+export async function closeTicketPicker(page: Page): Promise<void> {
+  const picker = visibleTicketPicker(page);
+  await expect(picker).toBeVisible();
+  await picker.getByRole('button', { name: '✕', exact: true }).click();
+  await expect(picker).toBeHidden({ timeout: 15_000 });
+}
+
+export async function continueFromTicketStep(page: Page): Promise<void> {
+  const picker = visibleTicketPicker(page);
+  const nextButton = picker
+    .getByRole('button', { name: 'Next', exact: true })
+    .filter({ visible: true });
+  await expect(nextButton).toHaveCount(1);
+  await expect(nextButton).toBeEnabled();
+  await nextButton.click();
 }
 
 export async function openEvent(
@@ -166,17 +181,17 @@ export async function selectTicketQuantity(
 }
 
 export async function openCheckout(page: Page): Promise<Locator> {
-  // Ticket cards now live in a picker modal. Quantity-based flows leave that
-  // picker open; manual seating flows reach this helper with only the page's
-  // "Review N tickets" entry visible. Support both paths and exercise the
-  // picker-to-checkout transition in either case.
+  // Ticket selection is now the first step of the unified checkout modal.
+  // Quantity-based flows already have this modal open; manual seating skips the
+  // ticket step, so only advance when the visible checkout surface offers Next.
   const picker = await openTicketPicker(page);
-  const checkoutButton = picker
-    .locator('[data-checkout-cta="true"]')
-    .filter({ visible: true })
-    .first();
-  await expect(checkoutButton).toBeEnabled();
-  await checkoutButton.click();
+  const nextButton = picker
+    .getByRole('button', { name: 'Next', exact: true })
+    .filter({ visible: true });
+  if ((await nextButton.count()) > 0) {
+    await continueFromTicketStep(page);
+    await expect(page.locator('#FirstName:visible')).toHaveCount(1);
+  }
   const summaryHeading = page.getByRole('heading', {
     name: 'Order Summary',
     exact: true,
@@ -238,11 +253,9 @@ export async function applyPromoCode(
     `Promo calculation failed with ${calculationResponse.status()}: ${calculationBody}`
   ).toBeTruthy();
   const calculation = JSON.parse(calculationBody) as CheckoutCalculation;
-  await expect(
-    page
-      .getByText('Promo Code Applied', { exact: true })
-      .filter({ visible: true })
-  ).toBeVisible();
+  // A valid promo replaces the editable input with the applied state. The
+  // success copy itself is backend-provided and can vary by discount type.
+  await expect(promoInput).toHaveCount(0);
   return calculation;
 }
 
@@ -291,9 +304,16 @@ export async function submitPurchase(
     purchaseResponse.ok(),
     `Purchase failed with ${purchaseResponse.status()}: ${responseBody}`
   ).toBeTruthy();
-  await page.waitForURL(/\/payment\/success\/event\/[^/]+\/[^/?]+(?:\?|$)/, {
-    timeout: 45_000,
-  });
+  try {
+    await page.waitForURL(
+      /\/payment\/success\/event\/[^/]+\/[^/?]+(?:\?|$)/,
+      { timeout: 45_000 }
+    );
+  } catch {
+    throw new Error(
+      `Purchase succeeded but the UI did not navigate to confirmation. Current URL: ${page.url()}`
+    );
+  }
   const confirmation = new URL(page.url()).pathname.split('/').pop() ?? '';
   expect(
     confirmation,

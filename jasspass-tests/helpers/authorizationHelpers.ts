@@ -53,7 +53,7 @@ export async function expectApiOk(
 export async function signInAsUser(
   browser: Browser,
   credentials: { email: string; password: string },
-  targetPath = '/portal/organizer'
+  targetPath = '/portal/home'
 ): Promise<AuthenticatedUser> {
   const context = await browser.newContext({ baseURL: JASS_TEST_URL });
   const page = await context.newPage();

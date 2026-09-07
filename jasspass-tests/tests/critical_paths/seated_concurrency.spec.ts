@@ -8,6 +8,7 @@ import {
 import {
   assertOrderConfirmation,
   assertPurchaseSuccessUrl,
+  continueFromTicketStep,
   createUniqueBuyer,
   fillGuestContact,
   getApiArray,
@@ -64,10 +65,7 @@ async function preparePairCheckout(
   await openEvent(page, created.id, created.name);
   await selectTicketQuantity(page, created.id, ticketType.Type, 2);
   await expect(
-    visibleTicketPicker(page)
-      .locator('[data-checkout-cta="true"]')
-      .filter({ visible: true })
-      .first()
+    visibleTicketPicker(page).getByRole('button', { name: 'Next', exact: true })
   ).toBeEnabled();
 }
 
@@ -127,13 +125,7 @@ test.describe('seated-event concurrency', () => {
         )
       );
       await Promise.all(
-        pages.map((buyerPage) =>
-          visibleTicketPicker(buyerPage)
-            .locator('[data-checkout-cta="true"]')
-            .filter({ visible: true })
-            .first()
-            .click()
-        )
+        pages.map((buyerPage) => continueFromTicketStep(buyerPage))
       );
       const holdResponses = await Promise.all(responses);
       const holdBodies = await Promise.all(

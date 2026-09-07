@@ -1,5 +1,12 @@
 import { test, expect } from '../../fixtures/application';
-import { openEvent } from '../../helpers/criticalCheckoutHelpers';
+import {
+  closeTicketPicker,
+  createUniqueBuyer,
+  fillGuestContact,
+  openCheckout,
+  openEvent,
+  purchaseButton,
+} from '../../helpers/criticalCheckoutHelpers';
 import {
   clickSeatAndWaitForHold,
   createAndPublishSeatingMap,
@@ -105,7 +112,7 @@ test.describe('seated-event hold integrity', () => {
     }
   });
 
-  test('enforces orphan-seat and event-wide selection limits before checkout', async ({
+  test('allows temporary orphans but enforces orphan-seat and event-wide limits at checkout', async ({
     page,
     eventFactory,
     ownerApi,
@@ -144,23 +151,51 @@ test.describe('seated-event hold integrity', () => {
       created.id,
       'O-A2'
     );
-    expect(orphanAttempt.response.status()).toBe(400);
-    expect(await orphanAttempt.response.text()).toContain(
-      'would leave a single seat empty and alone'
-    );
+    expect(orphanAttempt.response.status()).toBe(200);
+    expect(orphanAttempt.hold?.Validation).toEqual({
+      Valid: false,
+      OrphanSeatLabels: ['O-A1'],
+    });
     await expect(
-      page.getByText(/would leave a single seat empty and alone/)
+      page.getByText(/Your selection leaves a single seat empty and alone/)
     ).toBeVisible();
     await expect(seatButton(page, 'O-A2')).toHaveAttribute(
       'aria-pressed',
-      'false'
+      'true'
     );
 
-    const first = await clickSeatAndWaitForHold(page, created.id, 'O-A1');
-    const second = await clickSeatAndWaitForHold(page, created.id, 'O-A2');
-    expect(first.response.status()).toBe(200);
-    expect(second.response.status()).toBe(200);
-    expect(second.hold?.HoldToken).toBe(first.hold?.HoldToken);
+    await openCheckout(page);
+    await fillGuestContact(page, createUniqueBuyer('OrphanGate'));
+    const rejectedPurchasePromise = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        response.url().includes('/api/public/payments/purchase'),
+      { timeout: 45_000 }
+    );
+    await purchaseButton(page, 'RSVP').click();
+    const rejectedPurchase = await rejectedPurchasePromise;
+    expect(rejectedPurchase.status()).toBe(400);
+    expect(await rejectedPurchase.text()).toContain(
+      'Your selection leaves an isolated single seat (O-A1)'
+    );
+
+    await closeTicketPicker(page);
+    const completedSelection = await clickSeatAndWaitForHold(
+      page,
+      created.id,
+      'O-A1'
+    );
+    expect(completedSelection.response.status()).toBe(200);
+    expect(completedSelection.hold?.HoldToken).toBe(
+      orphanAttempt.hold?.HoldToken
+    );
+    expect(completedSelection.hold?.Validation).toEqual({
+      Valid: true,
+      OrphanSeatLabels: [],
+    });
+    await expect(
+      page.getByText(/Your selection leaves a single seat empty and alone/)
+    ).toHaveCount(0);
 
     let thirdSeatRequestCount = 0;
     page.on('request', (request) => {
@@ -183,7 +218,7 @@ test.describe('seated-event hold integrity', () => {
     await expectSeatStatus(ownerApi, created.id, 'O-A2', 'Reserved');
     await expectSeatStatus(ownerApi, created.id, 'O-A3', 'Available');
 
-    const hold = second.hold as HoldResponse;
+    const hold = completedSelection.hold as HoldResponse;
     const release = await ownerApi.delete(
       `/api/public/seating/${created.id}/hold/${hold.HoldToken}`
     );

@@ -176,12 +176,9 @@ test.describe('ticket inventory integrity', () => {
       soldOutRow.getByText('Sold Out', { exact: true })
     ).toBeVisible();
     await expect(soldOutRow.getByRole('button')).toHaveCount(0);
-    const soldOutCta = soldOutPicker
-      .locator('[data-checkout-cta="true"]')
-      .filter({ visible: true })
-      .first();
-    await expect(soldOutCta).toBeEnabled();
-    await expect(soldOutCta).toHaveText('Join Waitlist');
+    await expect(
+      soldOutPicker.getByRole('button', { name: 'Next', exact: true })
+    ).toBeDisabled();
   });
 
   test('rejects a tampered RSVP request above the server-side purchase limit', async ({

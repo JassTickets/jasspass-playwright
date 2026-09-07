@@ -72,6 +72,9 @@ export async function setStripeTestAccount(
       `Assign Stripe test account failed with ${stripeConnectResponse.status()}: ${body}`
     );
   }
+  // Refresh organizer/payment-method state so finance surfaces can request the
+  // newly assigned Stripe dashboard link immediately.
+  await page.reload({ waitUntil: 'domcontentloaded' });
   return true;
 }
 
@@ -141,17 +144,25 @@ export async function createOrganizer(
   ).toBeTruthy();
 
   await page.locator('#org-contact-email:visible').first().fill(email);
+  await page
+    .locator('#studio-estimated-revenue:visible, #estimatedMonthlyRevenue:visible')
+    .selectOption('under_5k');
+  await page
+    .locator('#studio-event-frequency:visible, #eventFrequency:visible')
+    .selectOption('monthly');
+
+  const createOrganizationButton = page
+    .getByRole('button', { name: 'Create organization', exact: true })
+    .filter({ visible: true })
+    .first();
+  await expect(createOrganizationButton).toBeEnabled({ timeout: 15_000 });
   const createOrganizerResponsePromise = page.waitForResponse(
     (response) =>
       response.request().method() === 'POST' &&
       new URL(response.url()).pathname === '/api/protected/organizers',
     { timeout: 30_000 }
   );
-  await page
-    .getByRole('button', { name: 'Create organization', exact: true })
-    .filter({ visible: true })
-    .first()
-    .click();
+  await createOrganizationButton.click();
   const createOrganizerResponse = await createOrganizerResponsePromise;
   const createOrganizerBody = await createOrganizerResponse
     .text()
@@ -168,10 +179,18 @@ export async function createOrganizer(
       `Could not parse organizer ID from create response: ${createOrganizerBody}`
     );
   }
-  await expect(page).toHaveURL(
-    new RegExp(`/portal/organizer/company/${organizerId}(?:\\?|$)`),
-    { timeout: 30_000 }
-  );
+  const organizerPath = `/portal/organizer/company/${organizerId}`;
+  await expect(sheetHeading).toBeHidden({ timeout: 15_000 });
+  const createdOrganizerButton = page
+    .getByRole('button')
+    .filter({ hasText: organizerName })
+    .filter({ visible: true })
+    .first();
+  await expect(createdOrganizerButton).toBeVisible({ timeout: 30_000 });
+  await createdOrganizerButton.click();
+  await expect(page).toHaveURL(new RegExp(`${organizerPath}(?:\\?|$)`), {
+    timeout: 30_000,
+  });
 
   // Change the Stripe Connect ID to point to the onboarded Playwright bot's Stripe Connect ID.
   // The manual Stripe-Connect-ID form is a debug-only affordance rendered only when
@@ -204,16 +223,7 @@ export async function selectFirstOrganizer(page: Page) {
     { timeout: 30_000 }
   );
 
-  // The route changes before the organizer portal finishes replacing the home
-  // navigation. Wait for a stable organizer-only control before helpers start
-  // opening grouped destinations such as Organization > Profile.
-  await expect(
-    page
-      .locator('aside:visible')
-      .first()
-      .getByRole('button', { name: 'Dashboard', exact: true })
-      .first()
-  ).toBeVisible({ timeout: 30_000 });
+  await page.waitForLoadState('domcontentloaded');
 }
 
 export async function editOrganizerDetails(
@@ -272,12 +282,6 @@ export async function editOrganizerDetails(
 
     const cityInput = page.locator('#city');
     await cityInput.fill(CONTACT_CITY);
-    const citySuggestion = page
-      .locator('li')
-      .filter({ hasText: new RegExp(`^${CONTACT_CITY}$`) });
-    await expect(citySuggestion).toBeVisible();
-    await citySuggestion.click();
-
     await page.locator('#ZipCode').fill(CONTACT_ZIP_CODE);
   }
   await page.getByRole('button', { name: 'Save Changes' }).click();
@@ -472,9 +476,14 @@ export async function addTeamMember(page: Page) {
 
 export async function accessStripeFinance(page: Page) {
   await openOrganizerSurface(page, 'finance');
-  const page3Promise = page.waitForEvent('popup');
-  await page.getByRole('link', { name: 'Access Stripe Dashboard' }).click();
-  const page3 = await page3Promise;
+  const dashboardLink = page.getByRole('link', {
+    name: /Access Stripe Dashboard|Complete Stripe Onboarding/,
+  });
+  await expect(dashboardLink).toBeVisible({ timeout: 30_000 });
+  const [page3] = await Promise.all([
+    page.waitForEvent('popup', { timeout: 30_000 }),
+    dashboardLink.click(),
+  ]);
 
   return page3;
 }

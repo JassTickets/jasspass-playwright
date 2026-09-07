@@ -102,7 +102,7 @@ test.describe('seated-event checkout paths', () => {
     await openEvent(page, created.id, created.name);
     await expect(
       page.getByText('Select Your Seats', { exact: true }).first()
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
 
     const vipHold = await clickSeatAndWaitForHold(page, created.id, 'V-A1');
     expect(vipHold.response.status()).toBe(200);

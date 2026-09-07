@@ -108,36 +108,24 @@ async function openGroupedLeaf(
   groupName: string,
   leafName: string
 ): Promise<Locator> {
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const leaf = visibleButton(page, leafName);
-    if (await leaf.isVisible().catch(() => false)) {
-      try {
-        // EventPortalSidebar can remount while its permission-backed data
-        // settles. Bound the click so a detached leaf is re-resolved here
-        // instead of consuming the entire test timeout.
-        await leaf.click({ timeout: 5_000 });
-        return leaf;
-      } catch {
-        continue;
-      }
-    }
-
+  const leaf = visibleButton(page, leafName);
+  if (!(await leaf.isVisible().catch(() => false))) {
     const group = visibleButton(page, groupName);
     await expect(group).toBeVisible({ timeout: 30_000 });
-    try {
-      await group.click({ timeout: 5_000 });
-      await visibleButton(page, leafName)
-        .waitFor({ state: 'visible', timeout: 5_000 })
-        .catch(() => undefined);
-    } catch {
-      // Re-resolve both controls on the next attempt after a sidebar remount.
+    if ((await group.getAttribute('aria-expanded')) !== 'true') {
+      await group.click();
     }
   }
 
-  const leaf = visibleButton(page, leafName);
   await expect(leaf).toBeVisible({ timeout: 30_000 });
-  await leaf.click({ timeout: 5_000 });
-  return leaf;
+  await leaf.click();
+  const activeLeaf = visibleButton(page, leafName);
+  await expect(activeLeaf).toHaveCSS(
+    'border-left-color',
+    'rgb(255, 225, 103)',
+    { timeout: 30_000 }
+  );
+  return activeLeaf;
 }
 
 export async function openEventPortalDestination(

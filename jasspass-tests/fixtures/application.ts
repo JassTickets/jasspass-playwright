@@ -10,7 +10,7 @@ import {
   ORGANIZER_NAME_PREFIX,
   PLAYWRIGHT_BOT_STRIPE_CONNECT_ID,
 } from '../constants';
-import { DOB_PROMPT_DISMISS_KEY, signIn } from '../helpers/auth';
+import { installDateOfBirthPromptHandler, signIn } from '../helpers/auth';
 import { createAndPublishSeatingMap } from '../helpers/seatingHelpers';
 import type {
   SeatingMapDefinition,
@@ -19,7 +19,7 @@ import type {
 
 type AuthStorageState = Awaited<ReturnType<BrowserContext['storageState']>>;
 
-const TEST_ORGANIZER_NAME = `${ORGANIZER_NAME_PREFIX}Integration Tests CA`;
+const TEST_ORGANIZER_NAME = `${ORGANIZER_NAME_PREFIX}Integration Tests CA v2`;
 const TEST_ORGANIZER_COUNTRY_ISO = 'CA';
 
 export type OrganizerIdentity = {
@@ -554,10 +554,8 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
       const context = await browser.newContext({
         storageState: ownerStorageState,
       });
-      await context.addInitScript((dismissKey) => {
-        window.sessionStorage.setItem(dismissKey, '1');
-      }, DOB_PROMPT_DISMISS_KEY);
       const page = await context.newPage();
+      await installDateOfBirthPromptHandler(page);
       await use(page);
       await context.close();
     },
