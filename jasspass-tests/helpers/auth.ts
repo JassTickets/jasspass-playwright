@@ -66,7 +66,9 @@ export async function signIn(
   } = {}
 ) {
   await installDateOfBirthPromptHandler(page);
-  await gotoSignIn(page, baseURL + '/signin');
+  const signInUrl = new URL('/signin', baseURL);
+  signInUrl.searchParams.set('returnTo', targetPath);
+  await gotoSignIn(page, signInUrl.toString());
 
   const emailInput = page.getByRole('textbox', { name: 'Email' });
   await expect(emailInput).toBeVisible({ timeout: 30000 });
