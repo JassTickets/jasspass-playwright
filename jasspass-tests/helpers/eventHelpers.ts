@@ -1,4 +1,9 @@
-import { expect, Locator, Page } from '@playwright/test';
+import {
+  expect,
+  type Locator,
+  type Page,
+  type Route,
+} from '@playwright/test';
 import {
   JASS_TEST_CHANGE_ORG_URL,
   PLAYWRIGHT_BOT_EMAIL,
@@ -47,6 +52,35 @@ import {
 function generateUniquePromoCode(): string {
   const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
   return `${EVENT_PLAYWRIGHT_PROMO_CODE}${timestamp}`;
+}
+
+async function scopeEventCreationToOrganizer(
+  page: Page,
+  organizerId: string
+): Promise<() => Promise<void>> {
+  const organizerListRoute = '**/api/protected/users/*/organizers';
+  const handler = async (route: Route) => {
+    const response = await route.fetch();
+    const organizers = (await response.json().catch(() => null)) as
+      | Array<{ Id?: string }>
+      | null;
+
+    if (!response.ok() || !Array.isArray(organizers)) {
+      await route.fulfill({ response });
+      return;
+    }
+
+    const selectedOrganizer = organizers.filter(
+      (organizer) => organizer.Id === organizerId
+    );
+    await route.fulfill({
+      response,
+      json: selectedOrganizer.length > 0 ? selectedOrganizer : organizers,
+    });
+  };
+
+  await page.route(organizerListRoute, handler);
+  return () => page.unroute(organizerListRoute, handler);
 }
 
 // Helper function to search and click a specific event promo code
@@ -259,18 +293,29 @@ export async function createEvent(
   const organizerId = await createOrganizer(page);
   await openOrganizerSurface(page, 'events');
 
+  // The shared Testlab user retains organizers created by earlier runs. Limit
+  // this page bootstrap to the organizer owned by this test so the UI does not
+  // request permissions for every historical fixture before showing the form.
+  const restoreOrganizerList = await scopeEventCreationToOrganizer(
+    page,
+    organizerId
+  );
+
   const newEventButton = page
     .getByRole('button', { name: 'New Event', exact: true })
     .filter({ visible: true })
     .first();
-  await expect(newEventButton).toBeVisible({ timeout: 30_000 });
-  await newEventButton.click();
-  await expect(page).toHaveURL(/\/portal\/create-event(?:\?|$)/, {
-    timeout: 30_000,
-  });
-
   const title = page.getByPlaceholder('Event title');
-  await expect(title).toBeVisible({ timeout: 30_000 });
+  try {
+    await expect(newEventButton).toBeVisible({ timeout: 30_000 });
+    await newEventButton.click();
+    await expect(page).toHaveURL(/\/portal\/create-event(?:\?|$)/, {
+      timeout: 30_000,
+    });
+    await expect(title).toBeVisible({ timeout: 30_000 });
+  } finally {
+    await restoreOrganizerList();
+  }
   await title.fill(eventName);
 
   const eventImageResponse = await page.request.get(
