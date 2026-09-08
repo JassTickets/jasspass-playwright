@@ -36,6 +36,7 @@ const isolatedIntegrationTests = [
  */
 export default defineConfig({
   testDir: './jasspass-tests',
+  globalTeardown: './jasspass-tests/global-teardown.ts',
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */

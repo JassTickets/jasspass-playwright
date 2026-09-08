@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../fixtures/application';
 import { deleteOrganizer } from '../../helpers/organizerHelpers';
 
 test.setTimeout(180_000);

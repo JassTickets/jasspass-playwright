@@ -1,4 +1,10 @@
+import { randomBytes } from 'node:crypto';
+
 export const JASS_TEST_URL = process.env.JASS_TEST_URL ?? 'https://testlab-env191.jasspass.com';
+export const INTEGRATION_TEST_RUN_ID =
+  process.env.INTEGRATION_TEST_RUN_ID ??
+  `IT-local-${Date.now()}-${randomBytes(16).toString('hex')}`;
+process.env.INTEGRATION_TEST_RUN_ID ??= INTEGRATION_TEST_RUN_ID;
 export const JASS_TEST_CHANGE_ORG_URL =
   JASS_TEST_URL + '/portal/organizer?mode=change';
 export const PLAYWRIGHT_BOT_EMAIL = 'playwright-bot@gmail.com';

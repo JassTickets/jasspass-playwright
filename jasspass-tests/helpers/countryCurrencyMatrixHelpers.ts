@@ -3,7 +3,7 @@ import {
   type APIRequestContext,
   type APIResponse,
 } from '@playwright/test';
-import { PLAYWRIGHT_BOT_EMAIL } from '../constants';
+import { PLAYWRIGHT_BOT_EMAIL, INTEGRATION_TEST_RUN_ID } from '../constants';
 
 export const MATRIX_COUNTRIES = [
   'US',
@@ -240,6 +240,7 @@ export async function createMatrixOrganizer(
     .toString(36)
     .slice(2, 7)}`;
   const createResponse = await api.post('/api/protected/organizers', {
+    headers: { 'X-Integration-Test-Run-Id': INTEGRATION_TEST_RUN_ID },
     multipart: {
       organizerUserId: userId,
       request: JSON.stringify({

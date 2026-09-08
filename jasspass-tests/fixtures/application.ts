@@ -9,6 +9,7 @@ import {
   JASS_TEST_URL,
   ORGANIZER_NAME_PREFIX,
   PLAYWRIGHT_BOT_STRIPE_CONNECT_ID,
+  INTEGRATION_TEST_RUN_ID,
 } from '../constants';
 import { installDateOfBirthPromptHandler, signIn } from '../helpers/auth';
 import { createAndPublishSeatingMap } from '../helpers/seatingHelpers';
@@ -172,6 +173,23 @@ type ApplicationWorkerFixtures = {
 
 function uniqueSuffix(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+async function installPlaywrightRunHeader(page: Page): Promise<void> {
+  const jassOrigin = new URL(JASS_TEST_URL).origin;
+  await page.route('**/api/**', async (route) => {
+    if (new URL(route.request().url()).origin !== jassOrigin) {
+      await route.continue();
+      return;
+    }
+
+    await route.continue({
+      headers: {
+        ...route.request().headers(),
+        'X-Integration-Test-Run-Id': INTEGRATION_TEST_RUN_ID,
+      },
+    });
+  });
 }
 
 function asArray<T>(data: unknown, property: string): T[] {
@@ -399,6 +417,11 @@ async function ensurePromoCodeAttachments(
 
 export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
   {
+    page: async ({ page }, use) => {
+      await installPlaywrightRunHeader(page);
+      await use(page);
+    },
+
     ownerStorageState: [
       async ({ browser }, use) => {
         const context = await browser.newContext();
@@ -542,6 +565,7 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
       const api = await playwright.request.newContext({
         baseURL: JASS_TEST_URL,
         storageState: ownerStorageState,
+        extraHTTPHeaders: { 'X-Integration-Test-Run-Id': INTEGRATION_TEST_RUN_ID },
       });
       try {
         await use(api);
@@ -564,6 +588,7 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
         storageState: ownerStorageState,
       });
       const page = await context.newPage();
+      await installPlaywrightRunHeader(page);
       await installDateOfBirthPromptHandler(page);
       await use(page);
       await context.close();

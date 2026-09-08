@@ -12,20 +12,25 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JASS_TEST_URL: https://testlab-env191.jasspass.com
+      INTEGRATION_TEST_RESOURCE_CLEANUP_REQUIRED: 'true'
     strategy:
       fail-fast: false
       matrix:
         suite:
-          - name: E2E Tests
+          - id: e2e
+            name: E2E Tests
             project_args: --project=chromium --project=firefox --project=webkit
             browsers: ''
-          - name: Stripe Matrix Tests
+          - id: stripe-matrix
+            name: Stripe Matrix Tests
             project_args: --project=country-currency-matrix
             browsers: chromium
-          - name: Seating Integ Tests
+          - id: seating
+            name: Seating Integ Tests
             project_args: --project=seating-integration
             browsers: chromium
-          - name: Kickback Tests
+          - id: kickback
+            name: Kickback Tests
             project_args: --project=kickback
             browsers: chromium
     steps:
@@ -33,6 +38,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
+
+      - name: Generate integration test run capability
+        env:
+          INTEGRATION_TEST_SUITE_ID: ${{ matrix.suite.id }}
+        run: >-
+          node -e 'const fs = require("node:fs");
+          const crypto = require("node:crypto");
+          const random = crypto.randomBytes(16).toString("hex");
+          const id = `IT-${process.env.GITHUB_REPOSITORY_ID}-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}-${process.env.INTEGRATION_TEST_SUITE_ID}-${random}`;
+          fs.appendFileSync(process.env.GITHUB_ENV, `INTEGRATION_TEST_RUN_ID=${id}\n`);'
       - name: Install dependencies
         run: npm install -g yarn && yarn install --frozen-lockfile
       - name: Type-check Kickback tests
@@ -42,6 +57,9 @@ jobs:
         run: yarn playwright install --with-deps ${{ matrix.suite.browsers }}
       - name: Run Playwright tests
         run: yarn playwright test ${{ matrix.suite.project_args }} --reporter=line,github,html
+      - name: Clean up Playwright resources
+        if: always()
+        run: yarn cleanup:test-resources
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:

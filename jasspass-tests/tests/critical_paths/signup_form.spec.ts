@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../fixtures/application';
 import { JASS_TEST_URL } from '../../constants';
 
 test.describe('email signup form', () => {

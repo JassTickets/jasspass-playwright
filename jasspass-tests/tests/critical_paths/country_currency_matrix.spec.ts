@@ -1,6 +1,6 @@
 import { type APIRequestContext } from '@playwright/test';
 import { test, expect } from '../../fixtures/application';
-import { JASS_TEST_URL } from '../../constants';
+import { JASS_TEST_URL, INTEGRATION_TEST_RUN_ID } from '../../constants';
 import {
   applyPromoCode,
   assertOrderConfirmation,
@@ -145,6 +145,7 @@ for (const stripeCountryIso of MATRIX_COUNTRIES) {
         setupApi = await playwright.request.newContext({
           baseURL: JASS_TEST_URL,
           storageState: ownerStorageState,
+          extraHTTPHeaders: { 'X-Integration-Test-Run-Id': INTEGRATION_TEST_RUN_ID },
         });
         matrixOrganizer = await createMatrixOrganizer(
           setupApi,

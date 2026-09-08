@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../fixtures/application';
 import { createEvent } from '../../helpers/eventHelpers';
 
 test.setTimeout(180_000);

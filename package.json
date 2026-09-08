@@ -10,6 +10,7 @@
     "typescript": "5.8.3"
   },
   "scripts": {
+    "cleanup:test-resources": "node scripts/cleanup-integration-test-run.cjs",
     "test:kickback": "playwright test --project=kickback --workers=1",
     "test:kickback:integration": "playwright test --project=kickback --workers=1",
     "test:kickback:typecheck": "tsc -p tsconfig.kickback.json",

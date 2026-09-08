@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../fixtures/application';
 import { signIn, signOutIfSignedIn } from '../../helpers/auth';
 import { addOperatorWithAllPolicies } from '../../helpers/organizerHelpers';
 import {
@@ -19,14 +19,12 @@ test.setTimeout(240_000); // 4 minutes timeout for complex flow
 
 // @Description: This test verifies the complete operator policy flow - adding an operator with all policies and verifying their access
 // @Dependencies: Requires existing organizer and event, sign-in functionality
-test('operator policies comprehensive flow', async ({ browser }) => {
+test('operator policies comprehensive flow', async ({ browser, page: page1 }) => {
   console.log('[INFO] Starting operator policies comprehensive flow test...');
 
   // Create two browser contexts to simulate two different users
-  const context1 = await browser.newContext();
   const context2 = await browser.newContext();
 
-  const page1 = await context1.newPage(); // Main organizer
   const page2 = await context2.newPage(); // Operator
 
   try {
@@ -112,6 +110,6 @@ test('operator policies comprehensive flow', async ({ browser }) => {
     // Playwright may already have disposed these contexts when the test times
     // out. Cleanup must not replace the actionable test failure with a
     // Target.disposeBrowserContext protocol error.
-    await Promise.allSettled([context1.close(), context2.close()]);
+    await Promise.allSettled([context2.close()]);
   }
 });

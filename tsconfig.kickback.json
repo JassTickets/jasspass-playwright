@@ -9,5 +9,9 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["jasspass-tests/tests/kickback/**/*.ts", "playwright.config.ts"]
+  "include": [
+    "jasspass-tests/tests/kickback/**/*.ts",
+    "jasspass-tests/global-teardown.ts",
+    "playwright.config.ts"
+  ]
 }
