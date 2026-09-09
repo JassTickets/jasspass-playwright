@@ -84,7 +84,12 @@ export default defineConfig({
     {
       name: 'webkit',
       testIgnore: isolatedIntegrationTests,
-      use: { ...devices['Desktop Safari'] },
+      use: {
+        ...devices['Desktop Safari'],
+        // WebKit on the Linux CI runner rejects Stripe's test endpoint
+        // certificate before the payment confirmation request is sent.
+        ignoreHTTPSErrors: true,
+      },
     },
 
     {

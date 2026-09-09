@@ -565,7 +565,9 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
       const api = await playwright.request.newContext({
         baseURL: JASS_TEST_URL,
         storageState: ownerStorageState,
-        extraHTTPHeaders: { 'X-Integration-Test-Run-Id': INTEGRATION_TEST_RUN_ID },
+        extraHTTPHeaders: {
+          'X-Integration-Test-Run-Id': INTEGRATION_TEST_RUN_ID,
+        },
       });
       try {
         await use(api);
@@ -590,8 +592,20 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
       const page = await context.newPage();
       await installPlaywrightRunHeader(page);
       await installDateOfBirthPromptHandler(page);
-      await use(page);
-      await context.close();
+      try {
+        await use(page);
+      } finally {
+        try {
+          // A long CI worker can refresh the owner's session in the browser.
+          // Carry that refreshed state into the next test instead of restoring
+          // the worker's original cookies and eventually becoming unauthorized.
+          const refreshedStorageState = await context.storageState();
+          ownerStorageState.cookies = refreshedStorageState.cookies;
+          ownerStorageState.origins = refreshedStorageState.origins;
+        } finally {
+          await context.close();
+        }
+      }
     },
 
     eventFactory: async ({ ownerApi, ownerIdentity }, use) => {
