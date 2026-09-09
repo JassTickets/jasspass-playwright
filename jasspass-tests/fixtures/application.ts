@@ -161,6 +161,7 @@ export type EventFactory = {
 };
 
 type ApplicationFixtures = {
+  ownerContext: BrowserContext;
   ownerApi: APIRequestContext;
   ownerPage: Page;
   eventFactory: EventFactory;
@@ -558,47 +559,19 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
       { scope: 'worker' },
     ],
 
-    ownerApi: async (
-      { playwright, ownerStorageState, ownerIdentity: _ownerIdentity },
-      use
-    ) => {
-      const api = await playwright.request.newContext({
-        baseURL: JASS_TEST_URL,
-        storageState: ownerStorageState,
-        extraHTTPHeaders: {
-          'X-Integration-Test-Run-Id': INTEGRATION_TEST_RUN_ID,
-        },
-      });
-      try {
-        await use(api);
-      } finally {
-        try {
-          // Organizer provisioning refreshes authorization and invalidates the old
-          // token. Reuse the updated cookies in the next test's owner contexts.
-          ownerStorageState.cookies = (await api.storageState()).cookies;
-        } finally {
-          await api.dispose();
-        }
-      }
-    },
-
-    ownerPage: async (
+    ownerContext: async (
       { browser, ownerStorageState, ownerIdentity: _ownerIdentity },
       use
     ) => {
       const context = await browser.newContext({
+        baseURL: JASS_TEST_URL,
         storageState: ownerStorageState,
       });
-      const page = await context.newPage();
-      await installPlaywrightRunHeader(page);
-      await installDateOfBirthPromptHandler(page);
       try {
-        await use(page);
+        await use(context);
       } finally {
         try {
-          // A long CI worker can refresh the owner's session in the browser.
-          // Carry that refreshed state into the next test instead of restoring
-          // the worker's original cookies and eventually becoming unauthorized.
+          // Persist once, after browser work and API cleanup have both finished.
           const refreshedStorageState = await context.storageState();
           ownerStorageState.cookies = refreshedStorageState.cookies;
           ownerStorageState.origins = refreshedStorageState.origins;
@@ -606,6 +579,19 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
           await context.close();
         }
       }
+    },
+
+    ownerApi: async ({ ownerContext }, use) => {
+      // Refreshing a token blacklists its predecessor. Share the browser's live
+      // cookie jar so API setup, browser navigation and cleanup use the same session.
+      await use(ownerContext.request);
+    },
+
+    ownerPage: async ({ ownerContext }, use) => {
+      const page = await ownerContext.newPage();
+      await installPlaywrightRunHeader(page);
+      await installDateOfBirthPromptHandler(page);
+      await use(page);
     },
 
     eventFactory: async ({ ownerApi, ownerIdentity }, use) => {
@@ -628,6 +614,7 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
           const eventName = options.name ?? `PW Critical - ${uniqueSuffix()}`;
           const payload = buildEventPayload(ownerIdentity, options, eventName);
           const createResponse = await ownerApi.post('/api/protected/events', {
+            headers: { 'X-Integration-Test-Run-Id': INTEGRATION_TEST_RUN_ID },
             multipart: {
               eventImageFile: {
                 name: 'photo1.jpg',

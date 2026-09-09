@@ -1,6 +1,22 @@
 import { defineConfig, devices } from '@playwright/test';
 import { JASS_TEST_URL } from './jasspass-tests/constants';
 
+const browserProfiles = {
+  chromium: devices['Desktop Chrome'],
+  firefox: devices['Desktop Firefox'],
+  webkit: {
+    ...devices['Desktop Safari'],
+    // Match the existing WebKit project's Stripe test certificate handling.
+    ignoreHTTPSErrors: true,
+  },
+};
+const selectedBrowser = process.env.PLAYWRIGHT_BROWSER ?? 'chromium';
+if (!Object.hasOwn(browserProfiles, selectedBrowser)) {
+  throw new Error(`Unsupported PLAYWRIGHT_BROWSER: ${selectedBrowser}`);
+}
+const suiteBrowserProfile =
+  browserProfiles[selectedBrowser as keyof typeof browserProfiles];
+
 const countryCurrencyMatrixTest =
   '**/critical_paths/country_currency_matrix.spec.ts';
 const seatingIntegrationTests = [
@@ -62,7 +78,7 @@ export default defineConfig({
       testMatch: '**/kickback/**/*.spec.ts',
       retries: 0,
       use: {
-        ...devices['Desktop Chrome'],
+        ...suiteBrowserProfile,
         actionTimeout: 20_000,
         navigationTimeout: 45_000,
         trace: 'retain-on-failure',
@@ -101,7 +117,7 @@ export default defineConfig({
     {
       name: 'seating-integration',
       testMatch: seatingIntegrationTests,
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...suiteBrowserProfile },
     },
 
     /* Test against mobile viewports. */

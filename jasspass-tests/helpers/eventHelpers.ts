@@ -703,9 +703,25 @@ export async function openEventOrganizerPortal(
     );
   }
 
-  await page.goto(
-    `${JASS_TEST_URL}/portal/organizer/company/${organizerId}/event/${eventId}`
-  );
+  // The sidebar can render before the organizer request finishes. The Orders
+  // component is only mounted once that request succeeds.
+  const [organizerResponse] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.request().method() === 'GET' &&
+        new URL(response.url()).pathname ===
+          `/api/protected/organizers/${organizerId}`,
+      { timeout: 30_000 }
+    ),
+    page.goto(
+      `${JASS_TEST_URL}/portal/organizer/company/${organizerId}/event/${eventId}`
+    ),
+  ]);
+  expect(
+    organizerResponse.ok(),
+    `Load event portal organizer ${organizerId}: HTTP ${organizerResponse.status()}`
+  ).toBeTruthy();
+  expect((await organizerResponse.json()).Id).toBe(organizerId);
   await expect(
     page
       .getByRole('button', { name: 'Overview', exact: true })
@@ -992,23 +1008,20 @@ export async function ensureEventHasAttendee(
   const portalUrl = organizerPage.url();
   const eventId = portalUrl.match(/event\/([^/?#]+)/)?.[1];
 
-  let hasAttendee = false;
-  if (eventId) {
-    try {
-      const response = await organizerPage.request.get(
-        `${JASS_TEST_URL}/api/protected/events/${eventId}/tickets`
-      );
-      if (response.ok()) {
-        const tickets = await response.json();
-        hasAttendee = Array.isArray(tickets) && tickets.length > 0;
-      }
-    } catch {
-      // Fall through and book a ticket — booking is safe even if the check failed.
-      hasAttendee = false;
-    }
+  if (!eventId) {
+    throw new Error(`Cannot identify the event from portal URL: ${portalUrl}`);
   }
 
-  if (hasAttendee) return;
+  const response = await organizerPage.request.get(
+    `${JASS_TEST_URL}/api/protected/events/${eventId}/tickets`
+  );
+  expect(
+    response.ok(),
+    `Read attendees for event ${eventId}: HTTP ${response.status()}`
+  ).toBeTruthy();
+  const tickets = await response.json();
+  expect(Array.isArray(tickets), 'Expected the event tickets array').toBe(true);
+  if (tickets.length > 0) return;
 
   console.log(
     '[INFO] Event has no attendees; booking a complimentary ticket to ensure a recipient exists.'
@@ -1017,13 +1030,7 @@ export async function ensureEventHasAttendee(
 
   // bookComplimentaryTicket ends on the payment-success page; return to the
   // organizer portal so the messaging flow can continue.
-  await organizerPage.goto(portalUrl);
-  await expect(
-    organizerPage
-      .getByRole('button', { name: 'Overview', exact: true })
-      .filter({ visible: true })
-      .first()
-  ).toBeVisible({ timeout: 30000 });
+  await openEventOrganizerPortal(organizerPage, eventId);
 }
 
 export async function sendMessageToAttendees(
