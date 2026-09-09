@@ -1,4 +1,5 @@
 import { test, expect } from '../../fixtures/application';
+import type { Route } from '@playwright/test';
 import {
   closeTicketPicker,
   createUniqueBuyer,
@@ -48,10 +49,32 @@ test.describe('seated-event hold integrity', () => {
         openEvent(competingPage, created.id, created.name),
       ]);
 
-      const [firstAttempt, secondAttempt] = await Promise.all([
-        clickSeatAndWaitForHold(page, created.id, 'R-A1'),
-        clickSeatAndWaitForHold(competingPage, created.id, 'R-A1'),
-      ]);
+      // Hold both requests until both clicks reach the API boundary. Otherwise
+      // realtime updates can disable the slower buyer's seat before it is clicked.
+      let releaseRequests!: () => void;
+      const bothRequestsReady = new Promise<void>((resolve) => { releaseRequests = resolve; });
+      let arrivals = 0;
+      const holdPath = `**/api/public/seating/${created.id}/hold/add`;
+      const synchronizeHolds = async (route: Route) => {
+        if (route.request().method() !== 'POST') return route.fallback();
+        if (++arrivals === 2) releaseRequests();
+        await bothRequestsReady;
+        await route.fallback();
+      };
+      await page.route(holdPath, synchronizeHolds);
+      await competingPage.route(holdPath, synchronizeHolds);
+      const [firstAttempt, secondAttempt] = await (async () => {
+        try {
+          return await Promise.all([
+            clickSeatAndWaitForHold(page, created.id, 'R-A1'),
+            clickSeatAndWaitForHold(competingPage, created.id, 'R-A1'),
+          ]);
+        } finally {
+          releaseRequests();
+          await page.unroute(holdPath, synchronizeHolds);
+          await competingPage.unroute(holdPath, synchronizeHolds);
+        }
+      })();
       expect(
         [firstAttempt.response.status(), secondAttempt.response.status()].sort()
       ).toEqual([200, 409]);

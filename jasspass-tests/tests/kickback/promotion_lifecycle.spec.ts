@@ -32,16 +32,36 @@ test.describe('Kickback enrollment lifecycle', () => {
     await expect(page.getByText(code, { exact: true })).toBeVisible();
   });
 
-  test('[KB-18 KB-16 OR-04 PV-08] sharing, My Tickets deep link, revoke and reactivate preserve the same personal code', async ({ page, kickbackEvent, ownerApi, context }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  test('[KB-18 KB-16 OR-04 PV-08] sharing, My Tickets deep link, revoke and reactivate preserve the same personal code', async ({ page, kickbackEvent, ownerApi, context, browserName }) => {
+    if (browserName === 'chromium') {
+      await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    }
     const event = await kickbackEvent(); const buyer = uniqueBuyer('Sharing');
     await purchaseWithAccount(page, event, buyer);
     const profile = await assertBrowserIdentity(page, buyer.email);
     await closeProfilePrompt(page); const promotion = await enrollThroughModal(page);
+    let copiedText = '';
+    if (browserName !== 'chromium') {
+      // These engines cannot grant clipboard permissions in Playwright. Capture
+      // the application's write at the OS boundary; Chromium checks the real clipboard.
+      await page.exposeFunction('__pwCaptureClipboard', (text: string) => { copiedText = text; });
+      await page.evaluate(() => {
+        Object.defineProperty(navigator.clipboard, 'writeText', {
+          configurable: true,
+          value: (text: string) => (window as unknown as {
+            __pwCaptureClipboard: (text: string) => Promise<void>;
+          }).__pwCaptureClipboard(text),
+        });
+      });
+    }
+    const readCopiedText = () => browserName === 'chromium'
+      ? page.evaluate(() => navigator.clipboard.readText())
+      : Promise.resolve(copiedText);
     await page.getByRole('button', { name: 'Copy promo code', exact: true }).click();
-    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(promotion.Code);
+    await expect.poll(readCopiedText).toBe(promotion.Code);
     await page.getByRole('button', { name: 'Copy personal link', exact: true }).click();
-    const link = new URL(await page.evaluate(() => navigator.clipboard.readText()));
+    await expect.poll(readCopiedText).toBe(promotion.ShareUrl);
+    const link = new URL(await readCopiedText());
     expect(link.searchParams.get('promoCode')).toBe(promotion.Code);
     await expect(page.getByRole('link', { name: 'Share on WhatsApp', exact: true })).toHaveAttribute('href', /wa\.me|whatsapp/);
     await page.getByRole('button', { name: 'Done', exact: true }).click();

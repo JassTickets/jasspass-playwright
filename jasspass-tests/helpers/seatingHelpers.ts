@@ -216,12 +216,13 @@ export async function clickSeatAndWaitForHold(
   eventId: string,
   seatLabel: string
 ): Promise<{ response: Response; hold: HoldResponse | null }> {
-  const responsePromise = page.waitForResponse(
-    (response) => isSeatMutation(response, eventId, 'add', seatLabel),
-    { timeout: 30_000 }
-  );
-  await seatButton(page, seatLabel).click();
-  const response = await responsePromise;
+  const [response] = await Promise.all([
+    page.waitForResponse(
+      (response) => isSeatMutation(response, eventId, 'add', seatLabel),
+      { timeout: 30_000 }
+    ),
+    seatButton(page, seatLabel).click(),
+  ]);
   return {
     response,
     hold: response.ok() ? ((await response.json()) as HoldResponse) : null,

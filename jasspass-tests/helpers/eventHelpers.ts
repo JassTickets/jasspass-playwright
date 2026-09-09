@@ -38,6 +38,7 @@ import { fillIndividualStripeFields } from './stripeHelpers';
 import {
   closeTicketPicker,
   fillGuestContact,
+  getApiArray,
   openCheckout,
   openTicketPicker,
   selectTicketQuantity,
@@ -1012,15 +1013,12 @@ export async function ensureEventHasAttendee(
     throw new Error(`Cannot identify the event from portal URL: ${portalUrl}`);
   }
 
-  const response = await organizerPage.request.get(
-    `${JASS_TEST_URL}/api/protected/events/${eventId}/tickets`
+  const tickets = await getApiArray(
+    organizerPage.request.get(
+      `${JASS_TEST_URL}/api/protected/events/${eventId}/tickets`
+    ),
+    'Items'
   );
-  expect(
-    response.ok(),
-    `Read attendees for event ${eventId}: HTTP ${response.status()}`
-  ).toBeTruthy();
-  const tickets = await response.json();
-  expect(Array.isArray(tickets), 'Expected the event tickets array').toBe(true);
   if (tickets.length > 0) return;
 
   console.log(
