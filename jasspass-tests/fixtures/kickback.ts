@@ -1,6 +1,13 @@
 import { test as application, expect, type CreateEventOptions, type CreatedEvent } from './application';
 import { getApiArray } from '../helpers/criticalCheckoutHelpers';
 import { json, type KickbackTransaction, type OrderTicket } from '../helpers/kickbackHelpers';
+import { refundCleanupTransaction } from '../helpers/refundCleanup';
+import { INTEGRATION_TEST_RUN_ID } from '../constants';
+
+const { retainFinancialCleanupRun, confirmFinancialCleanup } = require('../../scripts/financial-cleanup-guard.cjs') as {
+  retainFinancialCleanupRun(runId: string, eventId: string): void;
+  confirmFinancialCleanup(runId: string, eventId: string): void;
+};
 
 type KickbackFixtures = { kickbackEvent: (options?: CreateEventOptions) => Promise<CreatedEvent> };
 
@@ -15,6 +22,8 @@ export const test = application.extend<KickbackFixtures>({
         ...options, cleanup: false,
       });
       events.push(event);
+      // Also preserve financial evidence if the worker stops before teardown finishes.
+      retainFinancialCleanupRun(INTEGRATION_TEST_RUN_ID, event.id);
       if (options.buyerPromotionSettings?.IsEnabled !== false) {
         expect(event.event.BuyerPromotionSettings).toMatchObject({ IsEnabled: true });
       }
@@ -45,12 +54,11 @@ export const test = application.extend<KickbackFixtures>({
             }, { timeout: 150_000, intervals: [1_000, 3_000, 5_000] }).toBe('Completed');
           }
           if (transaction.Amount > 0) {
-            const refund = await ownerApi.post('/api/protected/refunds', { data: {
+            await refundCleanupTransaction(ownerApi, {
               eventId: event.id, transactionId: transaction.Id, ticketIds: active.map(t => t.Id),
               details: `Kickback test cleanup ${testInfo.testId}`, refundType: 'Online',
               includesServiceFee: true, includesOrganizerFee: true, includesTransactionFee: true, includesTax: true,
-            } });
-            expect(refund.ok(), `Cleanup refund ${transaction.Id}: HTTP ${refund.status()}`).toBeTruthy();
+            }, transaction.Confirmation);
           } else {
             for (const ticket of active) {
               await json(await ownerApi.post('/api/protected/tickets/status', { data: {
@@ -74,7 +82,12 @@ export const test = application.extend<KickbackFixtures>({
                 && row.SettlementSummary.PayoutRecoveryOutstandingCents === 0);
           }, { timeout: 60_000, intervals: [1_000, 3_000, 5_000] }).toBe(true);
         }
-      } catch (error) { errors.push(`Event ${event.id} retained: ${String(error)}`); }
+        confirmFinancialCleanup(INTEGRATION_TEST_RUN_ID, event.id);
+      } catch (error) {
+        // Only the first line: API errors can include sensitive request headers.
+        const reason = String(error).split('\n')[0];
+        errors.push(`Event ${event.id} retained: ${reason}`);
+      }
       // Hide fixtures even when money reconciliation fails, preserving all financial parents.
       try {
         const hide = await ownerApi.put(`/api/protected/events/${event.id}`, { multipart: {

@@ -1,4 +1,5 @@
 const { request } = require('@playwright/test');
+const { assertFinancialCleanupComplete } = require('./financial-cleanup-guard.cjs');
 
 async function responseText(response) {
   return response.text().catch(() => '<response body unavailable>');
@@ -19,6 +20,9 @@ async function cleanupIntegrationTestRun({
     return;
   }
 
+  // Shared by global teardown and the CI always() fallback; neither may erase
+  // evidence of an unconfirmed refund or commission reversal.
+  assertFinancialCleanupComplete(runId);
   const api = await request.newContext({ baseURL });
   try {
     const login = await api.post('/api/public/auth/login', {
