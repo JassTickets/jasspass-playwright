@@ -51,8 +51,18 @@ test.describe('Kickback checkout identity', () => {
     expect((await wrongLogin).ok()).toBe(false);
     expect((await page.request.get('/api/protected/profile/me')).ok()).toBe(false);
     await page.getByLabel(/^Password\s*\*?$/i).fill(PLAYWRIGHT_BOT_PASSWORD);
-    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-    await expect.poll(async () => (await page.request.get('/api/protected/profile/me')).ok()).toBe(true);
+    const [loginResponse] = await Promise.all([
+      page.waitForResponse(
+        response => response.url().endsWith('/api/public/auth/login') && response.request().method() === 'POST',
+        { timeout: 30_000 },
+      ),
+      page.getByRole('button', { name: 'Sign in', exact: true }).click(),
+    ]);
+    expect(loginResponse.ok(), `Matching account sign-in: HTTP ${loginResponse.status()}`).toBe(true);
+    await expect.poll(async () => (await page.request.get('/api/protected/profile/me')).ok(), {
+      timeout: 30_000,
+      message: 'Matching account session should become available after successful sign-in',
+    }).toBe(true);
     await assertBrowserIdentity(page, buyer.email);
   });
 
