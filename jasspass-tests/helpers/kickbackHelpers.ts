@@ -3,7 +3,7 @@ import { expect, type APIRequestContext, type APIResponse, type Page, type Respo
 import { JASS_TEST_URL } from '../constants';
 import type { CreatedEvent } from '../fixtures/application';
 import {
-  applyPromoCode, fillGuestContact, openEvent,
+  applyPromoCode, continueFromTicketStep, fillGuestContact, openEvent, selectTicketQuantity,
   submitPurchase, submitStripeCheckout, type Buyer,
 } from './criticalCheckoutHelpers';
 
@@ -65,11 +65,15 @@ export async function purchase(
   { quantity = 1, free = false, promoCode }: { quantity?: number; free?: boolean; promoCode?: string } = {},
 ): Promise<{ Confirmation: string }> {
   await openEvent(page, event.id, event.name);
-  await page.getByRole('button', { name: /^(Get Tickets|RSVP)$/ }).filter({ visible: true }).first().click();
-  const increase = page.getByRole('button', { name: `Increase quantity for ${event.ticketTypes[0].Type}`, exact: true });
-  for (let index = 0; index < quantity; index++) await increase.click();
-  await page.getByRole('button', { name: 'Next', exact: true }).click();
-  await fillGuestContact(page, buyer);
+  const profilePrompt = page.getByText('Complete your profile', { exact: true });
+  if (await profilePrompt.waitFor({ state: 'visible', timeout: 1_000 }).then(() => true).catch(() => false))
+    await closeProfilePrompt(page);
+  await selectTicketQuantity(page, event.id, event.ticketTypes[0].Type, quantity);
+  await continueFromTicketStep(page);
+  const firstName = page.locator('#FirstName:visible');
+  await expect(firstName.or(page.getByRole('button', { name: /^(Proceed to Payment|Checkout|RSVP)$/ }).filter({ visible: true })).first())
+    .toBeVisible({ timeout: 30_000 });
+  if (await firstName.isVisible()) await fillGuestContact(page, buyer);
   if (promoCode) await applyPromoCode(page, event.id, promoCode);
   if (!free) return submitStripeCheckout(page);
   return submitPurchase(page, 'RSVP');
