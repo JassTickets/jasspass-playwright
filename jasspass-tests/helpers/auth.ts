@@ -7,13 +7,18 @@ import {
 
 const pagesWithDateOfBirthHandler = new WeakSet<Page>();
 
+function dateOfBirthRemindLater(page: Page) {
+  // ModalShell has no dialog role. Anchor to the birthday field and its nearest
+  // card containing the action; the inline Kickback banner uses the same label.
+  return page.locator('#dob-prompt-input')
+    .locator('xpath=ancestor::div[.//button[normalize-space(.)="Remind me later"]][1]')
+    .getByRole('button', { name: 'Remind me later', exact: true });
+}
+
 export async function installDateOfBirthPromptHandler(page: Page) {
   if (pagesWithDateOfBirthHandler.has(page)) return;
 
-  const remindMeLater = page.getByRole('button', {
-    name: 'Remind me later',
-    exact: true,
-  });
+  const remindMeLater = dateOfBirthRemindLater(page);
   await page.addLocatorHandler(remindMeLater, async () => {
     await remindMeLater.click();
     await expect(remindMeLater).toBeHidden();
@@ -26,10 +31,7 @@ export async function dismissDateOfBirthPromptIfPresent(
   timeout = 3_000
 ) {
   await installDateOfBirthPromptHandler(page);
-  const remindMeLater = page.getByRole('button', {
-    name: 'Remind me later',
-    exact: true,
-  });
+  const remindMeLater = dateOfBirthRemindLater(page);
   const promptIsVisible = await remindMeLater
     .waitFor({ state: 'visible', timeout })
     .then(() => true)
