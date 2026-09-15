@@ -561,29 +561,18 @@ export async function addOperatorWithAllPolicies(
     .fill(operatorEmail);
   await page.getByRole('button', { name: 'Add Event Staff' }).click();
 
-  // Check all available policies
-  const policies = [
-    'Read Event',
-    'Update Event',
-    'Delete Event',
-    'Read / Scan Ticket',
-    'Read Ticket Type',
-    'Create Ticket Type',
-    'Update Ticket Type',
-    'Delete Ticket Type',
-    'Read Transaction',
-    'Read Refund',
-    'Read External Purchase',
-    'Update External Purchase',
-  ];
-
-  for (const policy of policies) {
-    if (typeof policy === 'string') {
-      await page.getByRole('checkbox', { name: policy }).check();
-    } else {
-      await page.getByRole('checkbox', policy).check();
-    }
-  }
+  // The API catalog owns the available choices. Select All also covers newly
+  // added policies, without relying on translated or bundled checkbox labels.
+  const selectAll = page.getByRole('button', {
+    name: 'Select All Policies',
+    exact: true,
+  });
+  await expect(selectAll).toBeEnabled({ timeout: 30_000 });
+  await selectAll.click();
+  await expect(page.getByRole('button', {
+    name: 'Unselect All Policies',
+    exact: true,
+  })).toBeVisible();
 
   // Save policies
   const assignOperatorResponsePromise = page.waitForResponse((response) => {
@@ -593,10 +582,29 @@ export async function addOperatorWithAllPolicies(
       /\/api\/protected\/events\/[^/]+\/operators\/?$/.test(pathname)
     );
   });
+  await expect(page.getByRole('button', { name: 'Save Policies' })).toBeEnabled();
   await page.getByRole('button', { name: 'Save Policies' }).click();
   const assignOperatorResponse = await assignOperatorResponsePromise;
   expect(
     assignOperatorResponse.ok(),
     `Assign operator failed with ${assignOperatorResponse.status()}: ${await assignOperatorResponse.text()}`
   ).toBeTruthy();
+
+  // Check the persisted event grant, rather than trusting only the UI response.
+  const eventId = new URL(page.url()).pathname.match(/\/event\/([^/]+)/)?.[1];
+  expect(eventId, 'Expected an event portal URL').toBeTruthy();
+  const operatorsResponse = await page.request.get(
+    `/api/protected/events/${eventId}/operators`
+  );
+  expect(operatorsResponse.ok()).toBeTruthy();
+  const operators = await operatorsResponse.json();
+  const operator = operators.find((item: { Email: string }) =>
+    item.Email.toLowerCase() === operatorEmail.toLowerCase()
+  );
+  const grant = operator?.OperatorDetails.find(
+    (item: { EventId: string }) => item.EventId === eventId
+  );
+  expect(grant, 'The assigned operator must have a persisted event grant').toBeDefined();
+  expect(grant.ManualPolicies ?? grant.Policies).toEqual(['*']);
+
 }
