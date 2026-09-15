@@ -18,6 +18,7 @@ import type {
   SeatingSelectionRulesInput,
 } from './seatingTypes';
 import { openEventPortalDestination } from './portalNavigationHelpers';
+import { retryTransientResponse } from './transientServiceRetry';
 
 export type {
   HeldSeat,
@@ -140,7 +141,15 @@ export async function readSeatingAvailability(
   api: APIRequestContext,
   eventId: string
 ): Promise<SeatingAvailabilityResponse> {
-  const response = await api.get(`/api/public/seating/${eventId}/availability`);
+  const response = await retryTransientResponse(
+    () => api.get(`/api/public/seating/${eventId}/availability`),
+    {
+      onRetry: (failedResponse, _attempt, delayMs) =>
+        console.warn(
+          `[seating] Availability returned ${failedResponse.status()}; retrying after ${delayMs}ms while the test service recovers.`
+        ),
+    }
+  );
   await requireOk(response, `Read seating availability for event ${eventId}`);
   return (await response.json()) as SeatingAvailabilityResponse;
 }

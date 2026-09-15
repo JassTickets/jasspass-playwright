@@ -14,6 +14,7 @@
     "test:kickback": "playwright test --project=kickback --workers=1",
     "test:kickback:integration": "playwright test --project=kickback --workers=1",
     "test:kickback:typecheck": "tsc -p tsconfig.kickback.json",
+    "test:unit": "playwright test --config=playwright.unit.config.ts",
     "test:testlab": "playwright test",
     "test:critical": "playwright test jasspass-tests/tests/critical_paths --project=chromium",
     "test:critical:cross-browser": "playwright test jasspass-tests/tests/critical_paths",

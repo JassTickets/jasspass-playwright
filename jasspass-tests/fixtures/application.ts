@@ -13,6 +13,7 @@ import {
 } from '../constants';
 import { installDateOfBirthPromptHandler, signIn } from '../helpers/auth';
 import { createAndPublishSeatingMap } from '../helpers/seatingHelpers';
+import { retryTransientResponse } from '../helpers/transientServiceRetry';
 import type {
   SeatingMapDefinition,
   SeatingMapResponse,
@@ -443,7 +444,9 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
           storageState: ownerStorageState,
         });
 
-        const profileResponse = await api.get('/api/protected/profile/me');
+        const profileResponse = await retryTransientResponse(() =>
+          api.get('/api/protected/profile/me')
+        );
         await requireOk(profileResponse, 'Fetch signed-in profile');
         const profile = (await profileResponse.json()) as Record<
           string,
@@ -456,8 +459,8 @@ export const test = base.extend<ApplicationFixtures, ApplicationWorkerFixtures>(
           );
         }
 
-        const organizersResponse = await api.get(
-          `/api/protected/users/${userId}/organizers`
+        const organizersResponse = await retryTransientResponse(() =>
+          api.get(`/api/protected/users/${userId}/organizers`)
         );
         await requireOk(organizersResponse, 'Fetch owner organizers');
         const organizers = asArray<Record<string, unknown>>(

@@ -211,6 +211,14 @@ export async function createOrganizer(
 export async function selectFirstOrganizer(page: Page) {
   await signIn(page, { targetPath: '/portal/home' });
 
+  // The studio home paginates organizations. Search for the stable Playwright
+  // prefix instead of assuming one of those organizations is on page one.
+  const organizerSearch = page
+    .getByPlaceholder('Search organizations')
+    .filter({ visible: true });
+  await expect(organizerSearch).toBeVisible({ timeout: 30000 });
+  await organizerSearch.fill(ORGANIZER_NAME_PREFIX);
+
   const organizerLink = page
     .getByRole('button')
     .filter({ hasText: new RegExp(ORGANIZER_NAME_PREFIX) })
