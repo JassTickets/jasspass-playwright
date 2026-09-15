@@ -31,7 +31,7 @@ test.describe('email signup form', () => {
       name: /I accept the terms & conditions and privacy policy/,
     });
     const sms = page.getByRole('checkbox', {
-      name: 'Text me JassPass offers.',
+      name: /I agree to recurring promotional texts from JassPass/,
     });
 
     await expect(organizer).not.toBeChecked();

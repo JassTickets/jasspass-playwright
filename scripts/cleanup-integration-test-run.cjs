@@ -5,6 +5,23 @@ async function responseText(response) {
   return response.text().catch(() => '<response body unavailable>');
 }
 
+const transientStatuses = new Set([502, 503, 504]);
+const transientRetryDelaysMs = [2_000, 5_000, 10_000, 15_000, 20_000];
+
+async function retryTransientResponse(operation, label) {
+  let response = await operation();
+  for (const delayMs of transientRetryDelaysMs) {
+    if (!transientStatuses.has(response.status())) return response;
+    console.warn(
+      `[cleanup] ${label} returned ${response.status()}; retrying after ${delayMs}ms while the test service recovers.`,
+    );
+    await response.dispose();
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    response = await operation();
+  }
+  return response;
+}
+
 async function cleanupIntegrationTestRun({
   baseURL,
   runId,
@@ -25,18 +42,24 @@ async function cleanupIntegrationTestRun({
   assertFinancialCleanupComplete(runId);
   const api = await request.newContext({ baseURL });
   try {
-    const login = await api.post('/api/public/auth/login', {
-      data: { Email: email, Password: password },
-    });
+    const login = await retryTransientResponse(
+      () => api.post('/api/public/auth/login', {
+        data: { Email: email, Password: password },
+      }),
+      'Login',
+    );
     if (!login.ok()) {
       throw new Error(
         `Integration test cleanup login failed with ${login.status()}: ${await responseText(login)}`,
       );
     }
 
-    const cleanup = await api.delete(
-      '/api/protected/integration-test-resources',
-      { headers: { 'X-Integration-Test-Run-Id': runId } },
+    const cleanup = await retryTransientResponse(
+      () => api.delete(
+        '/api/protected/integration-test-resources',
+        { headers: { 'X-Integration-Test-Run-Id': runId } },
+      ),
+      'Resource deletion',
     );
     if (cleanup.status() === 404 && !required) {
       console.log(

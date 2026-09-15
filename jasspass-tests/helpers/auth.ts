@@ -4,6 +4,7 @@ import {
   PLAYWRIGHT_BOT_PASSWORD,
   JASS_TEST_URL,
 } from '../constants';
+import { retryTransientResponse } from './transientServiceRetry';
 
 const pagesWithDateOfBirthHandler = new WeakSet<Page>();
 
@@ -77,13 +78,25 @@ export async function signIn(
 
   await emailInput.fill(email);
   await page.getByRole('textbox', { name: 'Password' }).fill(password);
-  const loginResponsePromise = page.waitForResponse(
-    (response) =>
-      response.request().method() === 'POST' &&
-      response.url().includes('/api/public/auth/login')
+  const signInButton = page.getByRole('button', { name: 'Sign in' });
+  const loginResponse = await retryTransientResponse(
+    async () => {
+      await expect(signInButton).toBeEnabled({ timeout: 10_000 });
+      const loginResponsePromise = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          response.url().includes('/api/public/auth/login')
+      );
+      await signInButton.click();
+      return loginResponsePromise;
+    },
+    {
+      onRetry: (failedResponse, _attempt, delayMs) =>
+        console.warn(
+          `[auth] Login returned ${failedResponse.status()}; retrying after ${delayMs}ms while the test service recovers.`
+        ),
+    }
   );
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  const loginResponse = await loginResponsePromise;
   if (!loginResponse.ok()) {
     const loginResponseBody = await loginResponse
       .text()
