@@ -55,7 +55,7 @@ function generateUniquePromoCode(): string {
   return `${EVENT_PLAYWRIGHT_PROMO_CODE}${timestamp}`;
 }
 
-async function scopeEventCreationToOrganizer(
+export async function scopeEventCreationToOrganizer(
   page: Page,
   organizerId: string
 ): Promise<() => Promise<void>> {
