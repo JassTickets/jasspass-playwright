@@ -1,30 +1,31 @@
-import { expect, test } from '@playwright/test';
-import { selectFirstEventStartingWithPBO } from '../../helpers/eventHelpers';
+import { expect, test } from '../../fixtures/application';
+import { openEventOrganizerPortal } from '../../helpers/eventHelpers';
+import { openEventPortalDestination } from '../../helpers/portalNavigationHelpers';
 
 test.setTimeout(120_000);
 
 test('duplicate ticket type validates overrides and creates a copy', async ({
-  page,
+  ownerPage,
+  eventFactory,
 }) => {
-  const organizerPage = await selectFirstEventStartingWithPBO(page);
+  const created = await eventFactory.create({
+    tickets: [{ type: 'General Admission', price: 25, totalTickets: 100 }],
+  });
+  const organizerPage = await openEventOrganizerPortal(ownerPage, created.id);
 
-  await organizerPage
-    .getByRole('button', { name: 'Ticket Types', exact: true })
-    .first()
-    .click();
+  await openEventPortalDestination(organizerPage, 'ticketTypes');
 
   const duplicateAction = organizerPage
-    .getByRole('button', { name: /^Duplicate .+/ })
-    .first();
+    .getByRole('button', { name: 'Duplicate General Admission', exact: true })
+    .filter({ visible: true });
   await expect(duplicateAction).toBeVisible();
 
-  const actionLabel = await duplicateAction.getAttribute('aria-label');
-  const sourceName = actionLabel!.replace(/^Duplicate /, '');
+  const sourceName = created.ticketTypes[0].Type;
   await duplicateAction.click();
 
-  const form = organizerPage.getByRole('form', {
-    name: 'Duplicate Ticket Type',
-  });
+  const form = organizerPage
+    .getByRole('form', { name: 'Duplicate Ticket Type' })
+    .filter({ visible: true });
   await expect(form).toBeVisible();
 
   const name = form.getByLabel('New name');
@@ -33,8 +34,9 @@ test('duplicate ticket type validates overrides and creates a copy', async ({
   const submit = form.getByRole('button', { name: 'Duplicate', exact: true });
 
   await expect(name).toHaveValue(`${sourceName} Copy`);
-  await expect(price).not.toHaveValue('');
-  await expect(capacity).not.toHaveValue('');
+  await expect(price).toBeEnabled();
+  await expect(price).toHaveValue('25');
+  await expect(capacity).toHaveValue('100');
 
   await name.fill('');
   await submit.click();
@@ -57,56 +59,82 @@ test('duplicate ticket type validates overrides and creates a copy', async ({
   const uniqueName = `Copy ${Date.now().toString().slice(-8)}`;
   await name.fill(uniqueName);
 
-  if (await price.isEnabled()) {
-    await price.fill('-0.01');
-    await submit.click();
-    await expect(form.getByRole('alert')).toContainText(
-      'Price must be zero or greater.'
-    );
-    await price.fill('12.34');
-  } else {
-    await expect(price).toHaveValue('0');
-  }
+  // Native min/step validation blocks submission before React's onSubmit runs.
+  await price.fill('-0.01');
+  await submit.click();
+  expect(
+    await price.evaluate(
+      (input: HTMLInputElement) => input.validity.rangeUnderflow
+    )
+  ).toBe(true);
+  await expect(form).toBeVisible();
+  await price.fill('12.34');
 
   await capacity.fill('1.5');
   await submit.click();
-  await expect(form.getByRole('alert')).toContainText(
-    'Capacity must be a whole number that is zero or greater.'
-  );
+  expect(
+    await capacity.evaluate(
+      (input: HTMLInputElement) => input.validity.stepMismatch
+    )
+  ).toBe(true);
+  await expect(form).toBeVisible();
 
   await capacity.fill('37');
-  await submit.click();
+  const [response] = await Promise.all([
+    organizerPage.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname ===
+          `/api/protected/events/${created.id}/ticket-types/${created.ticketTypes[0].Id}/duplicate`,
+      { timeout: 30_000 }
+    ),
+    submit.click(),
+  ]);
+  expect(
+    response.ok(),
+    `Duplicate ticket type: HTTP ${response.status()}`
+  ).toBe(true);
+  const duplicate = await response.json();
+  expect(duplicate).toMatchObject({
+    Type: uniqueName,
+    Price: 12.34,
+    TotalTickets: 37,
+  });
+  expect(duplicate.Id).toBeTruthy();
+  expect(duplicate.Id).not.toBe(created.ticketTypes[0].Id);
 
-  await expect(form).toBeHidden();
+  await expect(form).toBeHidden({ timeout: 30_000 });
   await expect(
     organizerPage.getByText(
       `Ticket type "${uniqueName}" duplicated successfully.`
     )
   ).toBeVisible();
   await expect(
-    organizerPage.getByText(uniqueName, { exact: true })
+    organizerPage
+      .getByText(uniqueName, { exact: true })
+      .filter({ visible: true })
   ).toBeVisible();
 });
 
 test('duplicate ticket type editor stays inline and stacks on mobile', async ({
-  page,
+  ownerPage,
+  eventFactory,
 }) => {
-  const organizerPage = await selectFirstEventStartingWithPBO(page);
+  const created = await eventFactory.create({
+    tickets: [{ type: 'General Admission', price: 25, totalTickets: 100 }],
+  });
+  const organizerPage = await openEventOrganizerPortal(ownerPage, created.id);
+  await openEventPortalDestination(organizerPage, 'ticketTypes');
   await organizerPage.setViewportSize({ width: 390, height: 844 });
 
   await organizerPage
-    .getByRole('button', { name: 'Ticket Types', exact: true })
-    .first()
+    .getByRole('button', { name: 'Duplicate General Admission', exact: true })
+    .filter({ visible: true })
     .click();
 
-  await organizerPage
-    .getByRole('button', { name: /^Duplicate .+/ })
-    .first()
-    .click();
-
-  const form = organizerPage.getByRole('form', {
-    name: 'Duplicate Ticket Type',
-  });
+  const form = organizerPage
+    .getByRole('form', { name: 'Duplicate Ticket Type' })
+    .filter({ visible: true });
   await expect(form).toBeVisible();
   await expect(
     organizerPage.getByRole('dialog', { name: 'Duplicate Ticket Type' })
