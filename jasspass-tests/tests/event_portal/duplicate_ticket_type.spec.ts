@@ -44,10 +44,10 @@ test('duplicate ticket type validates overrides and creates a copy', async ({
     'Enter a name for the duplicated ticket type.'
   );
 
-  await name.fill('123456789012345678901');
+  await name.fill('x'.repeat(31));
   await submit.click();
   await expect(form.getByRole('alert')).toContainText(
-    'Ticket type name must be 20 characters or less.'
+    'Ticket type name must be 30 characters or less.'
   );
 
   await name.fill(sourceName);
@@ -140,9 +140,13 @@ test('duplicate ticket type editor stays inline and stacks on mobile', async ({
     organizerPage.getByRole('dialog', { name: 'Duplicate Ticket Type' })
   ).toHaveCount(0);
 
-  const nameBox = await form.getByLabel('New name').boundingBox();
-  const priceBox = await form.getByLabel(/New price/).boundingBox();
-  const capacityBox = await form.getByLabel('New capacity').boundingBox();
+  // Both responsive forms are mounted with the same input IDs. Scope to the
+  // visible form: labels currently resolve to the hidden desktop inputs.
+  const nameBox = await form.locator('input[id$="-name"]').boundingBox();
+  const priceBox = await form.locator('input[id$="-price"]').boundingBox();
+  const capacityBox = await form
+    .locator('input[id$="-capacity"]')
+    .boundingBox();
   const formBox = await form.boundingBox();
 
   expect(nameBox).not.toBeNull();
