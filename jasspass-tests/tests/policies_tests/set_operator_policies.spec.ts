@@ -1,5 +1,5 @@
 import { test, expect } from '../../fixtures/application';
-import { signIn, signOutIfSignedIn } from '../../helpers/auth';
+import { signIn } from '../../helpers/auth';
 import { addOperatorWithAllPolicies } from '../../helpers/organizerHelpers';
 import {
   createEvent,
@@ -19,7 +19,10 @@ test.setTimeout(240_000); // 4 minutes timeout for complex flow
 
 // @Description: This test verifies the complete operator policy flow - adding an operator with all policies and verifying their access
 // @Dependencies: Requires existing organizer and event, sign-in functionality
-test('operator policies comprehensive flow', async ({ browser, page: page1 }) => {
+test('operator policies comprehensive flow', async ({
+  browser,
+  page: page1,
+}) => {
   console.log('[INFO] Starting operator policies comprehensive flow test...');
 
   // Create two browser contexts to simulate two different users
@@ -76,23 +79,14 @@ test('operator policies comprehensive flow', async ({ browser, page: page1 }) =>
     console.log(
       '[INFO] Step 3: Signing in as operator and verifying access...'
     );
-    await page2.goto(`${JASS_TEST_URL}/portal/organizer`);
-
-    // Sign out if already signed in
-    await signOutIfSignedIn(page2);
-
-    // Sign in with operator credentials
+    // Sign in directly to this event. Portal home loads every organization the
+    // shared operator belongs to, which is unrelated to this permission check.
     await signIn(page2, {
       email: PLAYWRIGHT_BOT2_EMAIL,
       password: PLAYWRIGHT_BOT2_PASSWORD,
+      targetPath: `/portal/organizer/company/${organizerId}/event/${eventId}`,
     });
 
-    // Open the resource this operator was just assigned. The shared operator
-    // account can belong to many test organizations, so sidebar search and its
-    // paginated result order are not part of this policy test.
-    await page2.goto(
-      `${JASS_TEST_URL}/portal/organizer/company/${organizerId}/event/${eventId}`
-    );
     await expect(page2).toHaveURL(
       new RegExp(
         `/portal/organizer/company/${organizerId}/event/${eventId}(?:\\?|$)`

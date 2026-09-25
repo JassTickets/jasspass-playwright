@@ -172,7 +172,10 @@ export async function selectTicketQuantity(
     );
     await increaseButton.click();
     const calculationResponse = await calculationResponsePromise;
-    expect(calculationResponse.ok()).toBeTruthy();
+    expect(
+      calculationResponse.ok(),
+      `Checkout calculation for event ${eventId}: HTTP ${calculationResponse.status()}`
+    ).toBeTruthy();
     calculation = (await calculationResponse.json()) as CheckoutCalculation;
   }
 

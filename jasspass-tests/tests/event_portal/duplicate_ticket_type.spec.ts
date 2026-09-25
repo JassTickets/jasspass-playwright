@@ -127,9 +127,22 @@ test('duplicate ticket type editor stays inline and stacks on mobile', async ({
   await openEventPortalDestination(organizerPage, 'ticketTypes');
   await organizerPage.setViewportSize({ width: 390, height: 844 });
 
-  await organizerPage
-    .getByRole('button', { name: 'Duplicate General Admission', exact: true })
-    .filter({ visible: true })
+  const ticketCard = organizerPage.getByRole('article', {
+    name: 'General Admission',
+    exact: true,
+  });
+  await expect(ticketCard).toBeVisible();
+  const details = ticketCard.getByRole('button', {
+    name: 'Details & actions',
+    exact: true,
+  });
+  await expect(details).toHaveAttribute('aria-expanded', 'false');
+  await details.click();
+  await expect(
+    ticketCard.getByRole('button', { name: 'Hide details', exact: true })
+  ).toHaveAttribute('aria-expanded', 'true');
+  await ticketCard
+    .getByRole('button', { name: 'Duplicate', exact: true })
     .click();
 
   const form = organizerPage
